@@ -19,7 +19,7 @@
 - **Service Layer:** Business logic, chat orchestration
 - **Adapter Layer:** LLM adapter (abstraction for flexibility)
 - **Infrastructure Layer:** Anthropic client, RAG system
-- **LLM:** Anthropic Claude 3.5 Sonnet
+- **LLM:** Anthropic Claude 4 Sonnet
 - **RAG:** Simple vector search with German tax law documents
 - **No Database:** localStorage for chat history, in-memory for RAG
 
