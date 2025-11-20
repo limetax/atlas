@@ -104,3 +104,187 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--foreground);
 }
+
+/* Markdown styling for chat messages */
+.prose {
+  color: inherit;
+}
+
+.prose p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose p:first-child {
+  margin-top: 0;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose ul,
+.prose ol {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.prose strong {
+  font-weight: 600;
+  color: inherit;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: var(--font-mono);
+}
+
+.prose pre {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1em;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.875em;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+.prose h1 {
+  font-size: 1.5em;
+}
+
+.prose h2 {
+  font-size: 1.25em;
+}
+
+.prose h3 {
+  font-size: 1.125em;
+}
+
+.prose blockquote {
+  border-left: 3px solid #84cc16;
+  padding-left: 1em;
+  margin-left: 0;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  font-style: italic;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.prose a {
+  color: #84cc16;
+  text-decoration: underline;
+  transition: all 0.15s ease-in-out;
+}
+
+.prose a:hover {
+  color: #65a30d;
+  text-decoration-thickness: 2px;
+}
+
+/* Citation links styling */
+.prose a[href*="gesetze-im-internet.de"] {
+  font-weight: 600;
+  background: rgba(132, 204, 22, 0.1);
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  border-bottom: 2px solid #84cc16;
+}
+
+.prose a[href*="gesetze-im-internet.de"]:hover {
+  background: rgba(132, 204, 22, 0.2);
+  border-bottom-color: #65a30d;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5em;
+  text-align: left;
+}
+
+.prose th {
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+
+/* Invert colors for lime gradient backgrounds (user messages) */
+.prose-invert {
+  color: white;
+}
+
+.prose-invert code {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.prose-invert pre {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.prose-invert blockquote {
+  border-left-color: white;
+  color: white;
+}
+
+.prose-invert strong {
+  color: white;
+}
+
+.prose-invert a {
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.prose-invert a:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.prose-invert th {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.prose-invert th,
+.prose-invert td {
+  border-color: rgba(255, 255, 255, 0.3);
+}

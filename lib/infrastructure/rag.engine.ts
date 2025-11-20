@@ -1,5 +1,5 @@
 import { TaxDocument, Mandant, Citation } from "@/types";
-import { TAX_DOCUMENTS } from "@/lib/utils/tax-documents";
+import { ALL_TAX_DOCUMENTS } from "@/lib/utils/tax-documents";
 import { MOCK_MANDANTEN, getAllOpenDeadlines } from "@/lib/utils/mock-data";
 
 /**
@@ -17,7 +17,7 @@ export class RAGEngine {
   private mandanten: Mandant[];
 
   constructor() {
-    this.taxDocuments = TAX_DOCUMENTS;
+    this.taxDocuments = ALL_TAX_DOCUMENTS;
     this.mandanten = MOCK_MANDANTEN;
   }
 

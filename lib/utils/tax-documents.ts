@@ -78,11 +78,63 @@ export const TAX_DOCUMENTS: TaxDocument[] = [
     content: `Mit Freiheitsstrafe bis zu fünf Jahren oder mit Geldstrafe wird bestraft, wer den Finanzbehörden oder anderen Behörden über steuerlich erhebliche Tatsachen unrichtige oder unvollständige Angaben macht, die Finanzbehörden pflichtwidrig über steuerlich erhebliche Tatsachen in Unkenntnis lässt oder pflichtwidrig die Verwendung von Steuerzeichen oder Steuerstemplern unterlässt und dadurch Steuern verkürzt oder nicht gerechtfertigte Steuervorteile erlangt.`,
     category: "AO",
   },
+  {
+    id: "ao_146a",
+    citation: "§ 146a AO",
+    title:
+      "Ordnungsvorschriften für die Buchführung und für Aufzeichnungen mittels elektronischer Aufzeichnungssysteme",
+    content: `Wer aufzeichnungspflichtige Geschäftsvorfälle oder andere Vorgänge mit Hilfe eines elektronischen Aufzeichnungssystems erfasst, hat ein elektronisches Aufzeichnungssystem zu verwenden, das jeden aufzeichnungspflichtigen Geschäftsvorfall einzeln, vollständig, richtig, zeitgerecht und geordnet aufzeichnet. Das elektronische Aufzeichnungssystem muss mit einer zertifizierten technischen Sicherheitseinrichtung ausgestattet sein (TSE - Technische Sicherheitseinrichtung). Die Anforderungen gelten insbesondere für elektronische Registrierkassen.`,
+    category: "AO",
+  },
+  {
+    id: "ao_162",
+    citation: "§ 162 AO",
+    title: "Schätzung von Besteuerungsgrundlagen",
+    content: `Soweit die Finanzbehörde die Besteuerungsgrundlagen nicht ermitteln oder berechnen kann, hat sie diese zu schätzen. Dabei sind alle Umstände zu berücksichtigen, die für die Schätzung von Bedeutung sind. Geschätzt werden kann insbesondere dann, wenn der Steuerpflichtige über seine Angaben keine ausreichenden Aufklärungen zu geben vermag oder weitere Auskunft oder eine Versicherung an Eides statt verweigert oder seine Mitwirkungspflicht nach § 90 Abs. 2 verletzt.`,
+    category: "AO",
+  },
+  {
+    id: "ao_152",
+    citation: "§ 152 AO",
+    title: "Verspätungszuschlag",
+    content: `Gegen denjenigen, der seiner Verpflichtung zur Abgabe einer Steuererklärung nicht oder nicht fristgemäß nachkommt, kann ein Verspätungszuschlag festgesetzt werden. Der Verspätungszuschlag beträgt mindestens 25 Euro für jeden angefangenen Monat der eingetretenen Verspätung. Bei einer Steuererklärung, die durch Datenfernübertragung zu übermitteln ist, beträgt der Verspätungszuschlag 0,25 Prozent der festgesetzten Steuer, mindestens jedoch 25 Euro für jeden angefangenen Monat der eingetretenen Verspätung.`,
+    category: "AO",
+  },
 ];
 
 /**
  * Additional tax law references for context
  */
+/**
+ * Additional UStG (Umsatzsteuergesetz) documents
+ */
+export const USTG_DOCUMENTS: TaxDocument[] = [
+  {
+    id: "ustg_18",
+    citation: "§ 18 UStG",
+    title: "Besteuerungsverfahren",
+    content: `Der Unternehmer hat bis zum 10. Tag nach Ablauf jedes Voranmeldungszeitraums eine Voranmeldung nach amtlich vorgeschriebenem Datensatz durch Datenfernübertragung zu übermitteln, in der er die Steuer für den Voranmeldungszeitraum (Vorauszahlung) selbst zu berechnen hat. Voranmeldungszeitraum ist das Kalendervierteljahr. Beträgt die Steuer für das vorangegangene Kalenderjahr mehr als 7.500 Euro, ist der Kalendermonat Voranmeldungszeitraum.`,
+    category: "UStG",
+  },
+  {
+    id: "ustg_14",
+    citation: "§ 14 UStG",
+    title: "Ausstellung von Rechnungen",
+    content: `Rechnung ist jedes Dokument, mit dem über eine Lieferung oder sonstige Leistung abgerechnet wird. Eine Rechnung muss folgende Angaben enthalten: vollständiger Name und Anschrift des leistenden Unternehmers und des Leistungsempfängers, Steuernummer oder Umsatzsteuer-Identifikationsnummer, Ausstellungsdatum, fortlaufende Rechnungsnummer, Menge und Art der gelieferten Gegenstände oder Umfang und Art der sonstigen Leistung, Zeitpunkt der Lieferung oder sonstigen Leistung, Entgelt und gesondert ausgewiesene Umsatzsteuer.`,
+    category: "UStG",
+  },
+  {
+    id: "ustg_13b",
+    citation: "§ 13b UStG",
+    title: "Leistungsempfänger als Steuerschuldner (Reverse-Charge)",
+    content: `Die Steuer entsteht in den Fällen des Absatzes 2 mit Ausstellung der Rechnung, spätestens jedoch mit Ablauf des der Leistung folgenden Kalendermonats. Steuerschuldner ist der Leistungsempfänger bei Bauleistungen, bei der Lieferung von Schrott und anderen Abfallstoffen, bei der Übertragung von Emissionszertifikaten und bei Lieferungen sicherungsübereigneter Gegenstände.`,
+    category: "UStG",
+  },
+];
+
+// Combine all tax documents
+export const ALL_TAX_DOCUMENTS = [...TAX_DOCUMENTS, ...USTG_DOCUMENTS];
+
 export const TAX_LAW_REFERENCES = {
   EStG: "Einkommensteuergesetz",
   UStG: "Umsatzsteuergesetz",

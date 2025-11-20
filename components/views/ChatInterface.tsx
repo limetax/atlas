@@ -81,7 +81,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const showWelcomeScreen = messages.length === 0;
   
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white">
       {/* System Prompt Panel */}
       <div className="p-4 bg-white border-b border-gray-200">
         <SystemPromptPanel
