@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import TextareaAutosize from "react-textarea-autosize";
 import { Message } from "@/types";
 import { ChatMessage } from "../components/ChatMessage";
@@ -114,8 +115,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="space-y-8">
               {/* Welcome Message */}
               <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gradient-to-br from-lime-400 to-lime-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <span className="text-white font-bold text-3xl">L</span>
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 p-3 shadow-lg">
+                  <Image
+                    src="/icon.png"
+                    alt="limetax logo"
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-3">
                   Willkommen bei limetaxIQ
@@ -161,10 +168,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
               {isLoading && (
                 <div className="flex gap-4 justify-start">
-                  <div className="w-10 h-10 rounded-full bg-lime-500 flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md">
+                    <Loader2 className="w-6 h-6 text-lime-500 animate-spin" />
                   </div>
-                  <div className="px-4 py-3 bg-white border border-gray-200 rounded-2xl rounded-tl-sm">
+                  <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl rounded-tl-sm">
                     <p className="text-sm text-gray-500">Denke nach...</p>
                   </div>
                 </div>

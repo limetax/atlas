@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { ComplianceBadge } from "../components/ComplianceBadge";
 import { Settings } from "lucide-react";
 import { Button } from "../elements/Button";
@@ -11,8 +12,14 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick }) => {
   return (
     <header className="flex-shrink-0 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-lime-400 to-lime-600 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold text-lg">L</span>
+        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
+          <Image
+            src="/icon.png"
+            alt="limetax logo"
+            width={40}
+            height={40}
+            className="w-full h-full object-contain"
+          />
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">limetaxIQ</h1>

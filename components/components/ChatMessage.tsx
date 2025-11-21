@@ -1,10 +1,11 @@
 import React from "react";
+import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Message } from "@/types";
 import { Avatar } from "../elements/Avatar";
 import { Badge } from "../elements/Badge";
-import { User, Bot, ExternalLink } from "lucide-react";
+import { User, ExternalLink } from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
@@ -69,8 +70,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     <div className={`flex gap-4 ${isUser ? "justify-end" : "justify-start"}`}>
       {!isUser && (
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center shadow-md">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md p-1.5">
+            <Image
+              src="/icon.png"
+              alt="limetax logo"
+              width={40}
+              height={40}
+              className="w-full h-full object-contain"
+            />
           </div>
         </div>
       )}
