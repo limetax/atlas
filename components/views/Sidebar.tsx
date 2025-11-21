@@ -19,9 +19,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeleteSession,
 }) => {
   return (
-    <aside className="w-72 bg-white border-r border-gray-200 flex flex-col h-full">
+    <aside className="w-72 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
       {/* New Chat Button */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="flex-shrink-0 p-4 border-b border-gray-200">
         <Button variant="accent" className="w-full" onClick={onNewChat}>
           <Plus className="w-4 h-4 mr-2" />
           Neuer Chat
@@ -29,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Chat History */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 overflow-y-auto p-3 min-h-0">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
           Verlauf
         </h2>
@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="flex-shrink-0 p-4 border-t border-gray-200">
         <p className="text-xs text-gray-400 text-center">
           Powered by Claude 4 Sonnet
         </p>
