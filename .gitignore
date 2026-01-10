@@ -36,6 +36,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Local Supabase Docker (contains secrets and data volumes)
+/supabase-project/.env
+/supabase-project/.env.old
+/supabase-project/volumes/
+
+# Cloned Supabase repo (if present)
+/supabase/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
