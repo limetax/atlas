@@ -80,12 +80,56 @@ export interface Database {
           }
         ];
       };
+      tax_documents: {
+        Row: {
+          id: string;
+          citation: string;
+          title: string;
+          content: string;
+          law_type: string;
+          embedding: number[] | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          citation: string;
+          title: string;
+          content: string;
+          law_type: string;
+          embedding?: number[] | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          citation?: string;
+          title?: string;
+          content?: string;
+          law_type?: string;
+          embedding?: number[] | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      match_tax_documents: {
+        Args: {
+          query_embedding: number[];
+          match_threshold?: number;
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          citation: string;
+          title: string;
+          content: string;
+          law_type: string;
+          similarity: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
@@ -111,3 +155,13 @@ export type AdvisorUpdate = Database["public"]["Tables"]["advisors"]["Update"];
 export interface AdvisorWithAdvisory extends Advisor {
   advisory: Advisory | null;
 }
+
+// Tax documents types
+export type TaxDocumentRow =
+  Database["public"]["Tables"]["tax_documents"]["Row"];
+export type TaxDocumentInsert =
+  Database["public"]["Tables"]["tax_documents"]["Insert"];
+
+// Match result from similarity search
+export type TaxDocumentMatch =
+  Database["public"]["Functions"]["match_tax_documents"]["Returns"][number];

@@ -12,12 +12,12 @@ export class RAGService {
    * Search for relevant context based on user query
    * Returns formatted context and citations
    */
-  searchContext(query: string): {
+  async searchContext(query: string): Promise<{
     context: string;
     citations: Citation[];
-  } {
+  }> {
     const { taxContext, mandantenContext, citations } =
-      this.ragEngine.buildContext(query);
+      await this.ragEngine.buildContext(query);
 
     // Combine contexts
     let combinedContext = "";
@@ -52,14 +52,14 @@ export class RAGService {
   /**
    * Search for specific tax law paragraphs
    */
-  searchTaxLaw(
+  async searchTaxLaw(
     query: string,
     maxResults: number = 3
-  ): {
+  ): Promise<{
     context: string;
     citations: Citation[];
-  } {
-    const { documents, citations } = this.ragEngine.searchTaxLaw(
+  }> {
+    const { documents, citations } = await this.ragEngine.searchTaxLaw(
       query,
       maxResults
     );

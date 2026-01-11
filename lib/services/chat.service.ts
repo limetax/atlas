@@ -26,8 +26,8 @@ export class ChatService {
     unknown
   > {
     try {
-      // 1. Search for relevant context using RAG
-      const { context, citations } = this.ragService.searchContext(userMessage);
+      // 1. Search for relevant context using RAG (now async with vector search)
+      const { context, citations } = await this.ragService.searchContext(userMessage);
 
       // 2. Build system prompt with context
       const systemPrompt = this.buildSystemPrompt(context);
@@ -103,7 +103,7 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
    * Get a non-streaming response (useful for testing)
    */
   async getResponse(userMessage: string, history: Message[]): Promise<string> {
-    const { context } = this.ragService.searchContext(userMessage);
+    const { context } = await this.ragService.searchContext(userMessage);
     const systemPrompt = this.buildSystemPrompt(context);
 
     const llmMessages: LLMMessage[] = [

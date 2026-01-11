@@ -1,81 +1,72 @@
 import { TaxDocument, Mandant, Citation } from "@/types";
-import { ALL_TAX_DOCUMENTS } from "@/lib/utils/tax-documents";
+import { TaxDocumentMatch } from "@/types/database";
 import { MOCK_MANDANTEN, getAllOpenDeadlines } from "@/lib/utils/mock-data";
+import { generateEmbedding } from "@/lib/infrastructure/embeddings";
+import { createSupabaseAdminClient } from "@/lib/infrastructure/supabase.server";
 
 /**
- * RAG Engine - Simple keyword-based search for tax documents and client data
+ * RAG Engine - Semantic search for tax documents using pgvector
  *
- * For a production system, this would use:
- * - Vector embeddings (e.g., OpenAI embeddings)
- * - Vector database (e.g., Pinecone, Weaviate)
- * - Semantic search
- *
- * For this prototype, we use simple keyword matching
+ * Uses Supabase pgvector for semantic similarity search on tax law documents.
+ * Mandanten (client) data uses keyword matching as it's structured data.
  */
 export class RAGEngine {
-  private taxDocuments: TaxDocument[];
   private mandanten: Mandant[];
 
   constructor() {
-    this.taxDocuments = ALL_TAX_DOCUMENTS;
     this.mandanten = MOCK_MANDANTEN;
   }
 
   /**
-   * Search tax law documents by keywords
-   * Returns relevant documents with citations
+   * Search tax law documents using semantic vector search (pgvector)
+   * Errors propagate to caller - proper error handling via TEC-13
    */
-  searchTaxLaw(
+  async searchTaxLaw(
     query: string,
     maxResults: number = 3
-  ): {
+  ): Promise<{
     documents: TaxDocument[];
     citations: Citation[];
-  } {
-    const lowerQuery = query.toLowerCase();
-    const keywords = this.extractKeywords(lowerQuery);
+  }> {
+    // Generate embedding for the query
+    const queryEmbedding = await generateEmbedding(query);
 
-    // Score each document based on keyword matches
-    const scoredDocuments = this.taxDocuments.map((doc) => {
-      let score = 0;
-      const lowerContent = doc.content.toLowerCase();
-      const lowerTitle = doc.title.toLowerCase();
-
-      // Check for exact paragraph references (e.g., "§ 1", "§ 42")
-      const paragraphMatch = lowerQuery.match(/§\s*(\d+)/);
-      if (paragraphMatch) {
-        const paragraphNum = paragraphMatch[1];
-        if (doc.citation.includes(`§ ${paragraphNum}`)) {
-          score += 100; // High priority for exact paragraph matches
-        }
-      }
-
-      // Score based on keyword matches
-      keywords.forEach((keyword) => {
-        if (lowerTitle.includes(keyword)) score += 10;
-        if (lowerContent.includes(keyword)) score += 5;
-        if (doc.citation.toLowerCase().includes(keyword)) score += 15;
-      });
-
-      return { doc, score };
+    // Query Supabase using the match_tax_documents function
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase.rpc("match_tax_documents", {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.3, // Lower threshold for German legal text
+      match_count: maxResults,
     });
 
-    // Sort by score and take top results
-    const topDocuments = scoredDocuments
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, maxResults)
-      .map((item) => item.doc);
+    if (error) {
+      throw new Error(`Vector search failed: ${error.message}`);
+    }
 
-    // Create citations
-    const citations: Citation[] = topDocuments.map((doc) => ({
-      id: doc.id,
-      source: doc.citation,
-      title: doc.title,
-      content: doc.content,
+    if (!data || data.length === 0) {
+      return { documents: [], citations: [] };
+    }
+
+    // Convert database results to TaxDocument format
+    const documents: TaxDocument[] = (data as TaxDocumentMatch[]).map(
+      (match) => ({
+        id: match.id,
+        citation: match.citation,
+        title: match.title,
+        content: match.content,
+        category: match.law_type as TaxDocument["category"],
+      })
+    );
+
+    // Create citations with similarity scores
+    const citations: Citation[] = (data as TaxDocumentMatch[]).map((match) => ({
+      id: match.id,
+      source: match.citation,
+      title: `${match.title} (${Math.round(match.similarity * 100)}% relevant)`,
+      content: match.content,
     }));
 
-    return { documents: topDocuments, citations };
+    return { documents, citations };
   }
 
   /**
@@ -118,16 +109,16 @@ export class RAGEngine {
   /**
    * Build context for RAG-augmented prompt
    */
-  buildContext(query: string): {
+  async buildContext(query: string): Promise<{
     taxContext: string;
     mandantenContext: string;
     citations: Citation[];
-  } {
-    // Search tax law documents
-    const { documents: taxDocs, citations } = this.searchTaxLaw(query);
+  }> {
+    // Search tax law documents (now async due to vector search)
+    const { documents: taxDocs, citations } = await this.searchTaxLaw(query);
     const taxContext = this.formatTaxContext(taxDocs);
 
-    // Search client data
+    // Search client data (still synchronous)
     const { context: mandantenContext } = this.searchMandanten(query);
 
     return {
@@ -135,41 +126,6 @@ export class RAGEngine {
       mandantenContext,
       citations,
     };
-  }
-
-  /**
-   * Extract keywords from query
-   */
-  private extractKeywords(query: string): string[] {
-    // Remove common German stop words
-    const stopWords = [
-      "der",
-      "die",
-      "das",
-      "ein",
-      "eine",
-      "und",
-      "oder",
-      "ist",
-      "sind",
-      "wie",
-      "was",
-      "für",
-      "bei",
-      "von",
-      "zu",
-      "mit",
-      "auf",
-      "in",
-      "an",
-    ];
-
-    const words = query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((word) => word.length > 2 && !stopWords.includes(word));
-
-    return [...new Set(words)]; // Remove duplicates
   }
 
   /**
