@@ -228,6 +228,8 @@ export interface DatevClientMatch {
   client_type: DatevClientType;
   company_form: string | null;
   industry_description: string | null;
+  main_email: string | null;
+  correspondence_city: string | null;
   similarity: number;
 }
 
