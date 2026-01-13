@@ -32,21 +32,6 @@ export interface TaxDocument {
   category: 'AO' | 'EStG' | 'UStG' | 'Other';
 }
 
-export interface Mandant {
-  id: string;
-  name: string;
-  type: 'GmbH' | 'Freiberufler' | 'Einzelunternehmen' | 'AG';
-  deadlines: Deadline[];
-}
-
-export interface Deadline {
-  id: string;
-  date: string;
-  task: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'open' | 'completed';
-}
-
 // API types
 export interface ChatRequest {
   message: string;

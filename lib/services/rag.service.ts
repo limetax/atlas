@@ -11,12 +11,13 @@ export class RAGService {
   /**
    * Search for relevant context based on user query
    * Returns formatted context and citations
+   * Includes tax law documents and DATEV client/order data from vector search
    */
   async searchContext(query: string): Promise<{
     context: string;
     citations: Citation[];
   }> {
-    const { taxContext, mandantenContext, citations } =
+    const { taxContext, datevContext, citations } =
       await this.ragEngine.buildContext(query);
 
     // Combine contexts
@@ -26,8 +27,8 @@ export class RAGService {
       combinedContext += `=== STEUERRECHTLICHE GRUNDLAGEN ===\n\n${taxContext}\n\n`;
     }
 
-    if (mandantenContext) {
-      combinedContext += `=== MANDANTEN-INFORMATIONEN ===\n\n${mandantenContext}\n\n`;
+    if (datevContext) {
+      combinedContext += `=== DATEV DATEN ===\n\n${datevContext}\n\n`;
     }
 
     if (!combinedContext) {
@@ -39,14 +40,6 @@ export class RAGService {
       context: combinedContext,
       citations,
     };
-  }
-
-  /**
-   * Get all open deadlines across all clients
-   */
-  getAllDeadlines(): string {
-    const { context } = this.ragEngine.searchMandanten("alle mandanten");
-    return context;
   }
 
   /**

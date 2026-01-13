@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ["/login", "/api/health"];
+const PUBLIC_ROUTES = ["/login", "/api/health", "/api/admin/sync-datev"];
 
 // Static file patterns to skip
 const STATIC_PATTERNS = [

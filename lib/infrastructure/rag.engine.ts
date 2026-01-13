@@ -1,21 +1,165 @@
-import { TaxDocument, Mandant, Citation } from "@/types";
+import { TaxDocument, Citation } from "@/types";
 import { TaxDocumentMatch } from "@/types/database";
-import { MOCK_MANDANTEN, getAllOpenDeadlines } from "@/lib/utils/mock-data";
+import { DatevClientMatch, DatevOrderMatch } from "@/types/datev";
 import { generateEmbedding } from "@/lib/infrastructure/embeddings";
 import { createSupabaseAdminClient } from "@/lib/infrastructure/supabase.server";
 
 /**
- * RAG Engine - Semantic search for tax documents using pgvector
+ * RAG Engine - Semantic search for tax documents and DATEV data using pgvector
  *
- * Uses Supabase pgvector for semantic similarity search on tax law documents.
- * Mandanten (client) data uses keyword matching as it's structured data.
+ * Uses Supabase pgvector for semantic similarity search on:
+ * - Tax law documents (AO, UStG, EStG, etc.)
+ * - DATEV clients (Mandanten) from Klardaten sync
+ * - DATEV orders (Aufträge) from Klardaten sync
  */
 export class RAGEngine {
-  private mandanten: Mandant[];
-
   constructor() {
-    this.mandanten = MOCK_MANDANTEN;
+    // No initialization needed - all data comes from Supabase
   }
+
+  // ============================================
+  // DATEV Client Search (Vector)
+  // ============================================
+
+  /**
+   * Search DATEV clients using semantic vector search
+   */
+  async searchDatevClients(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    clients: DatevClientMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await generateEmbedding(query);
+      const supabase = createSupabaseAdminClient();
+
+      const { data, error } = await supabase.rpc("match_datev_clients", {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.3,
+        match_count: maxResults,
+      });
+
+      if (error) {
+        console.error("DATEV client search error:", error);
+        return { clients: [], context: "" };
+      }
+
+      if (!data || data.length === 0) {
+        return { clients: [], context: "" };
+      }
+
+      const clients = data as DatevClientMatch[];
+      const context = this.formatDatevClientsContext(clients);
+
+      return { clients, context };
+    } catch (err) {
+      console.error("DATEV client search failed:", err);
+      return { clients: [], context: "" };
+    }
+  }
+
+  /**
+   * Search DATEV orders using semantic vector search
+   */
+  async searchDatevOrders(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    orders: DatevOrderMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await generateEmbedding(query);
+      const supabase = createSupabaseAdminClient();
+
+      const { data, error } = await supabase.rpc("match_datev_orders", {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.3,
+        match_count: maxResults,
+      });
+
+      if (error) {
+        console.error("DATEV order search error:", error);
+        return { orders: [], context: "" };
+      }
+
+      if (!data || data.length === 0) {
+        return { orders: [], context: "" };
+      }
+
+      const orders = data as DatevOrderMatch[];
+      const context = this.formatDatevOrdersContext(orders);
+
+      return { orders, context };
+    } catch (err) {
+      console.error("DATEV order search failed:", err);
+      return { orders: [], context: "" };
+    }
+  }
+
+  /**
+   * Format DATEV clients as context string
+   */
+  private formatDatevClientsContext(clients: DatevClientMatch[]): string {
+    if (clients.length === 0) return "";
+
+    const clientTypeNames: Record<number, string> = {
+      1: "Natürliche Person",
+      2: "Einzelunternehmen",
+      3: "Juristische Person",
+    };
+
+    return clients
+      .map((client) => {
+        const parts = [
+          `Mandant: ${client.client_name} (Nr. ${client.client_number})`,
+        ];
+        if (client.company_form) {
+          parts.push(`Rechtsform: ${client.company_form}`);
+        }
+        parts.push(
+          `Typ: ${clientTypeNames[client.client_type] || "Unbekannt"}`
+        );
+        if (client.industry_description) {
+          parts.push(`Branche: ${client.industry_description}`);
+        }
+        if (client.correspondence_city) {
+          parts.push(`Standort: ${client.correspondence_city}`);
+        }
+        parts.push(`(${Math.round(client.similarity * 100)}% relevant)`);
+        return parts.join(" | ");
+      })
+      .join("\n");
+  }
+
+  /**
+   * Format DATEV orders as context string
+   */
+  private formatDatevOrdersContext(orders: DatevOrderMatch[]): string {
+    if (orders.length === 0) return "";
+
+    return orders
+      .map((order) => {
+        const parts = [
+          `Auftrag: ${order.order_name}`,
+          `Mandant: ${order.client_name}`,
+          `Jahr: ${order.creation_year}`,
+          `Nr: ${order.order_number}`,
+          `Typ: ${order.ordertype}`,
+          `Status: ${order.completion_status}`,
+          `Abrechnung: ${order.billing_status}`,
+          `(${Math.round(order.similarity * 100)}% relevant)`,
+        ];
+        return parts.join(" | ");
+      })
+      .join("\n");
+  }
+
+  // ============================================
+  // Tax Law Search (Vector)
+  // ============================================
 
   /**
    * Search tax law documents using semantic vector search (pgvector)
@@ -70,60 +214,37 @@ export class RAGEngine {
   }
 
   /**
-   * Search client (Mandanten) data
-   * Returns relevant clients and their deadlines
-   */
-  searchMandanten(query: string): {
-    mandanten: Mandant[];
-    context: string;
-  } {
-    const lowerQuery = query.toLowerCase();
-
-    // Check if query is asking for all clients or deadlines
-    const isAskingForAll =
-      lowerQuery.includes("alle mandanten") ||
-      lowerQuery.includes("alle fristen") ||
-      lowerQuery.includes("übersicht") ||
-      lowerQuery.includes("zusammenfassung");
-
-    if (isAskingForAll) {
-      const allDeadlines = getAllOpenDeadlines();
-      const context = this.formatAllDeadlinesContext(allDeadlines);
-      return { mandanten: this.mandanten, context };
-    }
-
-    // Search for specific client by name
-    const matchingMandanten = this.mandanten.filter((mandant) =>
-      mandant.name.toLowerCase().includes(lowerQuery)
-    );
-
-    if (matchingMandanten.length > 0) {
-      const context = this.formatMandantenContext(matchingMandanten);
-      return { mandanten: matchingMandanten, context };
-    }
-
-    // No specific match, return empty
-    return { mandanten: [], context: "" };
-  }
-
-  /**
    * Build context for RAG-augmented prompt
+   * Includes tax law documents and DATEV client/order data from vector search
    */
   async buildContext(query: string): Promise<{
     taxContext: string;
-    mandantenContext: string;
+    datevContext: string;
     citations: Citation[];
   }> {
-    // Search tax law documents (now async due to vector search)
+    // Search tax law documents (vector search)
     const { documents: taxDocs, citations } = await this.searchTaxLaw(query);
     const taxContext = this.formatTaxContext(taxDocs);
 
-    // Search client data (still synchronous)
-    const { context: mandantenContext } = this.searchMandanten(query);
+    // Search DATEV data (vector search)
+    const [datevClientsResult, datevOrdersResult] = await Promise.all([
+      this.searchDatevClients(query, 3),
+      this.searchDatevOrders(query, 5),
+    ]);
+
+    // Combine DATEV context
+    const datevParts: string[] = [];
+    if (datevClientsResult.context) {
+      datevParts.push("=== DATEV Mandanten ===\n" + datevClientsResult.context);
+    }
+    if (datevOrdersResult.context) {
+      datevParts.push("=== DATEV Aufträge ===\n" + datevOrdersResult.context);
+    }
+    const datevContext = datevParts.join("\n\n");
 
     return {
       taxContext,
-      mandantenContext,
+      datevContext,
       citations,
     };
   }
@@ -137,64 +258,6 @@ export class RAGEngine {
     return documents
       .map((doc) => `${doc.citation} - ${doc.title}:\n${doc.content}\n`)
       .join("\n");
-  }
-
-  /**
-   * Format Mandanten data as context string
-   */
-  private formatMandantenContext(mandanten: Mandant[]): string {
-    if (mandanten.length === 0) return "";
-
-    return mandanten
-      .map((mandant) => {
-        const openDeadlines = mandant.deadlines.filter(
-          (d) => d.status === "open"
-        );
-        const deadlinesList = openDeadlines
-          .map((d) => `  - ${d.date}: ${d.task} (Priorität: ${d.priority})`)
-          .join("\n");
-
-        return `Mandant: ${mandant.name} (${mandant.type})\nOffene Fristen:\n${deadlinesList}`;
-      })
-      .join("\n\n");
-  }
-
-  /**
-   * Format all deadlines across all clients
-   */
-  private formatAllDeadlinesContext(
-    deadlines: Array<{
-      id: string;
-      date: string;
-      task: string;
-      priority: string;
-      mandantName: string;
-      mandantType: string;
-    }>
-  ): string {
-    if (deadlines.length === 0) {
-      return "Keine offenen Fristen gefunden.";
-    }
-
-    const grouped = deadlines.reduce((acc, deadline) => {
-      if (!acc[deadline.mandantName]) {
-        acc[deadline.mandantName] = [];
-      }
-      acc[deadline.mandantName].push(deadline);
-      return acc;
-    }, {} as Record<string, typeof deadlines>);
-
-    let context = `Übersicht aller offenen Fristen (${deadlines.length} gesamt):\n\n`;
-
-    Object.entries(grouped).forEach(([mandantName, mandantDeadlines]) => {
-      context += `${mandantName}:\n`;
-      mandantDeadlines.forEach((d) => {
-        context += `  - ${d.date}: ${d.task} (${d.priority})\n`;
-      });
-      context += "\n";
-    });
-
-    return context;
   }
 }
 
