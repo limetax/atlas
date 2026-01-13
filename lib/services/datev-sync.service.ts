@@ -151,7 +151,7 @@ export class DatevSyncService {
             correspondence_zip_code: client.correspondence_zip_code || null,
             tax_number_vat: client.tax_number_vat || null,
             embedding_text: record.embedding_text,
-            embedding: embedding as unknown as string, // Supabase expects string for vector
+            embedding: embedding,
             synced_at: new Date().toISOString(),
           },
           {
@@ -226,7 +226,7 @@ export class DatevSyncService {
             date_completion_status: order.date_completion_status || null,
             date_billing_status: order.date_billing_status || null,
             embedding_text: record.embedding_text,
-            embedding: embedding as unknown as string,
+            embedding: embedding,
             synced_at: new Date().toISOString(),
           },
           {
@@ -266,7 +266,7 @@ export class DatevSyncService {
       const clients = await this.adapter.getClients();
 
       // Step 3: Fetch orders for specified year
-      const orders = []; // TODO add this once the API is working: await this.adapter.getOrders(orderYear);
+      const orders: DatevOrder[] = []; // TODO add this once the API is working: await this.adapter.getOrders(orderYear);
 
       // Step 4: Build client map for denormalization
       const clientMap = new Map<string, string>();
