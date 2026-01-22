@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Standalone output for Docker/Coolify deployment
-  output: 'standalone',
+  /* config options here */
 };
 
 export default nextConfig;
