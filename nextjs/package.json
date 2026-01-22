@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "echo 'Legacy Next.js - skipping Turborepo build'",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
