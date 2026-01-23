@@ -1,5 +1,5 @@
 {
-  "name": "@lime-gpt/api",
+  "name": "@atlas/api",
   "version": "1.0.0",
   "description": "NestJS Backend API with tRPC",
   "main": "dist/main.js",
@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.1",
-    "@lime-gpt/shared": "workspace:*",
+    "@atlas/shared": "workspace:*",
     "@nestjs/common": "^11.0.16",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.16",

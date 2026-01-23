@@ -1,7 +1,7 @@
 import React from 'react';
 import { MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { ChatSession } from '@lime-gpt/shared';
+import { ChatSession } from '@atlas/shared';
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -21,14 +21,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="w-72 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
       <NewChatButton onNewChat={onNewChat} />
-      
+
       <ChatHistory
         sessions={sessions}
         currentSessionId={currentSessionId}
         onSessionSelect={onSessionSelect}
         onDeleteSession={onDeleteSession}
       />
-      
+
       <SidebarFooter />
     </aside>
   );

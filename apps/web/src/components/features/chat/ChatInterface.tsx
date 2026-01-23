@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
-import { Message } from '@lime-gpt/shared';
+import { Message } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '@/components/ui/Button';
 import { Send, Loader2 } from 'lucide-react';
@@ -51,12 +51,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white overflow-hidden">
-      <MessagesArea
-        messages={messages}
-        isLoading={isLoading}
-        messagesEndRef={messagesEndRef}
-      />
-      
+      <MessagesArea messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
+
       <InputArea
         inputValue={inputValue}
         setInputValue={setInputValue}

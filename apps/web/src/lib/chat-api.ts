@@ -1,4 +1,4 @@
-import { Message, ChatStreamChunk } from '@lime-gpt/shared';
+import { Message, ChatStreamChunk } from '@atlas/shared';
 import { env } from '@/config/env';
 import { STORAGE_KEYS, API_ENDPOINTS } from '@/constants';
 

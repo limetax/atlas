@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Res, Logger } from '@nestjs/common';
 import { Response } from 'express';
-import { ChatService } from './chat.service';
-import { Message } from '@lime-gpt/shared';
+import { ChatService } from '@chat/application/chat.service';
+import { Message } from '@chat/domain/message.entity';
 
 /**
  * Chat Controller - HTTP endpoint for streaming chat

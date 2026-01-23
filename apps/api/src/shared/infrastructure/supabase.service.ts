@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@lime-gpt/shared';
+import { Database } from '@atlas/shared';
 
 /**
  * Supabase Service - Infrastructure layer for Supabase access

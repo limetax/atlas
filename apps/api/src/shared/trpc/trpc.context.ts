@@ -3,6 +3,17 @@ import { SupabaseService } from '../infrastructure/supabase.service';
 import type { User } from '@supabase/supabase-js';
 
 /**
+ * HTTP Request interface for tRPC
+ */
+export interface TRPCRequest {
+  headers: {
+    authorization?: string | string[];
+    'x-request-id'?: string | string[];
+    [key: string]: string | string[] | undefined;
+  };
+}
+
+/**
  * tRPC Context - Contains user auth state and request metadata
  */
 export interface TRPCContext {
@@ -19,16 +30,21 @@ export class TRPCContextProvider {
 
   constructor(private readonly supabase: SupabaseService) {}
 
-  async create(req: any): Promise<TRPCContext> {
-    const requestId = req.headers['x-request-id'] || crypto.randomUUID();
+  async create(req: TRPCRequest): Promise<TRPCContext> {
+    const requestIdHeader = req.headers['x-request-id'];
+    const requestId =
+      (Array.isArray(requestIdHeader) ? requestIdHeader[0] : requestIdHeader) ||
+      crypto.randomUUID();
 
     // Extract JWT from Authorization header
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
+    const authValue = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+
+    if (!authValue?.startsWith('Bearer ')) {
       return { user: null, requestId };
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authValue.replace('Bearer ', '');
 
     try {
       const {

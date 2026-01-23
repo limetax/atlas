@@ -1,29 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SupabaseService } from '../infrastructure/supabase.service';
-import { EmbeddingsService } from '../infrastructure/embeddings.service';
 import {
-  Citation,
-  TaxDocument,
-  TaxDocumentMatch,
-  DatevClientMatch,
-  DatevOrderMatch,
-} from '@lime-gpt/shared';
+  IVectorStore,
+  type DatevClientMatch,
+  type DatevOrderMatch,
+} from '@rag/domain/vector-store.interface';
+import { type Citation, type TaxDocument } from '@rag/domain/citation.entity';
+import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
 
 /**
- * RAG Service - Semantic search for tax documents and DATEV data using pgvector
- *
- * Uses Supabase pgvector for semantic similarity search on:
- * - Tax law documents (AO, UStG, EStG, etc.)
- * - DATEV clients (Mandanten) from Klardaten sync
- * - DATEV orders (Aufträge) from Klardaten sync
+ * RAG Service - Application layer for Retrieval-Augmented Generation
+ * Contains business logic for semantic search and context building
+ * Depends on domain interfaces, not concrete implementations
  */
 @Injectable()
 export class RAGService {
   private readonly logger = new Logger(RAGService.name);
 
   constructor(
-    private readonly supabase: SupabaseService,
-    private readonly embeddings: EmbeddingsService
+    private readonly vectorStore: IVectorStore,
+    private readonly embeddingsProvider: IEmbeddingsProvider
   ) {}
 
   /**
@@ -94,7 +89,7 @@ export class RAGService {
   }
 
   /**
-   * Search tax law documents using semantic vector search (pgvector)
+   * Search tax law documents using semantic vector search
    */
   async searchTaxLaw(
     query: string,
@@ -105,26 +100,21 @@ export class RAGService {
   }> {
     try {
       // Generate embedding for the query
-      const queryEmbedding = await this.embeddings.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
-      // Query Supabase using the match_tax_documents function
-      const { data, error } = await this.supabase.db.rpc('match_tax_documents', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.3, // Lower threshold for German legal text
-        match_count: maxResults,
-      });
+      // Query vector store
+      const matches = await this.vectorStore.searchTaxDocuments(
+        queryEmbedding,
+        0.3, // Lower threshold for German legal text
+        maxResults
+      );
 
-      if (error) {
-        this.logger.error('Tax law search error:', error);
+      if (!matches || matches.length === 0) {
         return { documents: [], citations: [] };
       }
 
-      if (!data || data.length === 0) {
-        return { documents: [], citations: [] };
-      }
-
-      // Convert database results to TaxDocument format
-      const documents: TaxDocument[] = (data as TaxDocumentMatch[]).map((match) => ({
+      // Convert to domain entities
+      const documents: TaxDocument[] = matches.map((match) => ({
         id: match.id,
         citation: match.citation,
         title: match.title,
@@ -133,7 +123,7 @@ export class RAGService {
       }));
 
       // Create citations with similarity scores
-      const citations: Citation[] = (data as TaxDocumentMatch[]).map((match) => ({
+      const citations: Citation[] = matches.map((match) => ({
         id: match.id,
         source: match.citation,
         title: `${match.title} (${Math.round(match.similarity * 100)}% relevant)`,
@@ -158,26 +148,15 @@ export class RAGService {
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddings.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
-      const { data, error } = await this.supabase.db.rpc('match_datev_clients', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.3,
-        match_count: maxResults,
-      });
+      const clients = await this.vectorStore.searchDatevClients(queryEmbedding, 0.3, maxResults);
 
-      if (error) {
-        this.logger.error('DATEV client search error:', error);
+      if (!clients || clients.length === 0) {
         return { clients: [], context: '' };
       }
 
-      if (!data || data.length === 0) {
-        return { clients: [], context: '' };
-      }
-
-      const clients = data as DatevClientMatch[];
       const context = this.formatDatevClientsContext(clients);
-
       return { clients, context };
     } catch (err) {
       this.logger.error('DATEV client search failed:', err);
@@ -196,26 +175,15 @@ export class RAGService {
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddings.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
-      const { data, error } = await this.supabase.db.rpc('match_datev_orders', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.3,
-        match_count: maxResults,
-      });
+      const orders = await this.vectorStore.searchDatevOrders(queryEmbedding, 0.3, maxResults);
 
-      if (error) {
-        this.logger.error('DATEV order search error:', error);
+      if (!orders || orders.length === 0) {
         return { orders: [], context: '' };
       }
 
-      if (!data || data.length === 0) {
-        return { orders: [], context: '' };
-      }
-
-      const orders = data as DatevOrderMatch[];
       const context = this.formatDatevOrdersContext(orders);
-
       return { orders, context };
     } catch (err) {
       this.logger.error('DATEV order search failed:', err);

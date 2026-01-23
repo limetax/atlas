@@ -4,7 +4,7 @@ import { UserMenu } from '@/components/features/auth/UserMenu';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import type { Advisor } from '@lime-gpt/shared';
+import type { Advisor } from '@atlas/shared';
 
 export const Header = () => {
   const { user, advisor, isLoading } = useAuth();

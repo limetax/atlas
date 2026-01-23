@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
-import { AppModule } from './app.module';
 import * as trpcExpress from '@trpc/server/adapters/express';
-import { TRPCContextProvider } from './trpc/trpc.context';
+import { AppModule } from '@/app.module';
+import { TRPCContextProvider } from '@shared/trpc/trpc.context';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');

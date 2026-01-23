@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { router, publicProcedure, protectedProcedure } from '../trpc/trpc.service';
-import { LoginSchema } from '@lime-gpt/shared';
-import { AuthService } from './auth.service';
+import { LoginSchema } from '@atlas/shared';
+import { router, publicProcedure, protectedProcedure } from '@shared/trpc/trpc.service';
+import { AuthService } from '@auth/application/auth.service';
 
 /**
  * Auth Router - tRPC procedures for authentication

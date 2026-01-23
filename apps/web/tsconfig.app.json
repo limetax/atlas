@@ -23,8 +23,14 @@
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["../api/src/shared/*"],
+      "@auth/*": ["../api/src/auth/*"],
+      "@chat/*": ["../api/src/chat/*"],
+      "@datev/*": ["../api/src/datev/*"],
+      "@llm/*": ["../api/src/llm/*"],
+      "@rag/*": ["../api/src/rag/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../api/src/app.router.ts", "vite-env.d.ts"]
 }

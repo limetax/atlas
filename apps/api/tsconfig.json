@@ -19,7 +19,13 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@auth/*": ["src/auth/*"],
+      "@llm/*": ["src/llm/*"],
+      "@rag/*": ["src/rag/*"],
+      "@chat/*": ["src/chat/*"],
+      "@datev/*": ["src/datev/*"],
+      "@shared/*": ["src/shared/*"]
     }
   },
   "include": ["src/**/*"],

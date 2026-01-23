@@ -1,13 +1,14 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
+import { ILlmProvider } from '@llm/domain/llm-provider.interface';
 
 /**
- * Anthropic Service - Infrastructure layer for Claude API
- * Handles direct communication with Anthropic's API
+ * Anthropic Client - Infrastructure implementation for Claude API
+ * Implements ILlmProvider interface using Anthropic's SDK
  */
 @Injectable()
-export class AnthropicService implements OnModuleInit {
-  private readonly logger = new Logger(AnthropicService.name);
+export class AnthropicClient implements ILlmProvider, OnModuleInit {
+  private readonly logger = new Logger(AnthropicClient.name);
   private client!: Anthropic;
 
   onModuleInit() {
@@ -52,7 +53,9 @@ export class AnthropicService implements OnModuleInit {
 
   /**
    * Get a single completion (non-streaming)
-   * Useful for embeddings or quick responses
+   * @param messages - Array of messages in the conversation
+   * @param systemPrompt - System prompt to guide the model
+   * @returns Complete response text
    */
   async getMessage(
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,

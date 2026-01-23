@@ -6,7 +6,7 @@
 
 import { trpc } from '@/lib/trpc';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import type { Advisor } from '@lime-gpt/shared';
+import type { Advisor } from '@atlas/shared';
 
 export interface UseAuthReturn {
   user: SupabaseUser | null | undefined;

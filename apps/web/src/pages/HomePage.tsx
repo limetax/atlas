@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { Message } from '@lime-gpt/shared';
+import { Message } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
 import { truncateText } from '@/utils/formatters';
@@ -20,7 +20,7 @@ export const HomePage: React.FC = () => {
     updateCurrentSessionMessages,
     updateSessionTitle,
   } = useChatSessions();
-  
+
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendMessage = async (content: string) => {

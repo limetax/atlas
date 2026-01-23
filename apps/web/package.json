@@ -1,5 +1,5 @@
 {
-  "name": "@lime-gpt/web",
+  "name": "@atlas/web",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -19,7 +19,7 @@
     "@tanstack/react-query-devtools": "^5.64.2",
     "@trpc/client": "^11.0.0-rc.665",
     "@trpc/react-query": "^11.0.0-rc.665",
-    "@lime-gpt/shared": "workspace:*",
+    "@atlas/shared": "workspace:*",
     "lucide-react": "^0.554.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",

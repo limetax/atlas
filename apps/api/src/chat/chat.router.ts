@@ -1,9 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
-import { router, protectedProcedure } from '../trpc/trpc.service';
 import { observable } from '@trpc/server/observable';
-import { ChatService } from './chat.service';
-import { MessageSchema, ChatStreamChunk } from '@lime-gpt/shared';
+import { router, protectedProcedure } from '@shared/trpc/trpc.service';
+import { ChatService } from '@chat/application/chat.service';
+import { ChatStreamChunk } from '@chat/domain/message.entity';
+
+// Message schema for validation
+const MessageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string(),
+});
 
 /**
  * Chat Router - tRPC procedures for chat functionality

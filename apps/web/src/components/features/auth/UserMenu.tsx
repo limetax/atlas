@@ -6,7 +6,7 @@ import { ROUTES } from '@/constants';
 import { getInitials } from '@/utils/formatters';
 import { ChevronDown, LogOut, User, Building2 } from 'lucide-react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import type { Advisor } from '@lime-gpt/shared';
+import type { Advisor } from '@atlas/shared';
 
 interface UserMenuProps {
   user: SupabaseUser;

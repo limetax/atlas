@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Message } from '@lime-gpt/shared';
+import { Message } from '@atlas/shared';
 import { Badge } from '@/components/ui/Badge';
 import { User, ExternalLink } from 'lucide-react';
 

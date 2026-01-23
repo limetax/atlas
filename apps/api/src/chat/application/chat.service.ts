@@ -1,18 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AnthropicService } from '../infrastructure/anthropic.service';
-import { RAGService } from '../rag/rag.service';
-import { Message, ChatStreamChunk } from '@lime-gpt/shared';
+import { RAGService } from '@rag/application/rag.service';
+import { LlmService } from '@llm/application/llm.service';
+import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
 
 /**
- * Chat Service - Core business logic for chat functionality
- * Orchestrates RAG, LLM, and message handling
+ * Chat Service - Application layer for chat functionality
+ * Orchestrates RAG and LLM services to provide conversational AI
+ * Depends on application services from other domains
  */
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
 
   constructor(
-    private readonly anthropic: AnthropicService,
+    private readonly llm: LlmService,
     private readonly rag: RAGService
   ) {}
 
@@ -27,18 +28,18 @@ export class ChatService {
     history: Message[]
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     try {
-      // 1. Search for relevant context using RAG (now async with vector search)
+      // 1. Search for relevant context using RAG
       const { context, citations } = await this.rag.searchContext(userMessage);
 
       // 2. Build system prompt with context
       const systemPrompt = this.buildSystemPrompt(context);
 
       // 3. Convert message history to LLM format (filter out system messages)
-      const llmMessages = [
+      const llmMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
         ...history
           .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
           .map((msg) => ({
-            role: msg.role,
+            role: msg.role as 'user' | 'assistant',
             content: msg.content,
           })),
         {
@@ -53,7 +54,7 @@ export class ChatService {
       }
 
       // 5. Stream response from LLM
-      for await (const chunk of this.anthropic.streamMessage(llmMessages, systemPrompt)) {
+      for await (const chunk of this.llm.streamCompletion(llmMessages, systemPrompt)) {
         yield { type: 'text', content: chunk };
       }
 
@@ -112,11 +113,11 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     const { context } = await this.rag.searchContext(userMessage);
     const systemPrompt = this.buildSystemPrompt(context);
 
-    const llmMessages = [
+    const llmMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
       ...history
         .filter((msg) => msg.role === 'user' || msg.role === 'assistant')
         .map((msg) => ({
-          role: msg.role,
+          role: msg.role as 'user' | 'assistant',
           content: msg.content,
         })),
       {
@@ -125,6 +126,6 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       },
     ];
 
-    return await this.anthropic.getMessage(llmMessages, systemPrompt);
+    return await this.llm.getCompletion(llmMessages, systemPrompt);
   }
 }
