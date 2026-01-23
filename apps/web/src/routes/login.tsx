@@ -1,12 +1,13 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { LoginView } from '../views/LoginView';
+import { LoginView } from '@/components/features/auth/LoginView';
+import { STORAGE_KEYS, ROUTES } from '@/constants';
 
 export const Route = createFileRoute('/login')({
   beforeLoad: () => {
     // If already authenticated, redirect to home
-    const token = localStorage.getItem('supabase_token');
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     if (token) {
-      throw redirect({ to: '/', replace: true });
+      throw redirect({ to: ROUTES.HOME, replace: true });
     }
   },
   component: LoginView,

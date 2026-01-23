@@ -1,74 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Header } from '../views/Header';
-import { Sidebar } from '../views/Sidebar';
-import { ChatInterface } from '../views/ChatInterface';
-import { Message, ChatSession } from '@lime-gpt/shared';
-import { streamChatMessage } from '../lib/chat-api';
-
-const SYSTEM_PROMPT = 'System prompt placeholder';
-const DATA_SOURCES = ['AO', 'UStG', 'EStG'];
+import React, { useState } from 'react';
+import { Header } from '@/components/layouts/Header';
+import { Sidebar } from '@/components/layouts/Sidebar';
+import { ChatInterface } from '@/components/features/chat/ChatInterface';
+import { Message } from '@lime-gpt/shared';
+import { streamChatMessage } from '@/lib/chat-api';
+import { useChatSessions } from './useChatSessions';
+import { truncateText } from '@/utils/formatters';
+import { logger } from '@/utils/logger';
+import { APP_CONFIG } from '@/constants';
 
 export const HomePage: React.FC = () => {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const {
+    sessions,
+    currentSessionId,
+    messages,
+    handleNewChat,
+    handleSessionSelect,
+    handleDeleteSession,
+    updateCurrentSessionMessages,
+    updateSessionTitle,
+  } = useChatSessions();
+  
   const [isLoading, setIsLoading] = useState(false);
-
-  // Load sessions from localStorage
-  useEffect(() => {
-    const savedSessions = localStorage.getItem('limetax-sessions');
-    if (savedSessions) {
-      const parsed = JSON.parse(savedSessions);
-      setSessions(parsed);
-      if (parsed.length > 0) {
-        setCurrentSessionId(parsed[0].id);
-        setMessages(parsed[0].messages);
-      }
-    }
-  }, []);
-
-  // Save sessions to localStorage
-  useEffect(() => {
-    if (sessions.length > 0) {
-      localStorage.setItem('limetax-sessions', JSON.stringify(sessions));
-    }
-  }, [sessions]);
-
-  const handleNewChat = () => {
-    const newSession: ChatSession = {
-      id: `session-${Date.now()}`,
-      title: 'Neuer Chat',
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setSessions([newSession, ...sessions]);
-    setCurrentSessionId(newSession.id);
-    setMessages([]);
-  };
-
-  const handleSessionSelect = (sessionId: string) => {
-    const session = sessions.find((s) => s.id === sessionId);
-    if (session) {
-      setCurrentSessionId(sessionId);
-      setMessages(session.messages);
-    }
-  };
-
-  const handleDeleteSession = (sessionId: string) => {
-    const updatedSessions = sessions.filter((s) => s.id !== sessionId);
-    setSessions(updatedSessions);
-
-    if (currentSessionId === sessionId) {
-      if (updatedSessions.length > 0) {
-        setCurrentSessionId(updatedSessions[0].id);
-        setMessages(updatedSessions[0].messages);
-      } else {
-        setCurrentSessionId(undefined);
-        setMessages([]);
-      }
-    }
-  };
 
   const handleSendMessage = async (content: string) => {
     // Create user message
@@ -81,35 +34,11 @@ export const HomePage: React.FC = () => {
 
     // Add user message to current session
     const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+    updateCurrentSessionMessages(updatedMessages);
 
     // Update session title if it's the first message
-    let updatedSessions = sessions;
-    if (currentSessionId) {
-      updatedSessions = sessions.map((session) => {
-        if (session.id === currentSessionId) {
-          return {
-            ...session,
-            title: session.messages.length === 0 ? content.slice(0, 50) : session.title,
-            messages: updatedMessages,
-            updatedAt: new Date(),
-          };
-        }
-        return session;
-      });
-      setSessions(updatedSessions);
-    } else {
-      // Create new session if none exists
-      const newSession: ChatSession = {
-        id: `session-${Date.now()}`,
-        title: content.slice(0, 50),
-        messages: updatedMessages,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      updatedSessions = [newSession, ...sessions];
-      setSessions(updatedSessions);
-      setCurrentSessionId(newSession.id);
+    if (currentSessionId && messages.length === 0) {
+      updateSessionTitle(currentSessionId, truncateText(content, 50));
     }
 
     // Call streaming API
@@ -120,7 +49,7 @@ export const HomePage: React.FC = () => {
       let citations: Message['citations'] = [];
 
       // Stream from API using SSE
-      for await (const chunk of streamChatMessage(content, updatedMessages.slice(0, -1))) {
+      for await (const chunk of streamChatMessage(content, messages)) {
         if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
@@ -133,7 +62,7 @@ export const HomePage: React.FC = () => {
             timestamp: new Date(),
           };
 
-          setMessages([...updatedMessages, streamingMessage]);
+          updateCurrentSessionMessages([...updatedMessages, streamingMessage]);
         } else if (chunk.type === 'citations' && chunk.citations) {
           citations = chunk.citations;
         } else if (chunk.type === 'done') {
@@ -146,28 +75,13 @@ export const HomePage: React.FC = () => {
             timestamp: new Date(),
           };
 
-          const finalMessages = [...updatedMessages, finalMessage];
-          setMessages(finalMessages);
-
-          // Update session
-          setSessions(
-            updatedSessions.map((session) => {
-              if (session.id === currentSessionId) {
-                return {
-                  ...session,
-                  messages: finalMessages,
-                  updatedAt: new Date(),
-                };
-              }
-              return session;
-            })
-          );
+          updateCurrentSessionMessages([...updatedMessages, finalMessage]);
         } else if (chunk.type === 'error') {
           throw new Error(chunk.error);
         }
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
 
       // Show error message
       const errorMessage: Message = {
@@ -179,8 +93,7 @@ export const HomePage: React.FC = () => {
         timestamp: new Date(),
       };
 
-      const finalMessages = [...updatedMessages, errorMessage];
-      setMessages(finalMessages);
+      updateCurrentSessionMessages([...updatedMessages, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -202,8 +115,8 @@ export const HomePage: React.FC = () => {
           messages={messages}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
-          systemPrompt={SYSTEM_PROMPT}
-          dataSources={DATA_SOURCES}
+          systemPrompt={APP_CONFIG.SYSTEM_PROMPT}
+          dataSources={APP_CONFIG.DATA_SOURCES}
         />
       </div>
     </div>

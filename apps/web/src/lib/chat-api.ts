@@ -1,19 +1,19 @@
 import { Message, ChatStreamChunk } from '@lime-gpt/shared';
+import { env } from '@/config/env';
+import { STORAGE_KEYS, API_ENDPOINTS } from '@/constants';
 
 /**
  * Chat API client using Server-Sent Events (SSE)
  * More reliable than tRPC subscriptions for streaming
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
 export async function* streamChatMessage(
   message: string,
   history: Message[]
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
-  const token = localStorage.getItem('supabase_token');
+  const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
-  const response = await fetch(`${API_URL}/api/chat/stream`, {
+  const response = await fetch(`${env.apiUrl}${API_ENDPOINTS.CHAT_STREAM}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

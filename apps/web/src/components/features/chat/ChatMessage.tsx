@@ -2,7 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message } from '@lime-gpt/shared';
-import { Badge } from '../elements/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { User, ExternalLink } from 'lucide-react';
 
 interface ChatMessageProps {
@@ -78,7 +78,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                a: ({ node, href, children, ...props }) => (
+                a: ({ href, children, ...props }) => (
                   <a
                     href={href}
                     target="_blank"
