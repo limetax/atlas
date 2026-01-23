@@ -21,16 +21,14 @@ export function ErrorFallback({ error }: ErrorFallbackProps) {
             />
           </svg>
         </div>
-        
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Etwas ist schiefgelaufen
-        </h1>
-        
+
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Etwas ist schiefgelaufen</h1>
+
         <p className="text-gray-600 mb-6">
-          Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu oder
-          kontaktieren Sie den Support, wenn das Problem weiterhin besteht.
+          Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu oder kontaktieren
+          Sie den Support, wenn das Problem weiterhin besteht.
         </p>
-        
+
         {error && (
           <details className="mb-6 text-left">
             <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
@@ -41,7 +39,7 @@ export function ErrorFallback({ error }: ErrorFallbackProps) {
             </pre>
           </details>
         )}
-        
+
         <button
           onClick={() => window.location.reload()}
           className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"

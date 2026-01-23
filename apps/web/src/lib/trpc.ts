@@ -1,9 +1,5 @@
 import { createTRPCReact } from '@trpc/react-query';
-import {
-  httpBatchLink,
-  splitLink,
-  unstable_httpSubscriptionLink,
-} from '@trpc/client';
+import { httpBatchLink, splitLink, unstable_httpSubscriptionLink } from '@trpc/client';
 import type { AppRouterType } from '../../../api/src/app.router';
 import { env } from '@/config/env';
 import { STORAGE_KEYS, API_ENDPOINTS, ROUTES } from '@/constants';

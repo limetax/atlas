@@ -94,7 +94,9 @@ interface FeatureItemProps {
 const FeatureItem = ({ icon, bgColor, title, description }: FeatureItemProps) => {
   return (
     <div className="flex items-start gap-4">
-      <div className={`w-10 h-10 rounded-lg ${bgColor} flex items-center justify-center flex-shrink-0`}>
+      <div
+        className={`w-10 h-10 rounded-lg ${bgColor} flex items-center justify-center flex-shrink-0`}
+      >
         {icon}
       </div>
       <div>

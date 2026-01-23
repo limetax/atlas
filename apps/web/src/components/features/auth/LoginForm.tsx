@@ -29,23 +29,23 @@ export const LoginForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <ErrorAlert error={loginMutation.error?.message} />
-      
+
       <EmailField
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         disabled={loginMutation.isPending}
         error={!!loginMutation.error}
       />
-      
+
       <PasswordField
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         disabled={loginMutation.isPending}
         error={!!loginMutation.error}
       />
-      
+
       <SubmitButton isLoading={loginMutation.isPending} />
-      
+
       <PasswordResetInfo />
     </form>
   );
@@ -54,7 +54,7 @@ export const LoginForm: React.FC = () => {
 // Small components for better readability
 const ErrorAlert = ({ error }: { error?: string }) => {
   if (!error) return null;
-  
+
   return (
     <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
       <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -120,13 +120,7 @@ const PasswordField = ({ value, onChange, disabled, error }: PasswordFieldProps)
 
 const SubmitButton = ({ isLoading }: { isLoading: boolean }) => {
   return (
-    <Button
-      type="submit"
-      variant="primary"
-      size="lg"
-      className="w-full"
-      disabled={isLoading}
-    >
+    <Button type="submit" variant="primary" size="lg" className="w-full" disabled={isLoading}>
       {isLoading ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
