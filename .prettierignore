@@ -1,0 +1,18 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+build
+.next
+.turbo
+coverage
+
+# Generated files
+*.gen.ts
+pnpm-lock.yaml
+
+# Legacy
+nextjs/
+supabase/

@@ -50,7 +50,7 @@
         },
         "description": "Secondary accent - lavender purple for variety (from limetax.de)"
       },
-      
+
       "neutral": {
         "white": "#FFFFFF",
         "gray": {
@@ -67,7 +67,7 @@
         },
         "description": "Neutral colors for text, backgrounds, and borders"
       },
-      
+
       "accent": {
         "purple": {
           "light": "#E9D5FF",
@@ -77,7 +77,7 @@
         },
         "description": "Purple accent used for backgrounds, gradients, and decorative elements"
       },
-      
+
       "semantic": {
         "success": "#10B981",
         "warning": "#F59E0B",
@@ -86,7 +86,7 @@
         "active": "#22C55E",
         "description": "Semantic colors for status indicators and feedback"
       },
-      
+
       "backgrounds": {
         "primary": "#FFFFFF",
         "secondary": "#F9FAFB",
@@ -98,13 +98,13 @@
         "description": "Background colors for different surface levels"
       }
     },
-    
+
     "typography": {
       "fontFamily": {
         "primary": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif",
         "mono": "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Courier New', monospace"
       },
-      
+
       "fontSize": {
         "xs": "0.75rem",
         "sm": "0.875rem",
@@ -117,7 +117,7 @@
         "5xl": "3rem",
         "6xl": "3.75rem"
       },
-      
+
       "fontWeight": {
         "normal": 400,
         "medium": 500,
@@ -125,14 +125,14 @@
         "bold": 700,
         "extrabold": 800
       },
-      
+
       "lineHeight": {
         "tight": 1.25,
         "normal": 1.5,
         "relaxed": 1.75,
         "loose": 2
       },
-      
+
       "textStyles": {
         "h1": {
           "fontSize": "3rem",
@@ -184,7 +184,7 @@
         }
       }
     },
-    
+
     "spacing": {
       "scale": {
         "0": "0",
@@ -202,7 +202,7 @@
         "24": "6rem",
         "32": "8rem"
       },
-      
+
       "component": {
         "cardPadding": "1.5rem",
         "cardGap": "1rem",
@@ -211,7 +211,7 @@
         "sidebarWidth": "280px"
       }
     },
-    
+
     "borderRadius": {
       "none": "0",
       "sm": "0.25rem",
@@ -222,7 +222,7 @@
       "2xl": "2rem",
       "full": "9999px"
     },
-    
+
     "shadows": {
       "none": "none",
       "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
@@ -233,7 +233,7 @@
       "card": "0 2px 8px rgba(0, 0, 0, 0.08)",
       "cardHover": "0 4px 12px rgba(0, 0, 0, 0.12)"
     },
-    
+
     "components": {
       "card": {
         "description": "Versatile card component for displaying grouped information",
@@ -280,7 +280,7 @@
           }
         }
       },
-      
+
       "button": {
         "description": "Button component with multiple variants and states",
         "variants": {
@@ -351,7 +351,7 @@
           }
         }
       },
-      
+
       "badge": {
         "description": "Badge component for status indicators and labels",
         "variants": {
@@ -400,7 +400,7 @@
           }
         }
       },
-      
+
       "avatar": {
         "description": "Avatar component for user profiles",
         "sizes": {
@@ -431,7 +431,7 @@
           "objectFit": "cover"
         }
       },
-      
+
       "input": {
         "description": "Input field component",
         "default": {
@@ -459,7 +459,7 @@
           }
         }
       },
-      
+
       "dropdown": {
         "description": "Dropdown menu component",
         "container": {
@@ -482,7 +482,7 @@
           "color": "#111827"
         }
       },
-      
+
       "progressBar": {
         "description": "Progress bar component",
         "container": {
@@ -498,7 +498,7 @@
           "transition": "width 0.3s ease-in-out"
         }
       },
-      
+
       "divider": {
         "description": "Divider component",
         "horizontal": {
@@ -513,7 +513,7 @@
         }
       }
     },
-    
+
     "layouts": {
       "dashboard": {
         "description": "Main dashboard layout with sidebar and content area",
@@ -536,7 +536,7 @@
           }
         }
       },
-      
+
       "header": {
         "description": "Top navigation header",
         "structure": {
@@ -549,7 +549,7 @@
           "justifyContent": "space-between"
         }
       },
-      
+
       "contentGrid": {
         "description": "Responsive grid layout for content cards",
         "variants": {
@@ -571,7 +571,7 @@
           }
         }
       },
-      
+
       "modal": {
         "description": "Modal overlay layout",
         "overlay": {
@@ -593,7 +593,7 @@
         }
       }
     },
-    
+
     "patterns": {
       "financialCard": {
         "description": "Card pattern for displaying financial information with balance and actions",
@@ -616,7 +616,7 @@
           }
         }
       },
-      
+
       "contractList": {
         "description": "List pattern for displaying contracts with status badges",
         "structure": {
@@ -646,7 +646,7 @@
           }
         }
       },
-      
+
       "statsCard": {
         "description": "Card pattern for displaying statistics with charts",
         "structure": {
@@ -673,7 +673,7 @@
           }
         }
       },
-      
+
       "taskWidget": {
         "description": "Widget pattern for displaying tasks with count badge",
         "structure": {
@@ -710,7 +710,7 @@
           }
         }
       },
-      
+
       "profileMenu": {
         "description": "Profile dropdown menu pattern",
         "structure": {
@@ -746,14 +746,14 @@
         }
       }
     },
-    
+
     "animations": {
       "transitions": {
         "fast": "0.15s ease-in-out",
         "normal": "0.2s ease-in-out",
         "slow": "0.3s ease-in-out"
       },
-      
+
       "effects": {
         "fadeIn": {
           "animation": "fadeIn 0.2s ease-in-out",
@@ -778,7 +778,7 @@
         }
       }
     },
-    
+
     "iconography": {
       "style": "outline",
       "strokeWidth": "1.5px",
@@ -811,7 +811,7 @@
         "logout"
       ]
     },
-    
+
     "accessibility": {
       "focusRing": {
         "outline": "2px solid #84cc16",
@@ -826,7 +826,7 @@
         "minClickTarget": "24px"
       }
     },
-    
+
     "responsiveBreakpoints": {
       "xs": "320px",
       "sm": "640px",
@@ -835,7 +835,7 @@
       "xl": "1280px",
       "2xl": "1536px"
     },
-    
+
     "designPrinciples": [
       "Clean and minimal interface with ample whitespace",
       "Consistent use of rounded corners (0.75rem - 1rem for most components)",
@@ -852,4 +852,3 @@
     ]
   }
 }
-

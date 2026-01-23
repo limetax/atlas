@@ -1,0 +1,45 @@
+{
+  "name": "@lime-gpt/web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@tanstack/react-router": "^1.94.4",
+    "@tanstack/react-query": "^5.64.2",
+    "@tanstack/react-router-devtools": "^1.94.4",
+    "@tanstack/react-query-devtools": "^5.64.2",
+    "@trpc/client": "^11.0.0-rc.665",
+    "@trpc/react-query": "^11.0.0-rc.665",
+    "@lime-gpt/shared": "workspace:*",
+    "lucide-react": "^0.554.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "react-textarea-autosize": "^8.5.9"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "@tanstack/router-vite-plugin": "^1.94.4",
+    "@tailwindcss/vite": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  }
+}

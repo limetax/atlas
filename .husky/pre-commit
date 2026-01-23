@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🎨 Running Prettier and ESLint on staged files..."
+pnpm lint-staged
+
+echo ""
+echo "🔍 Running TypeScript type checking..."
+pnpm turbo run typecheck
+
+echo ""
+echo "✅ All pre-commit checks passed!"
