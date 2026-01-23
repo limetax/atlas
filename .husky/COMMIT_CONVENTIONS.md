@@ -14,32 +14,32 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) t
 
 ## Types
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `feat` | New feature | `feat(auth): add password reset functionality` |
-| `fix` | Bug fix | `fix(chat): resolve streaming timeout issue` |
-| `docs` | Documentation | `docs(readme): update installation steps` |
-| `style` | Code style (formatting, semicolons, etc) | `style(web): format components with prettier` |
-| `refactor` | Code refactoring | `refactor(api): simplify auth service logic` |
-| `perf` | Performance improvement | `perf(rag): optimize vector search query` |
-| `test` | Add or update tests | `test(auth): add login flow tests` |
-| `build` | Build system or dependencies | `build(deps): upgrade vite to v7.2.4` |
-| `ci` | CI/CD changes | `ci(github): add automated testing workflow` |
-| `chore` | Other changes | `chore(git): update .gitignore` |
-| `revert` | Revert a commit | `revert: revert "feat(auth): add oauth"` |
+| Type       | Description                              | Example                                        |
+| ---------- | ---------------------------------------- | ---------------------------------------------- |
+| `feat`     | New feature                              | `feat(auth): add password reset functionality` |
+| `fix`      | Bug fix                                  | `fix(chat): resolve streaming timeout issue`   |
+| `docs`     | Documentation                            | `docs(readme): update installation steps`      |
+| `style`    | Code style (formatting, semicolons, etc) | `style(web): format components with prettier`  |
+| `refactor` | Code refactoring                         | `refactor(api): simplify auth service logic`   |
+| `perf`     | Performance improvement                  | `perf(rag): optimize vector search query`      |
+| `test`     | Add or update tests                      | `test(auth): add login flow tests`             |
+| `build`    | Build system or dependencies             | `build(deps): upgrade vite to v7.2.4`          |
+| `ci`       | CI/CD changes                            | `ci(github): add automated testing workflow`   |
+| `chore`    | Other changes                            | `chore(git): update .gitignore`                |
+| `revert`   | Revert a commit                          | `revert: revert "feat(auth): add oauth"`       |
 
 ## Scopes (Optional but Recommended)
 
-| Scope | Description |
-|-------|-------------|
-| `api` | Backend/NestJS changes |
-| `web` | Frontend/Vite changes |
+| Scope    | Description            |
+| -------- | ---------------------- |
+| `api`    | Backend/NestJS changes |
+| `web`    | Frontend/Vite changes  |
 | `shared` | Shared package changes |
-| `auth` | Authentication related |
-| `chat` | Chat functionality |
-| `rag` | RAG/vector search |
-| `db` | Database changes |
-| `deps` | Dependency updates |
+| `auth`   | Authentication related |
+| `chat`   | Chat functionality     |
+| `rag`    | RAG/vector search      |
+| `db`     | Database changes       |
+| `deps`   | Dependency updates     |
 
 ## Examples
 
@@ -70,7 +70,7 @@ fix(auth): Fixed the login.    # Subject ends with period
 
 1. **Type**: Must be one of the allowed types (see table above)
 2. **Scope**: Optional, but recommended (lowercase)
-3. **Subject**: 
+3. **Subject**:
    - Cannot be empty
    - Lowercase
    - No period at the end

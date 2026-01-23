@@ -1,15 +1,10 @@
-import React from 'react';
 import { trpc } from '../lib/trpc';
 import { ComplianceBadge } from '../components/components/ComplianceBadge';
 import { UserMenu } from '../components/components/UserMenu';
 import { Settings } from 'lucide-react';
 import { Button } from '../components/elements/Button';
 
-interface HeaderProps {
-  onSettingsClick?: () => void;
-}
-
-export const Header: React.FC<HeaderProps> = ({ onSettingsClick }) => {
+export const Header = () => {
   const { data: user, isLoading: userLoading } = trpc.auth.getUser.useQuery();
   const { data: advisor } = trpc.auth.getAdvisor.useQuery(undefined, {
     enabled: !!user,
@@ -29,11 +24,10 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsClick }) => {
 
       <div className="flex items-center gap-4">
         <ComplianceBadge />
-        {onSettingsClick && (
-          <Button variant="ghost" size="sm" onClick={onSettingsClick} className="!p-2">
-            <Settings className="w-5 h-5" />
-          </Button>
-        )}
+
+        <Button variant="ghost" size="sm" className="!p-2">
+          <Settings className="w-5 h-5" />
+        </Button>
 
         {/* User menu */}
         {!userLoading && user && <UserMenu user={user} advisor={advisor} />}

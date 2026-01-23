@@ -1,5 +1,10 @@
 import { createTRPCReact } from '@trpc/react-query';
-import { httpBatchLink, splitLink, unstable_httpSubscriptionLink } from '@trpc/client';
+import {
+  httpBatchLink,
+  splitLink,
+  unstable_httpSubscriptionLink,
+  TRPCClientError,
+} from '@trpc/client';
 import type { AppRouterType } from '../../../api/src/app.router';
 
 // Import the actual router type from backend
@@ -30,6 +35,16 @@ export const trpcClient = trpc.createClient({
         headers: () => {
           const token = localStorage.getItem('supabase_token');
           return token ? { Authorization: `Bearer ${token}` } : {};
+        },
+        // Handle 401 responses by clearing token and reloading page
+        fetch(url, options) {
+          return fetch(url, options).then(async (response) => {
+            if (response.status === 401) {
+              localStorage.removeItem('supabase_token');
+              window.location.href = '/login';
+            }
+            return response;
+          });
         },
       }),
     }),
