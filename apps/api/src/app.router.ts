@@ -3,6 +3,7 @@ import { router } from '@shared/trpc/trpc.service';
 import { AuthRouter } from '@auth/auth.router';
 import { ChatRouter } from '@chat/chat.router';
 import { DatevRouter } from '@datev/datev.router';
+import { AssistantRouter } from '@/assistant/assistant.router';
 
 /**
  * Main App Router - Combines all tRPC routers
@@ -12,7 +13,8 @@ export class AppRouter {
   constructor(
     private readonly authRouter: AuthRouter,
     private readonly chatRouter: ChatRouter,
-    private readonly datevRouter: DatevRouter
+    private readonly datevRouter: DatevRouter,
+    private readonly assistantRouter: AssistantRouter
   ) {}
 
   createRouter() {
@@ -20,6 +22,7 @@ export class AppRouter {
       auth: this.authRouter.createRouter(),
       chat: this.chatRouter.createRouter(),
       datev: this.datevRouter.getRouter(),
+      assistant: this.assistantRouter.createRouter(),
     });
   }
 }
