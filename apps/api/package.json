@@ -28,12 +28,11 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@atlas/eslint-config": "workspace:*",
     "@nestjs/cli": "^11.0.16",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.0.16",
     "@types/node": "^22.12.8",
-    "@typescript-eslint/eslint-plugin": "^8.21.0",
-    "@typescript-eslint/parser": "^8.21.0",
     "eslint": "^9.20.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.0"
