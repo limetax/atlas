@@ -1,10 +1,10 @@
 /**
  * useChatSessions Hook
  * Component-specific hook for managing chat sessions
- * Colocated with HomePage as it's only used there
+ * Supports optional assistantId for assistant-based chats
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChatSession, Message } from '@atlas/shared';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants';
@@ -12,12 +12,16 @@ import { STORAGE_KEYS } from '@/constants';
 export interface UseChatSessionsReturn {
   sessions: ChatSession[];
   currentSessionId: string | undefined;
+  currentSession: ChatSession | undefined;
   messages: Message[];
-  handleNewChat: () => void;
+  handleNewChat: () => string;
+  handleNewChatWithAssistant: (assistantId: string) => string;
   handleSessionSelect: (sessionId: string) => void;
   handleDeleteSession: (sessionId: string) => void;
   updateCurrentSessionMessages: (messages: Message[]) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
+  getSessionById: (sessionId: string) => ChatSession | undefined;
+  setCurrentSessionById: (sessionId: string) => void;
 }
 
 export function useChatSessions(): UseChatSessionsReturn {
@@ -29,7 +33,31 @@ export function useChatSessions(): UseChatSessionsReturn {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(initialSession?.id);
   const [messages, setMessages] = useState<Message[]>(initialSession?.messages || []);
 
-  const handleNewChat = () => {
+  // Get current session object
+  const currentSession = sessions.find((s) => s.id === currentSessionId);
+
+  // Get session by ID
+  const getSessionById = useCallback(
+    (sessionId: string): ChatSession | undefined => {
+      return sessions.find((s) => s.id === sessionId);
+    },
+    [sessions]
+  );
+
+  // Set current session by ID (for route-based navigation)
+  const setCurrentSessionById = useCallback(
+    (sessionId: string) => {
+      const session = sessions.find((s) => s.id === sessionId);
+      if (session) {
+        setCurrentSessionId(sessionId);
+        setMessages(session.messages);
+      }
+    },
+    [sessions]
+  );
+
+  // Create new chat without assistant - returns session ID
+  const handleNewChat = useCallback((): string => {
     const newSession: ChatSession = {
       id: `session-${Date.now()}`,
       title: 'Neuer Chat',
@@ -40,73 +68,109 @@ export function useChatSessions(): UseChatSessionsReturn {
     setSessions([newSession, ...sessions]);
     setCurrentSessionId(newSession.id);
     setMessages([]);
-  };
+    return newSession.id;
+  }, [sessions, setSessions]);
 
-  const handleSessionSelect = (sessionId: string) => {
-    const session = sessions.find((s) => s.id === sessionId);
-    if (session) {
-      setCurrentSessionId(sessionId);
-      setMessages(session.messages);
-    }
-  };
+  // Create new chat WITH assistant - returns session ID
+  const handleNewChatWithAssistant = useCallback(
+    (assistantId: string): string => {
+      const newSession: ChatSession = {
+        id: `session-${Date.now()}`,
+        title: 'Neuer Chat',
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        assistantId,
+      };
+      setSessions([newSession, ...sessions]);
+      setCurrentSessionId(newSession.id);
+      setMessages([]);
+      return newSession.id;
+    },
+    [sessions, setSessions]
+  );
 
-  const handleDeleteSession = (sessionId: string) => {
-    const updatedSessions = sessions.filter((s) => s.id !== sessionId);
-    setSessions(updatedSessions);
-
-    if (currentSessionId === sessionId) {
-      if (updatedSessions.length > 0) {
-        setCurrentSessionId(updatedSessions[0].id);
-        setMessages(updatedSessions[0].messages);
-      } else {
-        setCurrentSessionId(undefined);
-        setMessages([]);
+  const handleSessionSelect = useCallback(
+    (sessionId: string) => {
+      const session = sessions.find((s) => s.id === sessionId);
+      if (session) {
+        setCurrentSessionId(sessionId);
+        setMessages(session.messages);
       }
-    }
-  };
+    },
+    [sessions]
+  );
 
-  const updateCurrentSessionMessages = (newMessages: Message[]) => {
-    setMessages(newMessages);
+  const handleDeleteSession = useCallback(
+    (sessionId: string) => {
+      const updatedSessions = sessions.filter((s) => s.id !== sessionId);
+      setSessions(updatedSessions);
 
-    if (currentSessionId) {
+      if (currentSessionId === sessionId) {
+        if (updatedSessions.length > 0) {
+          setCurrentSessionId(updatedSessions[0].id);
+          setMessages(updatedSessions[0].messages);
+        } else {
+          setCurrentSessionId(undefined);
+          setMessages([]);
+        }
+      }
+    },
+    [sessions, setSessions, currentSessionId]
+  );
+
+  const updateCurrentSessionMessages = useCallback(
+    (newMessages: Message[]) => {
+      setMessages(newMessages);
+
+      if (currentSessionId) {
+        setSessions(
+          sessions.map((session) => {
+            if (session.id === currentSessionId) {
+              return {
+                ...session,
+                messages: newMessages,
+                updatedAt: new Date(),
+              };
+            }
+            return session;
+          })
+        );
+      }
+    },
+    [currentSessionId, sessions, setSessions]
+  );
+
+  const updateSessionTitle = useCallback(
+    (sessionId: string, title: string) => {
       setSessions(
         sessions.map((session) => {
-          if (session.id === currentSessionId) {
+          if (session.id === sessionId) {
             return {
               ...session,
-              messages: newMessages,
+              title,
               updatedAt: new Date(),
             };
           }
           return session;
         })
       );
-    }
-  };
-
-  const updateSessionTitle = (sessionId: string, title: string) => {
-    setSessions(
-      sessions.map((session) => {
-        if (session.id === sessionId) {
-          return {
-            ...session,
-            title,
-            updatedAt: new Date(),
-          };
-        }
-        return session;
-      })
-    );
-  };
+    },
+    [sessions, setSessions]
+  );
 
   return {
     sessions,
     currentSessionId,
+    currentSession,
     messages,
     handleNewChat,
+    handleNewChatWithAssistant,
     handleSessionSelect,
     handleDeleteSession,
     updateCurrentSessionMessages,
     updateSessionTitle,
+    getSessionById,
+    setCurrentSessionById,
   };
 }

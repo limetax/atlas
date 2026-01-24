@@ -3,13 +3,15 @@ import { ChatService } from '@chat/application/chat.service';
 import { ChatController } from '@chat/chat.controller';
 import { LlmModule } from '@llm/llm.module';
 import { RAGModule } from '@rag/rag.module';
+import { AssistantModule } from '@/assistant/assistant.module';
 
 /**
  * Chat Module - Provides conversational AI functionality
  * Orchestrates LLM and RAG services
+ * Imports AssistantModule for assistant-based chat
  */
 @Module({
-  imports: [LlmModule, RAGModule],
+  imports: [LlmModule, RAGModule, AssistantModule],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],

@@ -21,18 +21,22 @@ export class ChatService {
    * Process a user message and stream the response
    * @param userMessage - The user's message
    * @param history - Previous messages in the conversation
+   * @param customSystemPrompt - Optional custom system prompt (for assistants)
    * @returns AsyncGenerator yielding response chunks and citations
    */
   async *processMessage(
     userMessage: string,
-    history: Message[]
+    history: Message[],
+    customSystemPrompt?: string
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     try {
       // 1. Search for relevant context using RAG
       const { context, citations } = await this.rag.searchContext(userMessage);
 
-      // 2. Build system prompt with context
-      const systemPrompt = this.buildSystemPrompt(context);
+      // 2. Build system prompt with context (use custom if provided)
+      const systemPrompt = customSystemPrompt
+        ? this.buildAssistantPrompt(customSystemPrompt, context)
+        : this.buildSystemPrompt(context);
 
       // 3. Convert message history to LLM format (filter out system messages)
       const llmMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
@@ -67,6 +71,23 @@ export class ChatService {
         error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
       };
     }
+  }
+
+  /**
+   * Build assistant prompt by combining custom prompt with RAG context
+   */
+  private buildAssistantPrompt(assistantPrompt: string, ragContext: string): string {
+    return `${assistantPrompt}
+
+---
+
+Verfügbare Informationen aus der Wissensdatenbank:
+
+${ragContext}
+
+---
+
+Beantworte die Frage des Nutzers basierend auf dem obigen Kontext.`;
   }
 
   /**

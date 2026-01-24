@@ -7,10 +7,12 @@ import { AuthModule } from '@auth/auth.module';
 import { ChatModule } from '@chat/chat.module';
 import { RAGModule } from '@rag/rag.module';
 import { DatevModule } from '@datev/datev.module';
+import { AssistantModule } from '@/assistant/assistant.module';
 import { HealthModule } from '@/health/health.module';
 import { AuthRouter } from '@auth/auth.router';
 import { ChatRouter } from '@chat/chat.router';
 import { DatevRouter } from '@datev/datev.router';
+import { AssistantRouter } from '@/assistant/assistant.router';
 import { AppRouter } from '@/app.router';
 
 /**
@@ -29,12 +31,14 @@ import { AppRouter } from '@/app.router';
     ChatModule,
     RAGModule,
     DatevModule,
+    AssistantModule,
     HealthModule,
   ],
   providers: [
     AuthRouter,
     ChatRouter,
     DatevRouter,
+    AssistantRouter,
     AppRouter,
     {
       provide: 'APP_ROUTER',

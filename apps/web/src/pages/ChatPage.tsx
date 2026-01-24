@@ -1,35 +1,56 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
+import { Badge } from '@/components/ui/Badge';
 import { Message } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
 import { truncateText } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
+import { trpc } from '@/lib/trpc';
+import { Bot } from 'lucide-react';
 import { APP_CONFIG } from '@/constants';
 
-export const HomePage: React.FC = () => {
+export const ChatPage: React.FC = () => {
+  const { chatId } = useParams({ from: '/chat/$chatId' });
   const navigate = useNavigate();
+
   const {
     sessions,
     currentSessionId,
+    currentSession,
     messages,
     handleNewChat,
     handleSessionSelect,
     handleDeleteSession,
     updateCurrentSessionMessages,
     updateSessionTitle,
+    setCurrentSessionById,
   } = useChatSessions();
 
   const [isLoading, setIsLoading] = useState(false);
-  const hasNavigatedRef = useRef(false);
+
+  // Set current session based on URL param
+  useEffect(() => {
+    if (chatId && chatId !== currentSessionId) {
+      setCurrentSessionById(chatId);
+    }
+  }, [chatId, currentSessionId, setCurrentSessionById]);
+
+  // Get assistantId from current session
+  const assistantId = currentSession?.assistantId;
+
+  // Fetch assistant details if this chat has an assistant
+  const { data: assistant } = trpc.assistant.get.useQuery(
+    { id: assistantId! },
+    { enabled: !!assistantId }
+  );
 
   // Handle new chat - navigate to new chat URL
   const handleNewChatWithNavigation = () => {
     const newSessionId = handleNewChat();
-    hasNavigatedRef.current = false; // Reset for new chat
     navigate({ to: '/chat/$chatId', params: { chatId: newSessionId } });
   };
 
@@ -40,13 +61,6 @@ export const HomePage: React.FC = () => {
   };
 
   const handleSendMessage = async (content: string) => {
-    // If no session exists, create one first
-    let sessionId = currentSessionId;
-    if (!sessionId) {
-      sessionId = handleNewChat();
-    }
-
-    // Create user message
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
       role: 'user',
@@ -54,34 +68,28 @@ export const HomePage: React.FC = () => {
       timestamp: new Date(),
     };
 
-    // Add user message to current session
     const updatedMessages = [...messages, userMessage];
     updateCurrentSessionMessages(updatedMessages);
 
     // Update session title if it's the first message
-    if (sessionId && messages.length === 0) {
-      updateSessionTitle(sessionId, truncateText(content, 50));
+    if (currentSessionId && messages.length === 0) {
+      const title = assistant
+        ? `${assistant.name}: ${truncateText(content, 30)}`
+        : truncateText(content, 50);
+      updateSessionTitle(currentSessionId, title);
     }
 
-    // Navigate to /chat/{sessionId} after first message (only once)
-    if (sessionId && !hasNavigatedRef.current) {
-      hasNavigatedRef.current = true;
-      navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
-    }
-
-    // Call streaming API
     setIsLoading(true);
 
     try {
       let assistantContent = '';
       let citations: Message['citations'] = [];
 
-      // Stream from API using SSE
-      for await (const chunk of streamChatMessage(content, messages)) {
+      // Pass assistantId to streaming API if present
+      for await (const chunk of streamChatMessage(content, messages, assistantId)) {
         if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
-          // Update message in real-time
           const streamingMessage: Message = {
             id: `msg-${Date.now()}-assistant`,
             role: 'assistant',
@@ -94,7 +102,6 @@ export const HomePage: React.FC = () => {
         } else if (chunk.type === 'citations' && chunk.citations) {
           citations = chunk.citations;
         } else if (chunk.type === 'done') {
-          // Finalize message
           const finalMessage: Message = {
             id: `msg-${Date.now()}-assistant`,
             role: 'assistant',
@@ -111,7 +118,6 @@ export const HomePage: React.FC = () => {
     } catch (error) {
       logger.error('Error sending message:', error);
 
-      // Show error message
       const errorMessage: Message = {
         id: `msg-${Date.now()}-error`,
         role: 'assistant',
@@ -127,6 +133,24 @@ export const HomePage: React.FC = () => {
     }
   };
 
+  // If session not found, redirect to home
+  if (chatId && !currentSession && sessions.length > 0) {
+    // Session doesn't exist - could redirect or show error
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Chat nicht gefunden</p>
+          <button
+            onClick={() => navigate({ to: '/' })}
+            className="text-orange-600 hover:underline"
+          >
+            Zurück zur Startseite
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar
@@ -139,12 +163,26 @@ export const HomePage: React.FC = () => {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
+
+        {/* Assistant indicator - only show if chat has an assistant */}
+        {assistant && (
+          <div className="bg-orange-50 border-b border-orange-200 px-4 py-2">
+            <div className="max-w-4xl mx-auto flex items-center gap-2">
+              <Bot className="w-4 h-4 text-orange-600" />
+              <span className="text-sm font-medium text-orange-800">{assistant.name}</span>
+              <Badge variant="neutral" className="!text-[10px]">
+                Assistent
+              </Badge>
+            </div>
+          </div>
+        )}
+
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
-          systemPrompt={APP_CONFIG.SYSTEM_PROMPT}
-          dataSources={APP_CONFIG.DATA_SOURCES}
+          systemPrompt={!assistantId ? APP_CONFIG.SYSTEM_PROMPT : undefined}
+          dataSources={!assistantId ? APP_CONFIG.DATA_SOURCES : undefined}
         />
       </div>
     </div>

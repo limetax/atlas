@@ -5,11 +5,13 @@ import { STORAGE_KEYS, API_ENDPOINTS } from '@/constants';
 /**
  * Chat API client using Server-Sent Events (SSE)
  * More reliable than tRPC subscriptions for streaming
+ * Supports optional assistantId for pre-configured assistant prompts
  */
 
 export async function* streamChatMessage(
   message: string,
-  history: Message[]
+  history: Message[],
+  assistantId?: string
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
@@ -19,7 +21,7 @@ export async function* streamChatMessage(
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, assistantId }),
   });
 
   if (!response.ok) {

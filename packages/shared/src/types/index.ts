@@ -21,6 +21,7 @@ export interface ChatSession {
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
+  assistantId?: string; // Optional: links chat to a specific assistant
 }
 
 // RAG types
