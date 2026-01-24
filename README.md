@@ -1,25 +1,40 @@
 # limetax Atlas
 
-## 🚀 Tech Stack
+Enterprise-grade AI assistant for German tax advisors (Steuerberater).
 
-- **Next.js 16** (App Router, SSR, Streaming)
-- **Supabase** (Auth, PostgreSQL, pgvector)
-- **Claude Sonnet 4** (200k context, best German language support)
-- **TypeScript** + **Tailwind CSS 4**
+## 🏗️ Architecture
+
+- **Backend**: NestJS + tRPC (TypeScript)
+- **Frontend**: Vite + React + TanStack Router + TanStack Query
+- **Database**: Supabase (PostgreSQL + pgvector)
+- **AI**: Anthropic Claude Sonnet 4
+- **Monorepo**: Turborepo + pnpm
+
+## 📁 Project Structure
+
+```
+lime-gpt/
+├── apps/
+│   ├── api/          # NestJS backend with tRPC
+│   ├── web/          # Vite + React frontend
+├── packages/
+│   └── shared/       # Shared types and validators
+├── database/         # SQL migrations
+└── supabase-project/ # Local Supabase Docker
+```
 
 ## ⚡ Quick Start
 
 ### Prerequisites
 
 - **Node.js** 20+ ([nvm](https://github.com/nvm-sh/nvm) recommended)
-- **Docker Desktop** ([Download](https://www.docker.com/products/docker-desktop/))
+- **pnpm** 9+ (`npm install -g pnpm`)
+- **Docker Desktop** for local Supabase
 
-### 1. Clone & Install
+### 1. Install Dependencies
 
 ```bash
-git clone git@github.com:limetax/atlas.git
-cd atlas
-npm install
+pnpm install
 ```
 
 ### 2. Start Local Supabase
@@ -27,43 +42,53 @@ npm install
 ```bash
 cd supabase-project
 
-# First time only: generate secure keys
+# First time: generate secure keys
 sh ./utils/generate-keys.sh
 
 # Start services
-docker compose pull
 docker compose up -d
 ```
 
 ### 3. Configure Environment
 
+**Backend** (`apps/api/.env`):
+
 ```bash
-cp .env.example .env.local
+SUPABASE_URL=http://localhost:8000
+SUPABASE_SERVICE_ROLE_KEY=<from supabase-project/.env>
+ANTHROPIC_API_KEY=<your-key>
+FRONTEND_URL=http://localhost:5173
+PORT=3001
 ```
 
-Edit `.env.local` with keys from `supabase-project/.env`:
+**Frontend** (`apps/web/.env`):
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:8000
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<copy from ANON_KEY>
-SUPABASE_SERVICE_ROLE_KEY=<copy from SERVICE_ROLE_KEY>
-ANTHROPIC_API_KEY=<ask team lead>
+VITE_API_URL=http://localhost:3001
 ```
 
-### 4. Run Migrations & Create Test User
+### 4. Run Migrations
 
 ```bash
-# Apply database schema
 docker exec -i supabase-db psql -U postgres < database/migrations/001_auth_schema.sql
+docker exec -i supabase-db psql -U postgres < database/migrations/002_pgvector_tax_documents.sql
+docker exec -i supabase-db psql -U postgres < database/migrations/003_datev_data.sql
+```
 
-# Create test advisory
+### 5. Create Test User
+
+```bash
+# Get service role key from supabase-project/.env
+export SERVICE_ROLE_KEY="your-service-role-key"
+
+# Create advisory
 docker exec -i supabase-db psql -U postgres -c \
   "INSERT INTO public.advisories (name, slug) VALUES ('limetax Demo', 'limetax-demo') ON CONFLICT DO NOTHING;"
 
-# Create test user (via Supabase Auth API)
+# Create user via Supabase Auth API
 curl -X POST 'http://localhost:8000/auth/v1/admin/users' \
-  -H "apikey: <SERVICE_ROLE_KEY>" \
-  -H "Authorization: Bearer <SERVICE_ROLE_KEY>" \
+  -H "apikey: $SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"email":"test@limetax.de","password":"test1234","email_confirm":true,"user_metadata":{"full_name":"Test Berater"}}'
 
@@ -72,61 +97,78 @@ docker exec -i supabase-db psql -U postgres -c \
   "UPDATE public.advisors SET advisory_id = (SELECT id FROM public.advisories WHERE slug = 'limetax-demo'), role = 'admin' WHERE email = 'test@limetax.de';"
 ```
 
-### 5. Start Development
+### 6. Start Development Servers
 
 ```bash
-npm run dev
+# All services (recommended)
+pnpm dev
+
+# Or individually:
+pnpm --filter @lime-gpt/api dev     # Backend on :3001
+pnpm --filter @lime-gpt/web dev     # Frontend on :5173
+pnpm --filter nextjs dev             # Legacy Next.js on :3000
 ```
 
-Visit http://localhost:3000
+## 🧪 Testing
 
-**Test login:** `test@limetax.de` / `test1234`
+**Login credentials**: `test@limetax.de` / `test1234`
 
-## 🏗️ Project Structure
+- **New Vite App**: http://localhost:5173
+- **NestJS API**: http://localhost:3001/api/health
+- **Legacy Next.js**: http://localhost:3000
 
-```
-atlas/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── login/             # Auth pages
-│   └── page.tsx           # Main chat interface
-├── components/
-│   ├── elements/          # Atomic UI (Button, Input)
-│   ├── components/        # Composed (LoginForm, ChatMessage)
-│   └── views/             # Page layouts (Header, Sidebar)
-├── lib/
-│   ├── infrastructure/    # External clients (Supabase, Anthropic)
-│   ├── services/          # Business logic
-│   └── adapters/          # Interface adapters
-├── database/
-│   └── migrations/        # SQL migrations
-└── supabase-project/      # Local Supabase Docker (gitignored)
-```
-
-## 🔧 Common Commands
+## 🚀 Building for Production
 
 ```bash
-# Development
-npm run dev              # Start Next.js dev server
-npm run build            # Production build
-npm run lint             # Run ESLint
-npm run typecheck        # TypeScript check
+# Build all apps
+pnpm build
 
-# Supabase
-cd supabase-project
-docker compose up -d     # Start Supabase
-docker compose down      # Stop Supabase
-docker compose down -v   # Reset database
-docker compose logs -f   # View logs
+# Build specific app
+pnpm --filter @lime-gpt/api build
+pnpm --filter @lime-gpt/web build
 ```
 
-## 🌐 Local Services
+## 📡 API Endpoints
 
-| Service             | URL                   | Notes              |
-| ------------------- | --------------------- | ------------------ |
-| **App**             | http://localhost:3000 | Next.js dev server |
-| **Supabase Studio** | http://localhost:8000 | Database UI        |
-| **API**             | http://localhost:8000 | REST API via Kong  |
+- **Health**: `GET /api/health`
+- **tRPC**: `POST /api/trpc/[procedure]`
+  - `auth.login` - Authenticate user
+  - `auth.getUser` - Get current user
+  - `auth.getAdvisor` - Get advisor profile
+  - `chat.sendMessage` - Stream chat response (subscription)
+
+## 🎯 Type Safety
+
+Full end-to-end type safety from database to frontend:
+
+```
+Supabase Types → NestJS Services → tRPC Router → React Components
+```
+
+- ✅ Zero runtime type errors
+- ✅ Autocomplete everywhere
+- ✅ Compile-time validation
+
+## 🔧 Development Commands
+
+```bash
+pnpm dev          # Start all apps in dev mode
+pnpm build        # Build all apps
+pnpm lint         # Lint all apps
+pnpm typecheck    # TypeScript check all apps
+```
+
+## 📚 Documentation
+
+- [Migration Plan](/Users/cdansard/.cursor/plans/next.js_to_nestjs_vite_tanstack_final.plan.md)
+- [Architecture](ARCHITECTURE.md)
+
+## 🌐 Deployment
+
+See deployment plan for Coolify configuration:
+
+- `api.limetax.de` → NestJS Backend
+- `app.limetax.de` → Vite Frontend
 
 ---
 
