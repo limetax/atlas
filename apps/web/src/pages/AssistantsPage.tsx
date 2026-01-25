@@ -1,6 +1,18 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Search, Database, FileText, MessageSquare, Plus, Sparkles } from 'lucide-react';
+import {
+  Search,
+  Database,
+  FileText,
+  MessageSquare,
+  Plus,
+  Sparkles,
+  Users,
+  Settings,
+  Calendar,
+  BookOpen,
+  Lightbulb,
+} from 'lucide-react';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Badge } from '@/components/ui/Badge';
@@ -13,6 +25,11 @@ const iconMap: Record<string, React.ElementType> = {
   Search,
   Database,
   FileText,
+  Users,
+  Settings,
+  Calendar,
+  BookOpen,
+  Lightbulb,
 };
 
 export const AssistantsPage: React.FC = () => {
@@ -62,15 +79,12 @@ export const AssistantsPage: React.FC = () => {
         <main className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white p-6">
           <div className="max-w-5xl mx-auto">
             <PageHeader />
-            
+
             {isLoading ? (
               <LoadingState />
             ) : (
               <>
-                <BuiltInAssistants
-                  assistants={assistants || []}
-                  onStartChat={handleStartChat}
-                />
+                <BuiltInAssistants assistants={assistants || []} onStartChat={handleStartChat} />
                 <CustomAssistantsSection />
               </>
             )}
