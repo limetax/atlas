@@ -19,6 +19,16 @@ export const ChatPage: React.FC = () => {
   const chatId = (params as { chatId?: string }).chatId;
   const navigate = useNavigate();
 
+  // Get template content from localStorage if coming from template insertion
+  const [templateContent] = useState<string | undefined>(() => {
+    const content = localStorage.getItem('__template_content');
+    if (content) {
+      localStorage.removeItem('__template_content');
+      return content;
+    }
+    return undefined;
+  });
+
   const {
     sessions,
     currentSessionId,
@@ -177,6 +187,7 @@ export const ChatPage: React.FC = () => {
           isLoading={isLoading}
           systemPrompt={!assistantId ? APP_CONFIG.SYSTEM_PROMPT : undefined}
           dataSources={!assistantId ? APP_CONFIG.DATA_SOURCES : undefined}
+          initialContent={templateContent}
         />
       </div>
     </div>
