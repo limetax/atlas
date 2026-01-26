@@ -50,14 +50,14 @@ export const AssistantsPage: React.FC = () => {
     navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
   };
 
-  // Handle template insertion - create new chat and navigate
-  const handleInsertTemplate = (content: string) => {
-    // Store template content temporarily in localStorage
-    localStorage.setItem('__template_content', content);
+  // Handle template insertion - create new chat and navigate with template ID
+  const handleInsertTemplate = (templateId: string) => {
     const newSessionId = handleNewChat();
+    // Navigate with templateId as search param
     navigate({
       to: '/chat/$chatId',
       params: { chatId: newSessionId },
+      search: { templateId },
     });
   };
 
@@ -232,7 +232,7 @@ const CustomAssistantsSection = () => (
 );
 
 interface TemplatesSectionProps {
-  onInsertTemplate: (content: string) => void;
+  onInsertTemplate: (templateId: string) => void;
 }
 
 const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onInsertTemplate }) => {

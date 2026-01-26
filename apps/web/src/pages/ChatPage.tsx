@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from '@tanstack/react-router';
+import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
@@ -12,22 +12,23 @@ import { Assistant, useAssistant } from '@/hooks/useAssistants';
 import { ICON_MAP } from '@/constants/icons';
 import { Bot } from 'lucide-react';
 import { APP_CONFIG } from '@/constants';
+import { TEMPLATES } from '@/data/templates';
 
 export const ChatPage: React.FC = () => {
-  // chatId can be undefined when on "/" route
+  // Since ChatPage is shared between '/' and '/chat/$chatId', use strict: false
+  // This gives us a union of all possible params/search across both routes
   const params = useParams({ strict: false });
-  const chatId = (params as { chatId?: string }).chatId;
+  const chatId = params.chatId;
   const navigate = useNavigate();
 
-  // Get template content from localStorage if coming from template insertion
-  const [templateContent] = useState<string | undefined>(() => {
-    const content = localStorage.getItem('__template_content');
-    if (content) {
-      localStorage.removeItem('__template_content');
-      return content;
-    }
-    return undefined;
-  });
+  // Get search params - strict: false for shared component
+  const search = useSearch({ strict: false });
+  const templateId = search.templateId;
+
+  // Find template content by ID
+  const templateContent = templateId
+    ? TEMPLATES.find((t) => t.id === templateId)?.content
+    : undefined;
 
   const {
     sessions,

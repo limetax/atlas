@@ -31,8 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onSessionSelect={onSessionSelect}
         onDeleteSession={onDeleteSession}
       />
-
-      <SidebarFooter />
     </aside>
   );
 };
@@ -222,14 +220,6 @@ const SessionItem = ({ session, isActive, onSelect, onDelete }: SessionItemProps
           <Trash2 className="w-4 h-4 text-red-500" />
         </button>
       )}
-    </div>
-  );
-};
-
-const SidebarFooter = () => {
-  return (
-    <div className="flex-shrink-0 p-4 border-t border-gray-200">
-      <p className="text-xs text-gray-400 text-center">Powered by Claude 4 Sonnet</p>
     </div>
   );
 };
