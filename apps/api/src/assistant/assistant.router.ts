@@ -1,36 +1,52 @@
-import { Injectable } from '@nestjs/common';
-import { router, publicProcedure } from '@shared/trpc/trpc.service';
+import { Inject } from '@nestjs/common';
+import { Router, Query, Input } from 'nestjs-trpc';
 import { z } from 'zod';
 import { AssistantService } from './assistant.service';
+
+const GetAssistantInputSchema = z.object({
+  id: z.string(),
+});
+
+// Public assistant schema (excludes systemPrompt for security)
+const PublicAssistantSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  icon: z.string(),
+  isBuiltIn: z.boolean(),
+});
 
 /**
  * Assistant tRPC Router
  * Provides endpoints to list and retrieve assistants
  */
-@Injectable()
+@Router({ alias: 'assistant' })
 export class AssistantRouter {
-  constructor(private readonly assistantService: AssistantService) {}
+  constructor(@Inject(AssistantService) private readonly assistantService: AssistantService) {}
 
-  createRouter() {
-    return router({
-      /**
-       * List all available assistants
-       */
-      list: publicProcedure.query(() => {
-        const assistants = this.assistantService.getAll();
-        // Return without systemPrompt for listing (security)
-        return assistants.map(({ systemPrompt, ...rest }) => rest);
-      }),
+  /**
+   * List all available assistants
+   */
+  @Query({
+    output: z.array(PublicAssistantSchema),
+  })
+  list() {
+    const assistants = this.assistantService.getAll();
+    // Return without systemPrompt for listing (security)
+    return assistants.map(({ systemPrompt: _, ...rest }) => rest);
+  }
 
-      /**
-       * Get a specific assistant by ID
-       */
-      get: publicProcedure.input(z.object({ id: z.string() })).query(({ input }) => {
-        const assistant = this.assistantService.getById(input.id);
-        // Return without systemPrompt (security)
-        const { systemPrompt, ...rest } = assistant;
-        return rest;
-      }),
-    });
+  /**
+   * Get a specific assistant by ID
+   */
+  @Query({
+    input: GetAssistantInputSchema,
+    output: PublicAssistantSchema,
+  })
+  get(@Input('id') id: string) {
+    const assistant = this.assistantService.getById(id);
+    // Return without systemPrompt (security)
+    const { systemPrompt: _, ...rest } = assistant;
+    return rest;
   }
 }

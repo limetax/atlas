@@ -1,34 +1,53 @@
-import { Injectable } from '@nestjs/common';
-import { LoginSchema } from '@atlas/shared';
-import { router, publicProcedure, protectedProcedure } from '@shared/trpc/trpc.service';
+import { Inject } from '@nestjs/common';
+import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc';
+import { z } from 'zod';
 import { AuthService } from '@auth/application/auth.service';
+import { AuthMiddleware } from '@shared/trpc/auth.middleware';
+import type { User } from '@supabase/supabase-js';
+
+// Define schemas inline for nestjs-trpc to properly generate types
+const LoginInputSchema = z.object({
+  email: z.string().email('Ungültige E-Mail-Adresse'),
+  password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen lang sein'),
+});
+
+const LogoutOutputSchema = z.object({
+  success: z.boolean(),
+});
 
 /**
  * Auth Router - tRPC procedures for authentication
  */
-@Injectable()
+@Router({ alias: 'auth' })
 export class AuthRouter {
-  constructor(private readonly authService: AuthService) {}
+  constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
-  createRouter() {
-    return router({
-      login: publicProcedure.input(LoginSchema).mutation(async ({ input }) => {
-        return this.authService.login(input.email, input.password);
-      }),
+  @Mutation({
+    input: LoginInputSchema,
+  })
+  async login(@Input('email') email: string, @Input('password') password: string) {
+    return this.authService.login(email, password);
+  }
 
-      logout: protectedProcedure.mutation(async () => {
-        // Supabase logout (invalidate session on backend)
-        // Frontend will clear token from localStorage
-        return { success: true };
-      }),
+  @Mutation({
+    output: LogoutOutputSchema,
+  })
+  @UseMiddlewares(AuthMiddleware)
+  async logout(): Promise<{ success: boolean }> {
+    // Supabase logout (invalidate session on backend)
+    // Frontend will clear token from localStorage
+    return { success: true };
+  }
 
-      getUser: protectedProcedure.query(({ ctx }) => {
-        return ctx.user;
-      }),
+  @Query()
+  @UseMiddlewares(AuthMiddleware)
+  getUser(@Ctx() ctx: { user: User }): User {
+    return ctx.user;
+  }
 
-      getAdvisor: protectedProcedure.query(async ({ ctx }) => {
-        return this.authService.getAdvisorWithAdvisory(ctx.user.id);
-      }),
-    });
+  @Query()
+  @UseMiddlewares(AuthMiddleware)
+  async getAdvisor(@Ctx() ctx: { user: User }) {
+    return this.authService.getAdvisorWithAdvisory(ctx.user.id);
   }
 }

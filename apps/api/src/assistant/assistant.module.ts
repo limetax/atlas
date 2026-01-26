@@ -8,7 +8,11 @@ import { AssistantRouter } from './assistant.router';
  * No database dependencies - uses static config
  */
 @Module({
-  providers: [AssistantService, AssistantRouter],
-  exports: [AssistantService, AssistantRouter],
+  providers: [
+    AssistantService,
+    // tRPC Router
+    AssistantRouter,
+  ],
+  exports: [AssistantService],
 })
 export class AssistantModule {}

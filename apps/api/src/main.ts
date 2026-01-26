@@ -1,8 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { AppModule } from '@/app.module';
-import { TRPCContextProvider } from '@shared/trpc/trpc.context';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -17,18 +15,8 @@ async function bootstrap() {
   // Global prefix for all routes
   app.setGlobalPrefix('api');
 
-  // Get tRPC router and context provider from DI
-  const appRouter = app.get('APP_ROUTER');
-  const contextProvider = app.get(TRPCContextProvider);
-
-  // Mount tRPC at /api/trpc
-  app.use(
-    '/api/trpc',
-    trpcExpress.createExpressMiddleware({
-      router: appRouter,
-      createContext: ({ req, res }) => contextProvider.create(req),
-    })
-  );
+  // nestjs-trpc automatically mounts all routers at /api/trpc
+  // Routers: auth, chat, datev, assistant
 
   const port = process.env.PORT || 3001;
   await app.listen(port);

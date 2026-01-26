@@ -1,36 +1,22 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { TRPCContext, ContextOptions } from 'nestjs-trpc';
 import { SupabaseService } from '../infrastructure/supabase.service';
 import type { User } from '@supabase/supabase-js';
 
 /**
- * HTTP Request interface for tRPC
- */
-export interface TRPCRequest {
-  headers: {
-    authorization?: string | string[];
-    'x-request-id'?: string | string[];
-    [key: string]: string | string[] | undefined;
-  };
-}
-
-/**
- * tRPC Context - Contains user auth state and request metadata
- */
-export interface TRPCContext {
-  user: User | null;
-  requestId: string;
-}
-
-/**
- * tRPC Context Provider - Creates context for each tRPC request
+ * App Context for nestjs-trpc
+ * Creates context for each tRPC request with user auth state
  */
 @Injectable()
-export class TRPCContextProvider {
-  private readonly logger = new Logger(TRPCContextProvider.name);
+export class AppContext implements TRPCContext {
+  private readonly logger = new Logger(AppContext.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(@Inject(SupabaseService) private readonly supabase: SupabaseService) {}
 
-  async create(req: TRPCRequest): Promise<TRPCContext> {
+  async create(opts: ContextOptions): Promise<{ user: User | null; requestId: string }> {
+    const req = opts.req;
+
+    // Get request ID from header or generate new one
     const requestIdHeader = req.headers['x-request-id'];
     const requestId =
       (Array.isArray(requestIdHeader) ? requestIdHeader[0] : requestIdHeader) ||

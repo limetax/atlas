@@ -32,7 +32,10 @@ export const useAssistants = () => {
  * Uses the list query and filters - efficient due to React Query caching
  */
 export const useAssistant = (assistantId: string | undefined) => {
-  const { data: assistant, isLoading } = trpc.assistant.get.useQuery({ id: assistantId });
+  const { data: assistant, isLoading } = trpc.assistant.get.useQuery(
+    { id: assistantId! },
+    { enabled: !!assistantId }
+  );
 
   return {
     assistant,

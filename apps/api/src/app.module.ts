@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TRPCModule } from 'nestjs-trpc';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
-import { TRPCModule } from '@shared/trpc/trpc.module';
+import { AppContext } from '@shared/trpc/app.context';
+import { AuthMiddleware } from '@shared/trpc/auth.middleware';
 import { LlmModule } from '@llm/llm.module';
 import { AuthModule } from '@auth/auth.module';
 import { ChatModule } from '@chat/chat.module';
@@ -9,12 +11,6 @@ import { RAGModule } from '@rag/rag.module';
 import { DatevModule } from '@datev/datev.module';
 import { AssistantModule } from '@/assistant/assistant.module';
 import { HealthModule } from '@/health/health.module';
-import { AuthRouter } from '@auth/auth.router';
-import { ChatRouter } from '@chat/chat.router';
-import { DatevRouter } from '@datev/datev.router';
-import { AssistantRouter } from '@/assistant/assistant.router';
-import { AppRouter } from '@/app.router';
-
 /**
  * Root Application Module
  */
@@ -26,7 +22,12 @@ import { AppRouter } from '@/app.router';
     }),
     InfrastructureModule,
     LlmModule,
-    TRPCModule,
+    // nestjs-trpc module with auto-schema generation
+    TRPCModule.forRoot({
+      autoSchemaFile: './src/@generated',
+      context: AppContext,
+      basePath: '/api/trpc',
+    }),
     AuthModule,
     ChatModule,
     RAGModule,
@@ -34,20 +35,6 @@ import { AppRouter } from '@/app.router';
     AssistantModule,
     HealthModule,
   ],
-  providers: [
-    AuthRouter,
-    ChatRouter,
-    DatevRouter,
-    AssistantRouter,
-    AppRouter,
-    {
-      provide: 'APP_ROUTER',
-      useFactory: (appRouter: AppRouter) => {
-        return appRouter.createRouter();
-      },
-      inject: [AppRouter],
-    },
-  ],
-  exports: ['APP_ROUTER', AppRouter],
+  providers: [AppContext, AuthMiddleware],
 })
 export class AppModule {}
