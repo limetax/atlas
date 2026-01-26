@@ -14,7 +14,9 @@ import { Bot } from 'lucide-react';
 import { APP_CONFIG } from '@/constants';
 
 export const ChatPage: React.FC = () => {
-  const { chatId } = useParams({ from: '/chat/$chatId' });
+  // chatId can be undefined when on "/" route
+  const params = useParams({ strict: false });
+  const chatId = (params as { chatId?: string }).chatId;
   const navigate = useNavigate();
 
   const {
@@ -32,12 +34,16 @@ export const ChatPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Set current session based on URL param
+  // Set current session based on URL param or create first session
   useEffect(() => {
     if (chatId && chatId !== currentSessionId) {
+      // Route has chatId - switch to that session
       setCurrentSessionById(chatId);
+    } else if (!chatId && !currentSessionId) {
+      // On home route without session - create first session
+      handleNewChat();
     }
-  }, [chatId, currentSessionId, setCurrentSessionById]);
+  }, [chatId, currentSessionId, setCurrentSessionById, handleNewChat]);
 
   // Get assistantId from current session
   const assistantId = currentSession?.assistantId;
