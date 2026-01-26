@@ -1,36 +1,13 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  Search,
-  Database,
-  FileText,
-  MessageSquare,
-  Plus,
-  Sparkles,
-  Users,
-  Settings,
-  Calendar,
-  BookOpen,
-  Lightbulb,
-} from 'lucide-react';
+import { MessageSquare, Plus, Sparkles } from 'lucide-react';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useChatSessions } from './useChatSessions';
-import { trpc } from '@/lib/trpc';
-
-// Icon mapping for assistant icons
-const iconMap: Record<string, React.ElementType> = {
-  Search,
-  Database,
-  FileText,
-  Users,
-  Settings,
-  Calendar,
-  BookOpen,
-  Lightbulb,
-};
+import { useAssistants, type Assistant } from '@/hooks/useAssistants';
+import { ICON_MAP } from '@/constants/icons';
 
 export const AssistantsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,8 +20,8 @@ export const AssistantsPage: React.FC = () => {
     handleDeleteSession,
   } = useChatSessions();
 
-  // Fetch assistants from API
-  const { data: assistants, isLoading } = trpc.assistant.list.useQuery();
+  // Fetch assistants from shared hook
+  const { assistants, isLoading } = useAssistants();
 
   // Start chat with assistant - creates session with assistantId and navigates
   const handleStartChat = (assistantId: string) => {
@@ -116,14 +93,6 @@ const LoadingState = () => (
   </div>
 );
 
-interface Assistant {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  isBuiltIn: boolean;
-}
-
 interface BuiltInAssistantsProps {
   assistants: Assistant[];
   onStartChat: (id: string) => void;
@@ -152,7 +121,7 @@ interface AssistantCardProps {
 }
 
 const AssistantCard = ({ assistant, onStartChat }: AssistantCardProps) => {
-  const Icon = iconMap[assistant.icon] || Sparkles;
+  const Icon = ICON_MAP[assistant.icon] ?? Sparkles;
 
   return (
     <div

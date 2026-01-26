@@ -3,13 +3,13 @@ import { useParams, useNavigate } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { Badge } from '@/components/ui/Badge';
 import { Message } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
 import { truncateText } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
-import { trpc } from '@/lib/trpc';
+import { Assistant, useAssistant } from '@/hooks/useAssistants';
+import { ICON_MAP } from '@/constants/icons';
 import { Bot } from 'lucide-react';
 import { APP_CONFIG } from '@/constants';
 
@@ -43,10 +43,7 @@ export const ChatPage: React.FC = () => {
   const assistantId = currentSession?.assistantId;
 
   // Fetch assistant details if this chat has an assistant
-  const { data: assistant } = trpc.assistant.get.useQuery(
-    { id: assistantId! },
-    { enabled: !!assistantId }
-  );
+  const { assistant } = useAssistant(assistantId);
 
   // Handle new chat - navigate to new chat URL
   const handleNewChatWithNavigation = () => {
@@ -140,10 +137,7 @@ export const ChatPage: React.FC = () => {
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Chat nicht gefunden</p>
-          <button
-            onClick={() => navigate({ to: '/' })}
-            className="text-orange-600 hover:underline"
-          >
+          <button onClick={() => navigate({ to: '/' })} className="text-orange-600 hover:underline">
             Zurück zur Startseite
           </button>
         </div>
@@ -165,17 +159,7 @@ export const ChatPage: React.FC = () => {
         <Header />
 
         {/* Assistant indicator - only show if chat has an assistant */}
-        {assistant && (
-          <div className="bg-orange-50 border-b border-orange-200 px-4 py-2">
-            <div className="max-w-4xl mx-auto flex items-center gap-2">
-              <Bot className="w-4 h-4 text-orange-600" />
-              <span className="text-sm font-medium text-orange-800">{assistant.name}</span>
-              <Badge variant="neutral" className="!text-[10px]">
-                Assistent
-              </Badge>
-            </div>
-          </div>
-        )}
+        {assistant && <AssistantIndicator assistant={assistant} />}
 
         <ChatInterface
           messages={messages}
@@ -184,6 +168,19 @@ export const ChatPage: React.FC = () => {
           systemPrompt={!assistantId ? APP_CONFIG.SYSTEM_PROMPT : undefined}
           dataSources={!assistantId ? APP_CONFIG.DATA_SOURCES : undefined}
         />
+      </div>
+    </div>
+  );
+};
+
+const AssistantIndicator = ({ assistant }: { assistant: Assistant }) => {
+  const Icon = ICON_MAP[assistant.icon] ?? Bot;
+
+  return (
+    <div className="bg-orange-50 border-b border-orange-200 px-4 py-2">
+      <div className="max-w-4xl mx-auto flex items-center gap-2">
+        <Icon className="w-4 h-4 text-orange-600" />
+        <span className="text-sm font-medium text-orange-800">{assistant.name}</span>
       </div>
     </div>
   );

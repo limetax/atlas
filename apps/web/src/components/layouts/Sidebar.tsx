@@ -103,9 +103,7 @@ const Navigation = () => {
               <Icon className="w-4 h-4" />
               <span className="flex-1">{item.label}</span>
               {item.badge && (
-                <span className="text-xs text-gray-400 font-normal">
-                  {item.badge}
-                </span>
+                <span className="text-xs text-gray-400 font-normal">{item.badge}</span>
               )}
             </Link>
           );
