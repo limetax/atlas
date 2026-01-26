@@ -159,6 +159,7 @@ const InputArea = ({
               className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl outline-none transition-all duration-150 resize-none focus:border-orange-400 focus:ring-4 focus:ring-orange-400/10 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 lineHeight: '1.5',
+                transition: 'height 0.3s ease-out',
               }}
             />
             <div className="absolute bottom-2 right-2 text-xs text-gray-400 pointer-events-none">

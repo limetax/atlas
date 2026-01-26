@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { MessageSquare, Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Badge } from '@/components/ui/Badge';
