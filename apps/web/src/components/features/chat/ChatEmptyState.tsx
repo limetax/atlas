@@ -1,0 +1,19 @@
+/**
+ * ChatEmptyState Component
+ * Minimal welcoming empty state for new chats
+ */
+
+import React from 'react';
+
+export const ChatEmptyState: React.FC = () => {
+  return (
+    <div className="flex-1 flex items-center justify-center px-4">
+      <div className="text-center max-w-2xl">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Willkommen bei limetaxIQ</h1>
+        <p className="text-lg text-gray-600">
+          Ihr KI-Assistent für steuerrechtliche Fragen und Kanzleiunterstützung
+        </p>
+      </div>
+    </div>
+  );
+};

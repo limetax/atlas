@@ -4,7 +4,7 @@ import { Message } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '@/components/ui/Button';
 import { Send, Loader2 } from 'lucide-react';
-import { TemplateEmptyState } from '../templates/TemplateEmptyState';
+import { ChatEmptyState } from './ChatEmptyState';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -12,16 +12,26 @@ interface ChatInterfaceProps {
   isLoading?: boolean;
   systemPrompt?: string;
   dataSources?: readonly string[];
+  initialContent?: string;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   messages,
   onSendMessage,
   isLoading = false,
+  initialContent,
 }) => {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Update input when initialContent changes (template insertion from navigation)
+  useEffect(() => {
+    if (initialContent) {
+      setInputValue(initialContent);
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [initialContent]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,22 +60,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const handleInsertTemplate = (content: string) => {
-    setInputValue(content);
-    // Focus on input after template insertion
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  };
-
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white overflow-hidden">
-      <MessagesArea
-        messages={messages}
-        isLoading={isLoading}
-        messagesEndRef={messagesEndRef}
-        onInsertTemplate={handleInsertTemplate}
-      />
+      <MessagesArea messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
 
       <InputArea
         inputValue={inputValue}
@@ -83,18 +80,12 @@ interface MessagesAreaProps {
   messages: Message[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  onInsertTemplate: (content: string) => void;
 }
 
-const MessagesArea = ({
-  messages,
-  isLoading,
-  messagesEndRef,
-  onInsertTemplate,
-}: MessagesAreaProps) => {
-  // Show template empty state when no messages
+const MessagesArea = ({ messages, isLoading, messagesEndRef }: MessagesAreaProps) => {
+  // Show minimal empty state when no messages
   if (messages.length === 0) {
-    return <TemplateEmptyState onInsertTemplate={onInsertTemplate} />;
+    return <ChatEmptyState />;
   }
 
   return (
