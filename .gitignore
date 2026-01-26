@@ -48,3 +48,6 @@ supabase-project/volumes/
 # TypeScript
 *.tsbuildinfo
 tsconfig.tsbuildinfo
+
+# nestjs-trpc generated files
+apps/api/src/@generated/

@@ -26,6 +26,7 @@
     "react-textarea-autosize": "^8.5.9"
   },
   "devDependencies": {
+    "@atlas/api": "workspace:*",
     "@atlas/eslint-config": "workspace:*",
     "@supabase/supabase-js": "^2.47.0",
     "@types/node": "^24.10.1",
