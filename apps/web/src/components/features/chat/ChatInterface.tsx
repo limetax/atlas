@@ -4,6 +4,7 @@ import { Message } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '@/components/ui/Button';
 import { Send, Loader2 } from 'lucide-react';
+import { TemplateEmptyState } from '../templates/TemplateEmptyState';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -49,9 +50,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const handleInsertTemplate = (content: string) => {
+    setInputValue(content);
+    // Focus on input after template insertion
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  };
+
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white overflow-hidden">
-      <MessagesArea messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
+      <MessagesArea
+        messages={messages}
+        isLoading={isLoading}
+        messagesEndRef={messagesEndRef}
+        onInsertTemplate={handleInsertTemplate}
+      />
 
       <InputArea
         inputValue={inputValue}
@@ -69,9 +83,20 @@ interface MessagesAreaProps {
   messages: Message[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  onInsertTemplate: (content: string) => void;
 }
 
-const MessagesArea = ({ messages, isLoading, messagesEndRef }: MessagesAreaProps) => {
+const MessagesArea = ({
+  messages,
+  isLoading,
+  messagesEndRef,
+  onInsertTemplate,
+}: MessagesAreaProps) => {
+  // Show template empty state when no messages
+  if (messages.length === 0) {
+    return <TemplateEmptyState onInsertTemplate={onInsertTemplate} />;
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -134,6 +159,7 @@ const InputArea = ({
               className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl outline-none transition-all duration-150 resize-none focus:border-orange-400 focus:ring-4 focus:ring-orange-400/10 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 lineHeight: '1.5',
+                transition: 'height 0.3s ease-out',
               }}
             />
             <div className="absolute bottom-2 right-2 text-xs text-gray-400 pointer-events-none">

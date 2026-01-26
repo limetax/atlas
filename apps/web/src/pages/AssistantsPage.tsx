@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { MessageSquare, Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Badge } from '@/components/ui/Badge';
@@ -139,11 +139,7 @@ const AssistantCard = ({ assistant, onStartChat }: AssistantCardProps) => {
         )}
       </div>
       <h3 className="font-semibold text-gray-900 mb-2">{assistant.name}</h3>
-      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{assistant.description}</p>
-      <Button variant="secondary" className="w-full !py-2 pointer-events-none">
-        <MessageSquare className="w-4 h-4 mr-2" />
-        Chat starten
-      </Button>
+      <p className="text-sm text-gray-600 line-clamp-2">{assistant.description}</p>
     </div>
   );
 };

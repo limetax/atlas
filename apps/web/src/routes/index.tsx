@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { HomePage } from '@/pages/HomePage';
+import { ChatPage } from '@/pages/ChatPage';
 import { STORAGE_KEYS, ROUTES } from '@/constants';
 import { isTokenExpired } from '@/utils/validators';
 
@@ -20,5 +20,5 @@ export const Route = createFileRoute('/')({
 
     // Token exists and is not expired - allow access
   },
-  component: HomePage,
+  component: ChatPage,
 });

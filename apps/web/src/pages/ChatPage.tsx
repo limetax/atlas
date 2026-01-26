@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
@@ -14,7 +14,9 @@ import { Bot } from 'lucide-react';
 import { APP_CONFIG } from '@/constants';
 
 export const ChatPage: React.FC = () => {
-  const { chatId } = useParams({ from: '/chat/$chatId' });
+  // chatId can be undefined when on "/" route
+  const params = useParams({ strict: false });
+  const chatId = (params as { chatId?: string }).chatId;
   const navigate = useNavigate();
 
   const {
@@ -31,12 +33,20 @@ export const ChatPage: React.FC = () => {
   } = useChatSessions();
 
   const [isLoading, setIsLoading] = useState(false);
+  const hasCreatedInitialSession = useRef(false);
 
-  // Set current session based on URL param
+  // Set current session based on URL param or create first session
   useEffect(() => {
     if (chatId && chatId !== currentSessionId) {
+      // Route has chatId - switch to that session
       setCurrentSessionById(chatId);
+    } else if (!chatId && !currentSessionId && !hasCreatedInitialSession.current) {
+      // On home route without session - create first session
+      hasCreatedInitialSession.current = true;
+      handleNewChat();
     }
+    // handleNewChat intentionally omitted to prevent re-render loop (stable via ref)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, currentSessionId, setCurrentSessionById]);
 
   // Get assistantId from current session
