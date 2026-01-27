@@ -1,21 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ILlmProvider, LlmMessage } from '@llm/domain/llm-provider.interface';
 import { ChatContext } from '@atlas/shared';
+import { ToolOrchestrationService } from './tool-orchestration.service';
 
 /**
  * LLM Service - Application layer for language model operations
  * Contains business logic for LLM interactions
  * Depends on ILlmProvider interface, not concrete implementations
  * No try-catch - errors bubble up to calling layer
+ *
+ * Delegates to ToolOrchestrationService for tool-enabled requests
  */
 @Injectable()
 export class LlmService {
   private readonly logger = new Logger(LlmService.name);
 
-  constructor(private readonly llmProvider: ILlmProvider) {}
+  constructor(
+    private readonly llmProvider: ILlmProvider,
+    private readonly toolOrchestration: ToolOrchestrationService
+  ) {}
 
   /**
    * Stream a chat completion with optional context for tool selection
+   * Delegates to ToolOrchestrationService for tool-enabled requests
+   *
    * @param messages - Array of messages in the conversation
    * @param systemPrompt - System prompt to guide the model
    * @param context - Optional chat context for tool access (e.g., research sources)
@@ -36,11 +44,14 @@ export class LlmService {
         : undefined,
     });
 
-    yield* this.llmProvider.streamMessage(messages, systemPrompt, context);
+    // Delegate to orchestration service which handles both tool-enabled and simple requests
+    yield* this.toolOrchestration.streamCompletionWithTools(messages, systemPrompt, context);
   }
 
   /**
    * Get a single completion with optional context for tool selection
+   * Delegates to ToolOrchestrationService for tool-enabled requests
+   *
    * @param messages - Array of messages in the conversation
    * @param systemPrompt - System prompt to guide the model
    * @param context - Optional chat context for tool access (e.g., research sources)
@@ -61,6 +72,7 @@ export class LlmService {
         : undefined,
     });
 
-    return await this.llmProvider.getMessage(messages, systemPrompt, context);
+    // Delegate to orchestration service which handles both tool-enabled and simple requests
+    return await this.toolOrchestration.getCompletionWithTools(messages, systemPrompt, context);
   }
 }
