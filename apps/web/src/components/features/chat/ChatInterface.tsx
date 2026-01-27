@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
-import { Message } from '@atlas/shared';
+import { Message, ChatContext } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '@/components/ui/Button';
 import { Send, Loader2 } from 'lucide-react';
 import { ChatEmptyState } from './ChatEmptyState';
+import { ContextToggles } from './context/ContextToggles';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -13,6 +14,8 @@ interface ChatInterfaceProps {
   systemPrompt?: string;
   dataSources?: readonly string[];
   initialContent?: string;
+  context: ChatContext;
+  onContextChange: (context: ChatContext) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -20,6 +23,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSendMessage,
   isLoading = false,
   initialContent,
+  context,
+  onContextChange,
 }) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -71,6 +76,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         isLoading={isLoading}
         onSubmit={handleSubmit}
         onKeyDown={handleKeyDown}
+        context={context}
+        onContextChange={onContextChange}
       />
     </div>
   );
@@ -123,6 +130,8 @@ interface InputAreaProps {
   isLoading: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  context: ChatContext;
+  onContextChange: (context: ChatContext) => void;
 }
 
 const InputArea = ({
@@ -132,6 +141,8 @@ const InputArea = ({
   isLoading,
   onSubmit,
   onKeyDown,
+  context,
+  onContextChange,
 }: InputAreaProps) => {
   return (
     <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
@@ -172,6 +183,12 @@ const InputArea = ({
             )}
           </Button>
         </div>
+
+        {/* Context toggles */}
+        <div className="mt-2">
+          <ContextToggles context={context} onContextChange={onContextChange} />
+        </div>
+
         <p className="text-xs text-gray-400 mt-2 text-center">
           limetaxIQ kann Fehler machen. Überprüfen Sie wichtige Informationen.
         </p>

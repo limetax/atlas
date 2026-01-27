@@ -1,4 +1,4 @@
-import { Message, ChatStreamChunk } from '@atlas/shared';
+import { Message, ChatStreamChunk, ChatContext } from '@atlas/shared';
 import { env } from '@/config/env';
 import { STORAGE_KEYS, API_ENDPOINTS } from '@/constants';
 
@@ -6,12 +6,14 @@ import { STORAGE_KEYS, API_ENDPOINTS } from '@/constants';
  * Chat API client using Server-Sent Events (SSE)
  * More reliable than tRPC subscriptions for streaming
  * Supports optional assistantId for pre-configured assistant prompts
+ * Supports optional context for MCP tool selection
  */
 
 export async function* streamChatMessage(
   message: string,
   history: Message[],
-  assistantId?: string
+  assistantId?: string,
+  context?: ChatContext
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
@@ -21,7 +23,7 @@ export async function* streamChatMessage(
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ message, history, assistantId }),
+    body: JSON.stringify({ message, history, assistantId, context }),
   });
 
   if (!response.ok) {

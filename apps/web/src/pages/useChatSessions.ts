@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { ChatSession, Message } from '@atlas/shared';
+import { ChatSession, Message, ChatContext } from '@atlas/shared';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants';
 
@@ -20,6 +20,7 @@ export interface UseChatSessionsReturn {
   handleDeleteSession: (sessionId: string) => void;
   updateCurrentSessionMessages: (messages: Message[]) => void;
   updateSessionTitle: (sessionId: string, title: string) => void;
+  updateSessionContext: (sessionId: string, context: ChatContext) => void;
   getSessionById: (sessionId: string) => ChatSession | undefined;
   setCurrentSessionById: (sessionId: string) => void;
 }
@@ -159,6 +160,24 @@ export function useChatSessions(): UseChatSessionsReturn {
     [sessions, setSessions]
   );
 
+  const updateSessionContext = useCallback(
+    (sessionId: string, context: ChatContext) => {
+      setSessions(
+        sessions.map((session) => {
+          if (session.id === sessionId) {
+            return {
+              ...session,
+              context,
+              updatedAt: new Date(),
+            };
+          }
+          return session;
+        })
+      );
+    },
+    [sessions, setSessions]
+  );
+
   return {
     sessions,
     currentSessionId,
@@ -170,6 +189,7 @@ export function useChatSessions(): UseChatSessionsReturn {
     handleDeleteSession,
     updateCurrentSessionMessages,
     updateSessionTitle,
+    updateSessionContext,
     getSessionById,
     setCurrentSessionById,
   };

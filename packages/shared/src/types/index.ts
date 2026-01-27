@@ -14,6 +14,17 @@ export interface Citation {
   content?: string;
 }
 
+// Context types for chat
+export type ResearchSource = 'handelsregister' | 'german_law' | 'law_publishers';
+export type IntegrationType = 'datev';
+export type MandantId = string;
+
+export interface ChatContext {
+  research?: ResearchSource[];
+  integration?: IntegrationType;
+  mandant?: MandantId;
+}
+
 // Chat types
 export interface ChatSession {
   id: string;
@@ -22,6 +33,7 @@ export interface ChatSession {
   createdAt: Date;
   updatedAt: Date;
   assistantId?: string; // Optional: links chat to a specific assistant
+  context?: ChatContext; // Context selections for this session (for future Langdock integration)
 }
 
 // RAG types
@@ -38,6 +50,8 @@ export interface ChatRequest {
   message: string;
   history: Message[];
   sessionId?: string;
+  context?: ChatContext;
+  assistantId?: string;
 }
 
 export interface ChatStreamChunk {
