@@ -35,16 +35,16 @@ export class ChatService {
   async *processMessage(
     userMessage: string,
     history: Message[],
-    customSystemPrompt?: string
-    // TODO: chatContext?: ChatContext add after integrating Langdock
+    customSystemPrompt?: string,
+    chatContext?: ChatContext
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     // 1. Search for relevant context using RAG
     const { context: ragContext, citations } = await this.rag.searchContext(userMessage);
 
     // 2. Build system prompt with context
     const systemPrompt = customSystemPrompt
-      ? this.buildAssistantPrompt(customSystemPrompt, ragContext)
-      : this.buildSystemPrompt(ragContext);
+      ? this.buildAssistantPrompt(customSystemPrompt, ragContext, chatContext)
+      : this.buildSystemPrompt(ragContext, chatContext);
 
     // 3. Convert message history to LLM format (type-safe, no assertions)
     const llmMessages: LlmMessage[] = [
@@ -57,8 +57,8 @@ export class ChatService {
       yield { type: 'citations', citations };
     }
 
-    // 5. Stream response from LLM
-    for await (const chunk of this.llm.streamCompletion(llmMessages, systemPrompt)) {
+    // 5. Stream response from LLM with context for tool access
+    for await (const chunk of this.llm.streamCompletion(llmMessages, systemPrompt, chatContext)) {
       yield { type: 'text', content: chunk };
     }
 
@@ -93,13 +93,22 @@ export class ChatService {
     let prompt = assistantPrompt;
 
     // Add context-specific instructions
-    // Note: Handelsregister integration pending (via Langdock)
     if (chatContext?.integration === 'datev') {
       prompt += `
 
 DATEV-INTEGRATION:
 - DATEV-Buchhaltungsdaten sind verfügbar
 - Berücksichtige DATEV-spezifische Workflows`;
+    }
+
+    if (chatContext?.research?.includes('handelsregister')) {
+      prompt += `
+
+HANDELSREGISTER-ZUGRIFF:
+- Du hast direkten Zugriff auf das deutsche Handelsregister via OpenRegister
+- Nutze die verfügbaren Tools um Firmendaten abzurufen
+- Verwende "find_companies_v1_search" für Unternehmenssuche
+- Präsentiere die Daten strukturiert und lesefreundlich`;
     }
 
     if (chatContext?.mandant) {
@@ -137,7 +146,6 @@ Deine Aufgaben:
 - Erkläre komplexe Sachverhalte verständlich für Steuerberater`;
 
     // Add context-specific instructions
-    // Note: Handelsregister integration pending (via Langdock)
 
     if (chatContext?.integration === 'datev') {
       basePrompt += `
@@ -145,6 +153,28 @@ Deine Aufgaben:
 DATEV-INTEGRATION:
 - DATEV-Buchhaltungsdaten sind verfügbar
 - Berücksichtige DATEV-spezifische Workflows`;
+    }
+
+    if (chatContext?.research?.includes('handelsregister')) {
+      basePrompt += `
+
+HANDELSREGISTER-ZUGRIFF:
+- Du hast direkten Zugriff auf das deutsche Handelsregister via OpenRegister
+- Nutze die verfügbaren Tools um Firmendaten, Gesellschafter und Finanzdaten abzurufen
+- Die Tools liefern aktuelle, offizielle Handelsregisterdaten
+
+TOOL-AUSWAHL:
+- Verwende "find_companies_v1_search" für die Suche nach Unternehmen (exakte Treffer)
+- Verwende "autocomplete_companies_v1_search" nur für Vorschläge/Auto-Vervollständigung
+- Verwende "get_details_v1_company" um vollständige Details zu einer gefundenen Firma zu erhalten
+- Verwende "get_owners_v1_company" für Gesellschafter-Informationen
+- Verwende "get_financials_v1_company" für Finanzdaten
+
+WICHTIG - Antwortformat:
+- Interpretiere die Handelsregisterdaten und präsentiere sie in klarer, strukturierter Form
+- Gib NICHT die rohen JSON-Daten aus
+- Formatiere Informationen lesefreundlich mit Überschriften und Listen
+- Erkläre die Bedeutung der Daten im steuerrechtlichen Kontext wenn relevant`;
     }
 
     if (chatContext?.mandant) {
@@ -186,13 +216,17 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
   /**
    * Get a non-streaming response (useful for testing)
    */
-  async getResponse(userMessage: string, history: Message[]): Promise<string> {
+  async getResponse(
+    userMessage: string,
+    history: Message[],
+    chatContext?: ChatContext
+  ): Promise<string> {
     const { context: ragContext } = await this.rag.searchContext(userMessage);
-    const systemPrompt = this.buildSystemPrompt(ragContext, undefined);
+    const systemPrompt = this.buildSystemPrompt(ragContext, chatContext);
 
     const llmMessages: LlmMessage[] = this.filterUserAssistantMessages(history);
     llmMessages.push({ role: 'user', content: userMessage });
 
-    return await this.llm.getCompletion(llmMessages, systemPrompt);
+    return await this.llm.getCompletion(llmMessages, systemPrompt, chatContext);
   }
 }

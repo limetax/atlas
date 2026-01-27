@@ -34,8 +34,6 @@ export class ChatController {
   ): Promise<void> {
     const { message, history, assistantId, context } = body;
 
-    void context; // TODO: Handle context after integrating Langdock
-
     // Lookup assistant system prompt if assistantId provided
     let customSystemPrompt: string | undefined;
     if (assistantId) {
@@ -56,7 +54,8 @@ export class ChatController {
     for await (const chunk of this.chatService.processMessage(
       message,
       history ?? [],
-      customSystemPrompt
+      customSystemPrompt,
+      context
     )) {
       const data = JSON.stringify(chunk);
       res.write(`data: ${data}\n\n`);

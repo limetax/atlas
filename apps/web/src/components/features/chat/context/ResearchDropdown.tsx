@@ -16,7 +16,7 @@ interface ResearchDropdownProps {
 }
 
 const RESEARCH_OPTIONS: ResearchOption[] = [
-  { id: 'handelsregister', label: 'Handelsregister', icon: Building2, disabled: true },
+  { id: 'handelsregister', label: 'Handelsregister', icon: Building2, disabled: false },
   { id: 'german_law', label: 'Deutsches Recht', icon: Scale, disabled: true },
   { id: 'law_publishers', label: 'Rechtsverlage', icon: BookOpen, disabled: true },
 ];
