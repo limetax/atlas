@@ -3,11 +3,14 @@ import { Response } from 'express';
 import { ChatService } from '@chat/application/chat.service';
 import { AssistantService } from '@/assistant/assistant.service';
 import { Message } from '@chat/domain/message.entity';
+import { ChatContext } from '@atlas/shared';
 
 /**
  * Chat Controller - HTTP endpoint for streaming chat
  * Uses Server-Sent Events (SSE) for streaming
  * Supports optional assistantId to use pre-configured assistant prompts
+ * Supports optional context for MCP tool selection
+ * No try-catch - errors bubble up to NestJS exception filter
  */
 @Controller('chat')
 export class ChatController {
@@ -20,10 +23,18 @@ export class ChatController {
 
   @Post('stream')
   async streamChat(
-    @Body() body: { message: string; history: Message[]; assistantId?: string },
+    @Body()
+    body: {
+      message: string;
+      history: Message[];
+      assistantId?: string;
+      context?: ChatContext;
+    },
     @Res() res: Response
-  ) {
-    const { message, history, assistantId } = body;
+  ): Promise<void> {
+    const { message, history, assistantId, context } = body;
+
+    void context; // TODO: Handle context after integrating Langdock
 
     // Lookup assistant system prompt if assistantId provided
     let customSystemPrompt: string | undefined;
@@ -41,28 +52,18 @@ export class ChatController {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    try {
-      // Stream response (pass customSystemPrompt if assistant selected)
-      for await (const chunk of this.chatService.processMessage(
-        message,
-        history || [],
-        customSystemPrompt
-      )) {
-        const data = JSON.stringify(chunk);
-        res.write(`data: ${data}\n\n`);
-      }
-
-      // Send done signal
-      res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-      res.end();
-    } catch (error) {
-      this.logger.error('Streaming error:', error);
-      const errorData = JSON.stringify({
-        type: 'error',
-        error: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
-      });
-      res.write(`data: ${errorData}\n\n`);
-      res.end();
+    // Stream response - errors bubble up to NestJS exception filter
+    for await (const chunk of this.chatService.processMessage(
+      message,
+      history ?? [],
+      customSystemPrompt
+    )) {
+      const data = JSON.stringify(chunk);
+      res.write(`data: ${data}\n\n`);
     }
+
+    // Send done signal
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    res.end();
   }
 }

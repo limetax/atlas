@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { Message } from '@atlas/shared';
+import { Message, ChatContext } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
 import { truncateText } from '@/utils/formatters';
@@ -41,10 +41,21 @@ export const ChatPage: React.FC = () => {
     updateCurrentSessionMessages,
     updateSessionTitle,
     setCurrentSessionById,
+    updateSessionContext,
   } = useChatSessions();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [chatContext, setChatContext] = useState<ChatContext>(() => currentSession?.context ?? {});
   const hasCreatedInitialSession = useRef(false);
+
+  // Update local context when session changes
+  useEffect(() => {
+    if (currentSession?.context) {
+      setChatContext(currentSession.context);
+    } else {
+      setChatContext({});
+    }
+  }, [currentSession]);
 
   // Set current session based on URL param or create first session
   useEffect(() => {
@@ -78,6 +89,14 @@ export const ChatPage: React.FC = () => {
     navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
   };
 
+  // Handle context changes from ChatInterface
+  const handleContextChange = (newContext: ChatContext) => {
+    setChatContext(newContext);
+    if (currentSessionId) {
+      updateSessionContext(currentSessionId, newContext);
+    }
+  };
+
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
@@ -103,8 +122,8 @@ export const ChatPage: React.FC = () => {
       let assistantContent = '';
       let citations: Message['citations'] = [];
 
-      // Pass assistantId to streaming API if present
-      for await (const chunk of streamChatMessage(content, messages, assistantId)) {
+      // Pass assistantId and context to streaming API
+      for await (const chunk of streamChatMessage(content, messages, assistantId, chatContext)) {
         if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
@@ -189,6 +208,8 @@ export const ChatPage: React.FC = () => {
           systemPrompt={!assistantId ? APP_CONFIG.SYSTEM_PROMPT : undefined}
           dataSources={!assistantId ? APP_CONFIG.DATA_SOURCES : undefined}
           initialContent={templateContent}
+          context={chatContext}
+          onContextChange={handleContextChange}
         />
       </div>
     </div>

@@ -1,9 +1,17 @@
 /**
+ * Domain interfaces for LLM operations
+ */
+export interface LlmMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
  * LLM Provider - Domain contract for language model providers
  *
  * Abstract class (not interface) so it can be used as injection token
  * This defines what we expect from any LLM provider,
- * regardless of the underlying implementation (Anthropic, OpenAI, etc.)
+ * regardless of the underlying implementation (Anthropic, OpenAI, Langdock, etc.)
  */
 export abstract class ILlmProvider {
   /**
@@ -13,7 +21,7 @@ export abstract class ILlmProvider {
    * @returns AsyncGenerator yielding text chunks
    */
   abstract streamMessage(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    messages: LlmMessage[],
     systemPrompt: string
   ): AsyncGenerator<string, void, unknown>;
 
@@ -23,8 +31,5 @@ export abstract class ILlmProvider {
    * @param systemPrompt - System prompt to guide the model
    * @returns Complete response text
    */
-  abstract getMessage(
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    systemPrompt: string
-  ): Promise<string>;
+  abstract getMessage(messages: LlmMessage[], systemPrompt: string): Promise<string>;
 }
