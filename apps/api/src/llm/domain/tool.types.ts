@@ -1,18 +1,15 @@
 /**
- * Domain models for tool-based LLM interactions
- * Provider-agnostic types that work with any LLM or tool provider
+ * Domain types for tool execution
+ * MCP-specific types for our tool provider adapter
  */
 
 /**
- * Represents an available tool that can be called by an LLM
+ * Simple tool definition (compatible with LangChain/Anthropic format)
  */
-export interface Tool {
-  /** Unique identifier for the tool */
+export interface ToolDefinition {
   name: string;
-  /** Human-readable description of what the tool does */
   description: string;
-  /** JSON schema describing the tool's input parameters */
-  inputSchema: {
+  input_schema: {
     type: 'object';
     properties: Record<string, unknown>;
     required?: string[];
@@ -20,29 +17,23 @@ export interface Tool {
 }
 
 /**
- * Represents a request from an LLM to execute a tool
+ * Tool call request
  */
 export interface ToolCall {
-  /** Unique identifier for this tool call (for matching with results) */
   id: string;
-  /** Name of the tool to execute */
   name: string;
-  /** Arguments to pass to the tool (must match the tool's input schema) */
   input: unknown;
 }
 
 /**
- * Represents the result of executing a tool
+ * Tool execution result
  */
 export interface ToolResult {
-  /** ID of the tool call this result corresponds to */
   toolCallId: string;
-  /** Content returned by the tool */
   content: Array<{
     type: 'text';
     text: string;
   }>;
-  /** Whether the tool execution resulted in an error */
   isError: boolean;
 }
 

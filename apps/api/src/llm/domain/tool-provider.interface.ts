@@ -1,4 +1,4 @@
-import { Tool, ToolCall, ToolResult } from './tool.types';
+import { ToolDefinition, ToolCall, ToolResult } from './tool.types';
 
 /**
  * Tool Provider - Domain contract for tool providers
@@ -19,7 +19,7 @@ export abstract class IToolProvider {
    * @returns Promise resolving to array of available tools
    * @throws ToolError if tools cannot be fetched
    */
-  abstract getTools(): Promise<Tool[]>;
+  abstract getTools(): Promise<ToolDefinition[]>;
 
   /**
    * Execute a tool call

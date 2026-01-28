@@ -97,36 +97,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           </div>
         </div>
 
-        {message.citations && message.citations.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs text-gray-500 font-medium">Quellen:</span>
-            {message.citations.map((citation) => {
-              const url = getLawBookUrl(citation.source);
-              return url ? (
-                <a
-                  key={citation.id}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1"
-                >
-                  <Badge
-                    variant="info"
-                    className="cursor-pointer hover:bg-blue-200 transition-colors"
-                  >
-                    📚 {citation.source}
-                    <ExternalLink className="w-3 h-3" />
-                  </Badge>
-                </a>
-              ) : (
-                <Badge key={citation.id} variant="info">
-                  📚 {citation.source}
-                </Badge>
-              );
-            })}
-          </div>
-        )}
-
         <span className="text-xs text-gray-400">
           {message.timestamp
             ? new Date(message.timestamp).toLocaleTimeString('de-DE', {

@@ -1,0 +1,22 @@
+---
+description: AI behavior guidelines - prevent proactive actions
+alwaysApply: true
+---
+
+# AI Behavior Guidelines
+
+## Documentation Files
+
+**Do not create markdown files** (.md, .mdc) unless the user explicitly requests it.
+
+- ❌ Don't proactively create documentation files
+- ❌ Don't create README.md, CHANGELOG.md, or summary files
+- ✅ Only create .md files when explicitly asked
+
+## Linear Integration
+
+**Do not update Linear issues** unless the user explicitly requests it.
+
+- ❌ Don't proactively update Linear issues
+- ❌ Don't auto-update issue status or descriptions
+- ✅ Only interact with Linear when explicitly asked

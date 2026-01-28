@@ -1,24 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ILlmProvider, LlmMessage } from '@llm/domain/llm-provider.interface';
+import { LlmMessage } from '@llm/domain/llm-provider.interface';
 import { ChatContext } from '@atlas/shared';
 import { ToolOrchestrationService } from './tool-orchestration.service';
 
 /**
  * LLM Service - Application layer for language model operations
  * Contains business logic for LLM interactions
- * Depends on ILlmProvider interface, not concrete implementations
  * No try-catch - errors bubble up to calling layer
  *
- * Delegates to ToolOrchestrationService for tool-enabled requests
+ * Delegates to ToolOrchestrationService for all requests
  */
 @Injectable()
 export class LlmService {
   private readonly logger = new Logger(LlmService.name);
 
-  constructor(
-    private readonly llmProvider: ILlmProvider,
-    private readonly toolOrchestration: ToolOrchestrationService
-  ) {}
+  constructor(private readonly toolOrchestration: ToolOrchestrationService) {}
 
   /**
    * Stream a chat completion with optional context for tool selection

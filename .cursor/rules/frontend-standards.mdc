@@ -1,0 +1,123 @@
+---
+description: Frontend coding standards - Atomic Design, React, Vite, Tailwind best practices
+globs: apps/web/**/*.ts,apps/web/**/*.tsx
+alwaysApply: false
+---
+
+# Frontend Coding Standards
+
+## Clean and Simple Atomic Design
+
+Organize components by complexity and reusability:
+
+- **ui/**: Basic reusable UI elements (Button, Input, Badge, Avatar)
+- **features/**: Feature-specific components organized by domain (auth, chat, compliance, templates)
+- **layouts/**: Layout components (Header, Sidebar)
+- **pages/**: Route-level page components
+
+```tsx
+// ✅ GOOD - Clear component hierarchy
+// components/ui/Button.tsx
+export const Button = ({ children, ...props }: ButtonProps) => {
+  return <button {...props}>{children}</button>;
+};
+
+// components/features/auth/LoginForm.tsx
+export const LoginForm = () => {
+  return (
+    <form>
+      <Input /> {/* from ui/ */}
+      <Button>Login</Button> {/* from ui/ */}
+    </form>
+  );
+};
+
+// components/layouts/Header.tsx
+export const Header = () => {
+  return (
+    <header>
+      <UserMenu /> {/* from features/auth/ */}
+    </header>
+  );
+};
+```
+
+## Type Safety
+
+**Never use type assertions** - use type guards instead:
+
+```typescript
+// ❌ BAD
+const user = data as User;
+
+// ✅ GOOD
+function isUser(data: unknown): data is User {
+  return typeof data === 'object' && data !== null && 'id' in data && 'email' in data;
+}
+
+if (isUser(data)) {
+  // data is properly typed as User
+}
+```
+
+## React Best Practices
+
+- Use functional components with hooks
+- Extract custom hooks for reusable logic
+- Keep components focused (single responsibility)
+- Use composition over prop drilling
+- Memoize expensive computations with `useMemo`
+- Optimize re-renders with `React.memo` when needed
+
+## TanStack Query Best Practices
+
+- Use query keys as arrays for better cache management
+- Leverage stale time and cache time appropriately
+- Use mutations for data modifications
+- Handle loading and error states consistently
+
+```tsx
+// ✅ GOOD
+const { data, isLoading } = useQuery({
+  queryKey: ['users', userId],
+  queryFn: () => fetchUser(userId),
+});
+```
+
+## Vite Best Practices
+
+- Leverage fast HMR for development
+- Use environment variables with `import.meta.env`
+- Optimize bundle with dynamic imports for code splitting
+- Configure build optimizations in `vite.config.ts`
+
+## Tailwind Best Practices
+
+- Use utility classes for styling
+- Create custom components for repeated patterns
+- Leverage Tailwind's design system (spacing, colors)
+- Use arbitrary values sparingly
+- Configure theme extensions in `tailwind.config.ts`
+
+```tsx
+// ✅ GOOD
+<button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-md">Click me</button>
+```
+
+## Package Usage
+
+- **Always use established packages**: TanStack Query, React Router, Zod
+- **Check documentation** before implementing features
+- **Research libraries** - only use widely adopted, well-maintained packages
+- Follow package-specific best practices (consult official docs)
+
+## Error Handling
+
+Let errors bubble up to error boundaries:
+
+```tsx
+// ✅ GOOD - Use error boundaries
+<ErrorBoundary fallback={<ErrorFallback />}>
+  <YourComponent />
+</ErrorBoundary>
+```
