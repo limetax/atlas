@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IToolProvider } from '@llm/domain/tool-provider.interface';
-import { Tool, ToolCall, ToolResult, ToolError } from '@llm/domain/tool.types';
+import { ToolDefinition, ToolCall, ToolResult, ToolError } from '@llm/domain/tool.types';
 import { OpenRegisterMcpService } from './openregister-mcp.service';
 
 /**
@@ -21,19 +21,19 @@ export class McpToolProviderAdapter implements IToolProvider {
 
   /**
    * Get all available tools from the MCP service
-   * Maps MCP tool format to domain Tool type
+   * Returns tools in LangChain/Anthropic format
    */
-  async getTools(): Promise<Tool[]> {
+  async getTools(): Promise<ToolDefinition[]> {
     const mcpTools = await this.mcpService.getTools();
 
-    // Map MCP tools to domain tools (already compatible format)
-    const tools: Tool[] = mcpTools.map((mcpTool) => ({
+    // Map MCP tools to LangChain format
+    const tools: ToolDefinition[] = mcpTools.map((mcpTool) => ({
       name: mcpTool.name,
       description: mcpTool.description,
-      inputSchema: mcpTool.inputSchema,
+      input_schema: mcpTool.inputSchema,
     }));
 
-    this.logger.debug(`Mapped ${tools.length} MCP tools to domain tools`);
+    this.logger.debug(`Mapped ${tools.length} MCP tools to LangChain format`);
 
     return tools;
   }

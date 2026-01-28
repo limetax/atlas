@@ -1,0 +1,106 @@
+---
+description: Backend coding standards - DDD Architecture, NestJS, tRPC best practices
+globs: apps/api/**/*.ts
+alwaysApply: false
+---
+
+# Backend Coding Standards
+
+## Clean DDD Architecture
+
+Follow strict Domain-Driven Design layering:
+
+- **Domain**: Pure business logic, entities, and interfaces (no external dependencies)
+- **Application**: Use cases and services (orchestration logic)
+- **Infrastructure**: External concerns (database, APIs, adapters)
+
+```typescript
+// ✅ GOOD - Clear separation
+// domain/user.entity.ts
+export class User {
+  constructor(
+    readonly id: string,
+    readonly email: string
+  ) {}
+}
+
+// application/user.service.ts
+export class UserService {
+  constructor(private readonly userRepository: UserRepository) {}
+}
+
+// infrastructure/supabase-user.repository.ts
+export class SupabaseUserRepository implements UserRepository {
+  // Implementation details
+}
+```
+
+## Type Safety
+
+**Never use type assertions** - use type guards instead:
+
+```typescript
+// ❌ BAD
+const user = data as User;
+
+// ✅ GOOD
+function isUser(data: unknown): data is User {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'id' in data &&
+    'email' in data
+  );
+}
+
+if (isUser(data)) {
+  // data is properly typed as User
+}
+```
+
+## Error Handling
+
+**No try-catch blocks** - let errors bubble up naturally:
+
+```typescript
+// ❌ BAD
+try {
+  await this.repository.save(user);
+} catch (error) {
+  // Swallowing errors
+}
+
+// ✅ GOOD
+async createUser(data: CreateUserDto) {
+  // Let errors propagate to global exception handler
+  return await this.repository.save(user);
+}
+```
+
+## NestJS Best Practices
+
+- Use dependency injection for all services
+- Follow module-based architecture
+- Use DTOs for input validation
+- Leverage NestJS decorators appropriately
+- Use providers for shared logic
+
+## tRPC Best Practices
+
+- Define procedures with proper input validation using Zod
+- Keep routers focused and modular
+- Use middleware for cross-cutting concerns
+- Return typed responses
+
+## Package Usage
+
+- **Always use established packages**: TanStack, NestJS, tRPC ecosystem
+- **Check documentation** before implementing features
+- **Research libraries** - only use widely adopted, well-maintained packages
+- Follow package-specific best practices (consult official docs)
+
+## Turborepo Best Practices
+
+- Keep package dependencies explicit in `package.json`
+- Use workspace protocol for internal dependencies
+- Leverage caching for build optimization

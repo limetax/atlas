@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChatContext } from '@atlas/shared';
 import { IToolProvider } from '@llm/domain/tool-provider.interface';
-import { Tool } from '@llm/domain/tool.types';
+import { ToolDefinition } from '@llm/domain/tool.types';
 
 /**
  * Tool Resolution Service - Application layer service for resolving tools based on context
@@ -29,14 +29,14 @@ export class ToolResolutionService {
    * @param context - Optional chat context from user request
    * @returns Promise resolving to array of available tools (empty if no tools needed)
    */
-  async resolveTools(context?: ChatContext): Promise<Tool[]> {
+  async resolveTools(context?: ChatContext): Promise<ToolDefinition[]> {
     // If no context, no tools needed
     if (!context) {
       this.logger.debug('No context provided, returning no tools');
       return [];
     }
 
-    const tools: Tool[] = [];
+    const tools: ToolDefinition[] = [];
 
     // Business rule: Handelsregister research requires OpenRegister MCP tools
     if (context.research?.includes('handelsregister')) {
