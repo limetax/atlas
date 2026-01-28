@@ -1,10 +1,11 @@
 /**
  * Domain types for tool execution
- * MCP-specific types for our tool provider adapter
+ * Minimal type definitions compatible with LangChain/Anthropic
  */
 
 /**
- * Simple tool definition (compatible with LangChain/Anthropic format)
+ * Tool definition - Compatible with Anthropic.Tool and ChatAnthropic.bindTools()
+ * This is the exact format expected by LangChain's Anthropic integration
  */
 export interface ToolDefinition {
   name: string;
