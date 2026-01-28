@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ComplianceBadge } from '@/components/features/compliance/ComplianceBadge';
 import { UserMenu } from '@/components/features/auth/UserMenu';
 import { Settings } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Advisor } from '@atlas/shared';
 
@@ -42,7 +42,7 @@ const HeaderActions = ({ user, advisor, isLoading }: HeaderActionsProps) => {
     <div className="flex items-center gap-4">
       <ComplianceBadge />
 
-      <Button variant="ghost" size="sm" className="!p-2">
+      <Button variant="ghost" size="sm" className="p-2">
         <Settings className="w-5 h-5" />
       </Button>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { MessageSquare, Plus, Trash2, Bot, Workflow } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { ChatSession } from '@atlas/shared';
 
 interface SidebarProps {
@@ -42,7 +42,7 @@ interface NewChatButtonProps {
 const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
   return (
     <div className="flex-shrink-0 p-4 border-b border-gray-200">
-      <Button variant="accent" className="w-full" onClick={onNewChat}>
+      <Button variant="default" className="w-full" onClick={onNewChat}>
         <Plus className="w-4 h-4 mr-2" />
         Neuer Chat
       </Button>
@@ -92,10 +92,10 @@ const Navigation = () => {
             <Link
               key={item.to}
               to={item.to}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
                 isActive
-                  ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                  : 'text-gray-700 hover:bg-gray-50'
+                  ? 'bg-orange-50 text-orange-700 border-orange-200'
+                  : 'text-gray-700 border-transparent hover:bg-gray-50'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -193,8 +193,8 @@ const SessionItem = ({ session, isActive, onSelect, onDelete }: SessionItemProps
 
   return (
     <div
-      className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
-        isActive ? 'bg-orange-50 border border-orange-200' : 'hover:bg-gray-50'
+      className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${
+        isActive ? 'bg-orange-50 border-orange-200' : 'border-transparent hover:bg-gray-50'
       }`}
       onClick={onSelect}
     >

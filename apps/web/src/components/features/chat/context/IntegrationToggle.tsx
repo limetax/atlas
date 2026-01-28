@@ -1,21 +1,18 @@
 import React from 'react';
 import { Link } from 'lucide-react';
-import * as Tooltip from '@radix-ui/react-tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface IntegrationToggleProps {
   enabled: boolean;
   onChange: (enabled: boolean) => void;
 }
 
-const cn = (...classes: (string | boolean | undefined)[]) => {
-  return classes.filter(Boolean).join(' ');
-};
-
 export const IntegrationToggle: React.FC<IntegrationToggleProps> = ({ enabled, onChange }) => {
   return (
-    <Tooltip.Provider>
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <button
             onClick={() => onChange(!enabled)}
             className={cn(
@@ -28,17 +25,11 @@ export const IntegrationToggle: React.FC<IntegrationToggleProps> = ({ enabled, o
             <Link className="w-4 h-4" />
             <span>DATEV</span>
           </button>
-        </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content
-            className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg z-50"
-            sideOffset={5}
-          >
-            DATEV-Integration {enabled ? 'deaktivieren' : 'aktivieren'}
-            <Tooltip.Arrow className="fill-gray-900" />
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-    </Tooltip.Provider>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={5}>
+          <p className="text-xs">DATEV-Integration {enabled ? 'deaktivieren' : 'aktivieren'}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };

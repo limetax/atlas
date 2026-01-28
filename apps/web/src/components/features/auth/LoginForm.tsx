@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Input } from '@/components/ui/Input';
+import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
 import { useAuthToken } from '@/hooks/useAuthToken';
 import { ROUTES } from '@/constants';
@@ -120,7 +120,7 @@ const PasswordField = ({ value, onChange, disabled, error }: PasswordFieldProps)
 
 const SubmitButton = ({ isLoading }: { isLoading: boolean }) => {
   return (
-    <Button type="submit" variant="primary" size="lg" className="w-full" disabled={isLoading}>
+    <Button type="submit" size="lg" variant="default" className="w-full" disabled={isLoading}>
       {isLoading ? (
         <>
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -10,7 +10,7 @@ import { TEMPLATES } from '@/data/templates';
 import { TemplateCategory, TEMPLATE_CATEGORIES } from '@/types/template';
 import { TemplateCard } from './TemplateCard';
 import { CategoryChip } from './CategoryChip';
-import { Input } from '@/components/ui/Input';
+import { Input } from '@/components/ui/input';
 
 interface TemplateEmptyStateProps {
   onInsertTemplate: (content: string) => void;

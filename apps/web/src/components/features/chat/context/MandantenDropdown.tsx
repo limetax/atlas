@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Users, ChevronDown, Search } from 'lucide-react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface MandantenDropdownProps {
   selected?: string;
@@ -20,10 +28,6 @@ const MOCK_MANDANTEN: Mandant[] = [
   { id: '3', name: 'Test Einzelunternehmen', number: '11111' },
 ];
 
-const cn = (...classes: (string | boolean | undefined)[]) => {
-  return classes.filter(Boolean).join(' ');
-};
-
 export const MandantenDropdown: React.FC<MandantenDropdownProps> = ({ selected, onChange }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,8 +42,8 @@ export const MandantenDropdown: React.FC<MandantenDropdownProps> = ({ selected, 
   const isDisabled = true;
 
   return (
-    <DropdownMenu.Root open={!isDisabled} onOpenChange={setOpen}>
-      <DropdownMenu.Trigger asChild>
+    <DropdownMenu open={!isDisabled && open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
         <button
           disabled={isDisabled}
           className={cn(
@@ -54,68 +58,57 @@ export const MandantenDropdown: React.FC<MandantenDropdownProps> = ({ selected, 
           <span>{selectedMandant?.name ?? 'Mandant'}</span>
           <ChevronDown className="w-3 h-3" />
         </button>
-      </DropdownMenu.Trigger>
+      </DropdownMenuTrigger>
 
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[250px] z-50"
-          sideOffset={5}
-        >
-          {/* Search input */}
-          <div className="px-2 py-1.5 mb-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Mandant suchen..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded outline-none focus:border-orange-400"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
+      <DropdownMenuContent className="min-w-[250px] p-2" sideOffset={5}>
+        {/* Search input */}
+        <div className="px-2 py-1.5 mb-1">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Mandant suchen..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-sm h-8"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
+        </div>
 
-          <DropdownMenu.Separator className="h-px bg-gray-200 my-1" />
+        <DropdownMenuSeparator />
 
-          {/* Clear selection */}
-          {selected && (
-            <>
-              <DropdownMenu.Item
-                onSelect={() => onChange(undefined)}
-                className="px-3 py-2 rounded cursor-pointer outline-none data-[highlighted]:bg-gray-100"
-              >
-                <span className="text-sm text-gray-600">Kein Mandant</span>
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator className="h-px bg-gray-200 my-1" />
-            </>
-          )}
+        {/* Clear selection */}
+        {selected && (
+          <>
+            <DropdownMenuItem onSelect={() => onChange(undefined)}>
+              <span className="text-sm text-gray-600">Kein Mandant</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
 
-          {/* Mandanten list */}
-          <div className="max-h-[200px] overflow-y-auto">
-            {filteredMandanten.map((mandant) => (
-              <DropdownMenu.Item
-                key={mandant.id}
-                onSelect={() => onChange(mandant.id)}
-                className={cn(
-                  'px-3 py-2 rounded cursor-pointer outline-none data-[highlighted]:bg-gray-100',
-                  selected === mandant.id && 'bg-orange-50'
-                )}
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{mandant.name}</span>
-                  <span className="text-xs text-gray-500">Nr. {mandant.number}</span>
-                </div>
-              </DropdownMenu.Item>
-            ))}
-            {filteredMandanten.length === 0 && (
-              <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                Keine Mandanten gefunden
+        {/* Mandanten list */}
+        <div className="max-h-[200px] overflow-y-auto">
+          {filteredMandanten.map((mandant) => (
+            <DropdownMenuItem
+              key={mandant.id}
+              onSelect={() => onChange(mandant.id)}
+              className={cn(selected === mandant.id && 'bg-orange-50')}
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{mandant.name}</span>
+                <span className="text-xs text-gray-500">Nr. {mandant.number}</span>
               </div>
-            )}
-          </div>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+            </DropdownMenuItem>
+          ))}
+          {filteredMandanten.length === 0 && (
+            <div className="px-3 py-2 text-sm text-gray-500 text-center">
+              Keine Mandanten gefunden
+            </div>
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
