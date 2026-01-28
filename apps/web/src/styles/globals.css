@@ -1,24 +1,73 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
-:root {
-  /* Colors from limetax.de design */
-  --background: #fffafa;
-  --foreground: #2b2b2b;
-  --card: #ffffff;
-  --card-foreground: #2b2b2b;
-  --primary: #f2b76c;
-  --primary-foreground: #2b2b2b;
-  --secondary: #cfe9fc;
-  --secondary-foreground: #2b2b2b;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --accent: #f2b76c;
-  --accent-foreground: #2b2b2b;
-  --border: #e5e7eb;
-  --input: #d1d5db;
-  --ring: #f2b76c;
-  --radius: 0.75rem;
+@layer base {
+  :root {
+    /* Shadcn base colors - following design.json specifications */
+    --background: 0 0% 100%; /* #FFFFFF */
+    --foreground: 214 13% 17%; /* #2b2b2b */
+    
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 214 13% 17%;
+    
+    /* Primary: Black for buttons per design.json */
+    --primary: 0 0% 0%; /* #000000 - Black for primary buttons */
+    --primary-foreground: 0 0% 100%; /* White text on black */
+    
+    /* Secondary: Blue-200 per design.json */
+    --secondary: 201 95% 90%; /* #CFE9FC */
+    --secondary-foreground: 214 13% 17%;
+    
+    /* Accent: Lime green (#84cc16) - PRIMARY accent per design.json */
+    --accent: 82 79% 45%; /* #84cc16 */
+    --accent-foreground: 0 0% 100%;
+    
+    --muted: 210 17% 96%; /* #F3F4F6 */
+    --muted-foreground: 220 13% 46%; /* #6B7280 */
+    
+    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 220 13% 91%; /* #E5E7EB */
+    --input: 215 16% 83%; /* #D1D5DB */
+    --ring: 82 79% 45%; /* #84cc16 - Lime green for focus ring */
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 214 13% 17%;
+    
+    --radius: 0.75rem; /* md - per design.json */
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --accent: 82 79% 45%;
+    --accent-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 82 79% 45%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 @theme inline {

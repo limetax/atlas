@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface PasswordInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   error?: boolean;
@@ -9,18 +11,12 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
   ({ error = false, className = '', ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
 
-    const baseStyles =
-      'w-full px-3.5 py-2.5 pr-10 text-sm bg-white border rounded-lg outline-none transition-all duration-150';
-    const normalStyles =
-      'border-gray-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/10';
-    const errorStyles = 'border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-500/10';
-
     return (
       <div className="relative">
-        <input
+        <Input
           ref={ref}
           type={showPassword ? 'text' : 'password'}
-          className={`${baseStyles} ${error ? errorStyles : normalStyles} ${className}`}
+          className={cn('pr-10', error && 'border-red-400 focus-visible:ring-red-500', className)}
           {...props}
         />
         <button

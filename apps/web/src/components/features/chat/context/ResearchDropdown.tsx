@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { ResearchSource } from '@atlas/shared';
 import { Database, Building2, Scale, BookOpen, ChevronDown } from 'lucide-react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface ResearchOption {
   id: ResearchSource;
@@ -21,10 +27,6 @@ const RESEARCH_OPTIONS: ResearchOption[] = [
   { id: 'law_publishers', label: 'Rechtsverlage', icon: BookOpen, disabled: true },
 ];
 
-const cn = (...classes: (string | boolean | undefined)[]) => {
-  return classes.filter(Boolean).join(' ');
-};
-
 export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, onChange }) => {
   const [open, setOpen] = useState(false);
 
@@ -37,8 +39,8 @@ export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, on
   };
 
   return (
-    <DropdownMenu.Root open={open} onOpenChange={setOpen}>
-      <DropdownMenu.Trigger asChild>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
         <button
           className={cn(
             'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors',
@@ -56,55 +58,33 @@ export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, on
           )}
           <ChevronDown className="w-3 h-3" />
         </button>
-      </DropdownMenu.Trigger>
+      </DropdownMenuTrigger>
 
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="bg-white rounded-lg shadow-lg border border-gray-200 p-1 min-w-[200px] z-50"
-          sideOffset={5}
-        >
-          {RESEARCH_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const isSelected = selected.includes(option.id);
+      <DropdownMenuContent className="min-w-[240px]" sideOffset={5}>
+        {RESEARCH_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          const isSelected = selected.includes(option.id);
 
-            return (
-              <DropdownMenu.CheckboxItem
-                key={option.id}
-                checked={isSelected}
-                onCheckedChange={() => handleToggle(option.id)}
-                disabled={option.disabled}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded outline-none',
-                  'data-[highlighted]:bg-gray-100',
-                  option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                )}
-              >
-                <DropdownMenu.ItemIndicator className="w-4 h-4">
-                  <div className="w-4 h-4 border-2 border-orange-600 rounded bg-orange-600 flex items-center justify-center">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                </DropdownMenu.ItemIndicator>
-                {!isSelected && <div className="w-4 h-4 border-2 border-gray-300 rounded" />}
-                <Icon className="w-4 h-4" />
-                <span className="flex-1">{option.label}</span>
-                {option.disabled && <span className="text-xs text-gray-400">Bald verfügbar</span>}
-              </DropdownMenu.CheckboxItem>
-            );
-          })}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+          return (
+            <DropdownMenuCheckboxItem
+              key={option.id}
+              checked={isSelected}
+              onCheckedChange={() => handleToggle(option.id)}
+              disabled={option.disabled}
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <Icon className="w-5 h-5 text-gray-700" />
+                <span className="text-gray-900">{option.label}</span>
+              </div>
+              {option.disabled && (
+                <span className="text-xs font-medium text-gray-500 ml-4 bg-gray-100 px-2 py-0.5 rounded">
+                  Bald verfügbar
+                </span>
+              )}
+            </DropdownMenuCheckboxItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };

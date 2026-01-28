@@ -2,8 +2,10 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message } from '@atlas/shared';
-import { Badge } from '@/components/ui/Badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card } from '@/components/ui/card';
 import { User, ExternalLink } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ChatMessageProps {
   message: Message;
@@ -53,27 +55,28 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const enrichedContent = enrichContentWithLinks(message.content, message.citations);
 
   return (
-    <div className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={cn('flex gap-4', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && (
-        <div className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md p-1.5">
-            <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
-          </div>
-        </div>
+        <Avatar className="flex-shrink-0 border-2 border-white shadow-md">
+          <AvatarImage src="/icon.png" alt="limetax logo" />
+          <AvatarFallback className="bg-lime-50 text-lime-600">LI</AvatarFallback>
+        </Avatar>
       )}
 
-      <div className={`flex flex-col gap-2 max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
-        <div
-          className={`px-4 py-3 rounded-2xl ${
+      <div className={cn('flex flex-col gap-2 max-w-[75%]', isUser ? 'items-end' : 'items-start')}>
+        <Card
+          className={cn(
+            'px-4 py-3 rounded-2xl border',
             isUser
-              ? 'bg-blue-200 text-gray-900 rounded-tr-sm shadow-md'
-              : 'bg-gray-50 border border-gray-200 rounded-tl-sm shadow-sm'
-          }`}
+              ? 'bg-blue-200 text-gray-900 rounded-tr-sm shadow-md border-blue-300'
+              : 'bg-gray-50 border-gray-200 rounded-tl-sm shadow-sm'
+          )}
         >
           <div
-            className={`text-sm leading-relaxed prose prose-sm max-w-none ${
-              isUser ? 'prose-invert' : ''
-            }`}
+            className={cn(
+              'text-sm leading-relaxed prose prose-sm max-w-none',
+              isUser && 'prose-invert'
+            )}
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -95,7 +98,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               {enrichedContent}
             </ReactMarkdown>
           </div>
-        </div>
+        </Card>
 
         <span className="text-xs text-gray-400">
           {message.timestamp
@@ -108,11 +111,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
 
       {isUser && (
-        <div className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center shadow-md">
-            <User className="w-5 h-5 text-white" />
-          </div>
-        </div>
+        <Avatar className="flex-shrink-0 border-2 border-white shadow-md bg-purple-400">
+          <AvatarFallback className="bg-purple-400 text-white">
+            <User className="w-5 h-5" />
+          </AvatarFallback>
+        </Avatar>
       )}
     </div>
   );

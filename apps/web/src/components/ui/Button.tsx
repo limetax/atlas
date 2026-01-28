@@ -1,38 +1,52 @@
-import React from 'react';
+import * as React from 'react';
+import { Slot } from '@radix-ui/react-slot';
+import { cva, type VariantProps } from 'class-variance-authority';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  children: React.ReactNode;
+import { cn } from '@/lib/utils';
+
+const buttonVariants = cva(
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  {
+    variants: {
+      variant: {
+        default:
+          'bg-orange-500 text-white rounded-xl hover:bg-orange-600 hover:-translate-y-px shadow-sm',
+        black: 'bg-black text-white rounded-xl hover:opacity-90 hover:-translate-y-px shadow-sm',
+        accent:
+          'bg-lime-500 text-white rounded-xl hover:bg-lime-600 hover:-translate-y-px shadow-sm',
+        secondary: 'bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200',
+        outline: 'border border-gray-300 bg-transparent text-gray-700 rounded-xl hover:bg-gray-50',
+        ghost: 'bg-transparent text-gray-700 rounded-xl hover:bg-gray-100',
+        destructive: 'bg-red-500 text-white rounded-xl hover:bg-red-600',
+        link: 'text-gray-700 underline-offset-4 hover:underline',
+      },
+      size: {
+        default: 'h-10 px-6 py-3',
+        sm: 'h-9 px-3 py-2 text-sm',
+        lg: 'h-11 px-8 py-3',
+        icon: 'h-10 w-10',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  }
+);
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({
-  variant = 'primary',
-  size = 'md',
-  className = '',
-  children,
-  ...props
-}) => {
-  const baseStyles =
-    'inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed hover:transform hover:-translate-y-0.5';
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'button';
+    return (
+      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+    );
+  }
+);
+Button.displayName = 'Button';
 
-  const variants = {
-    primary: 'bg-gray-900 text-white hover:bg-gray-800',
-    secondary: 'bg-blue-100 text-gray-800 hover:bg-blue-200',
-    accent: 'bg-orange-400 text-gray-900 hover:bg-orange-500 font-semibold',
-    outline: 'bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100',
-  };
-
-  const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-6 py-3 text-sm',
-    lg: 'px-8 py-4 text-base',
-  };
-
-  return (
-    <button className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
-      {children}
-    </button>
-  );
-};
+export { Button, buttonVariants };

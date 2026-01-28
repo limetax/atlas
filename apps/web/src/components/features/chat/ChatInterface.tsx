@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Message, ChatContext } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Send, Loader2 } from 'lucide-react';
 import { ChatEmptyState } from './ChatEmptyState';
 import { ContextToggles } from './context/ContextToggles';
+import { ChatStreamingIndicator } from './ChatStreamingIndicator';
+import { ChatScrollAnchor } from './ChatScrollAnchor';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -104,6 +106,7 @@ const MessagesArea = ({ messages, isLoading, messagesEndRef }: MessagesAreaProps
 
         {isLoading && <LoadingIndicator />}
 
+        <ChatScrollAnchor trackVisibility />
         <div ref={messagesEndRef} />
       </div>
     </div>
@@ -111,16 +114,7 @@ const MessagesArea = ({ messages, isLoading, messagesEndRef }: MessagesAreaProps
 };
 
 const LoadingIndicator = () => {
-  return (
-    <div className="flex gap-4 justify-start">
-      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md">
-        <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-      </div>
-      <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl rounded-tl-sm">
-        <p className="text-sm text-gray-500">Denke nach...</p>
-      </div>
-    </div>
-  );
+  return <ChatStreamingIndicator />;
 };
 
 interface InputAreaProps {
@@ -158,7 +152,7 @@ const InputArea = ({
               disabled={isLoading}
               minRows={1}
               maxRows={8}
-              className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl outline-none transition-all duration-150 resize-none focus:border-orange-400 focus:ring-4 focus:ring-orange-400/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl outline-none transition-all duration-150 resize-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 lineHeight: '1.5',
                 transition: 'height 0.3s ease-out',
@@ -172,9 +166,9 @@ const InputArea = ({
           </div>
           <Button
             type="submit"
-            variant="accent"
+            variant="default"
+            size="default"
             disabled={!inputValue.trim() || isLoading}
-            className="!px-4 !py-3 !rounded-xl"
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

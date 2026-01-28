@@ -3,9 +3,11 @@ import { useNavigate } from '@tanstack/react-router';
 import { Plus, Sparkles, Search } from 'lucide-react';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useChatSessions } from './useChatSessions';
 import { useAssistants, type Assistant } from '@/hooks/useAssistants';
 import { ICON_MAP } from '@/constants/icons';
@@ -146,11 +148,11 @@ const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange })
 const LoadingState = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {[1, 2, 3].map((i) => (
-      <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
-        <div className="w-12 h-12 bg-gray-200 rounded-xl mb-4" />
-        <div className="h-5 bg-gray-200 rounded w-2/3 mb-2" />
-        <div className="h-4 bg-gray-200 rounded w-full" />
-      </div>
+      <Card key={i} className="p-6">
+        <Skeleton className="w-12 h-12 rounded-xl mb-4" />
+        <Skeleton className="h-5 w-2/3 mb-2" />
+        <Skeleton className="h-4 w-full" />
+      </Card>
     ))}
   </div>
 );
@@ -186,8 +188,8 @@ const AssistantCard = ({ assistant, onStartChat }: AssistantCardProps) => {
   const Icon = ICON_MAP[assistant.icon] ?? Sparkles;
 
   return (
-    <div
-      className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-orange-200 transition-all group cursor-pointer"
+    <Card
+      className="p-6 hover:shadow-lg hover:border-orange-200 transition-all group cursor-pointer"
       onClick={onStartChat}
     >
       <div className="flex items-start justify-between mb-4">
@@ -202,7 +204,7 @@ const AssistantCard = ({ assistant, onStartChat }: AssistantCardProps) => {
       </div>
       <h3 className="font-semibold text-gray-900 mb-2">{assistant.name}</h3>
       <p className="text-sm text-gray-600 line-clamp-2">{assistant.description}</p>
-    </div>
+    </Card>
   );
 };
 
