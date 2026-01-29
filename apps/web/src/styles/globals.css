@@ -1,77 +1,72 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
-@layer base {
-  :root {
-    /* Shadcn base colors - following design.json specifications */
-    --background: 0 0% 100%; /* #FFFFFF */
-    --foreground: 214 13% 17%; /* #2b2b2b */
-    
-    --card: 0 0% 100%; /* #FFFFFF */
-    --card-foreground: 214 13% 17%;
-    
-    /* Primary: Black for buttons per design.json */
-    --primary: 0 0% 0%; /* #000000 - Black for primary buttons */
-    --primary-foreground: 0 0% 100%; /* White text on black */
-    
-    /* Secondary: Blue-200 per design.json */
-    --secondary: 201 95% 90%; /* #CFE9FC */
-    --secondary-foreground: 214 13% 17%;
-    
-    /* Accent: Lime green (#84cc16) - PRIMARY accent per design.json */
-    --accent: 82 79% 45%; /* #84cc16 */
-    --accent-foreground: 0 0% 100%;
-    
-    --muted: 210 17% 96%; /* #F3F4F6 */
-    --muted-foreground: 220 13% 46%; /* #6B7280 */
-    
-    --destructive: 0 84% 60%; /* #EF4444 */
-    --destructive-foreground: 0 0% 100%;
-    
-    --border: 220 13% 91%; /* #E5E7EB */
-    --input: 215 16% 83%; /* #D1D5DB */
-    --ring: 82 79% 45%; /* #84cc16 - Lime green for focus ring */
-    
-    --popover: 0 0% 100%;
-    --popover-foreground: 214 13% 17%;
-    
-    --radius: 0.75rem; /* md - per design.json */
-  }
+:root {
+  /* Shadcn base colors - following design.json specifications */
+  --background: oklch(1 0 0); /* #FFFFFF */
+  --foreground: oklch(0.17 0 0); /* #2b2b2b approx */
 
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --accent: 82 79% 45%;
-    --accent-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 82 79% 45%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-  }
-}
+  --card: oklch(1 0 0); /* #FFFFFF */
+  --card-foreground: oklch(0.17 0 0);
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+  /* Primary: Black for buttons per design.json */
+  --primary: oklch(0 0 0); /* #000000 - Black for primary buttons */
+  --primary-foreground: oklch(1 0 0); /* White text on black */
+
+  /* Secondary: Blue-200 per design.json */
+  --secondary: oklch(0.92 0.05 230); /* #CFE9FC approx */
+  --secondary-foreground: oklch(0.17 0 0);
+
+  /* Accent: Lime green (#84cc16) - PRIMARY accent per design.json */
+  --accent: oklch(0.76 0.18 127); /* #84cc16 */
+  --accent-foreground: oklch(1 0 0);
+
+  --muted: oklch(0.97 0 0); /* #F3F4F6 */
+  --muted-foreground: oklch(0.55 0 0); /* #6B7280 */
+
+  --destructive: oklch(0.62 0.25 29); /* #EF4444 */
+  --destructive-foreground: oklch(1 0 0);
+
+  --border: oklch(0.92 0 0); /* #E5E7EB */
+  --input: oklch(0.85 0 0); /* #D1D5DB */
+  --ring: oklch(0.76 0.18 127); /* #84cc16 - Lime green for focus ring */
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0 0);
+
+  --radius: 0.75rem; /* md - per design.json */
 }
 
 @theme inline {
-  /* Orange color palette (primary) */
+  /* Shadcn color mappings */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Border radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Orange color palette (primary brand) */
   --color-orange-50: #fff9f0;
   --color-orange-100: #fff3e0;
   --color-orange-200: #ffe7c7;
@@ -119,20 +114,28 @@
   --color-purple-800: #5a3fb8;
   --color-purple-900: #462f96;
 
+  /* Lime palette for accent */
+  --color-lime-500: #84cc16;
+  --color-lime-600: #65a30d;
+
   /* Semantic colors */
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #3b82f6;
 
-  /* Background colors */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
   /* Font families */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-    sans-serif;
-  --font-mono: "SF Mono", "Monaco", "Courier New", monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Courier New', monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 * {
@@ -147,8 +150,6 @@ body {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -282,7 +283,7 @@ body {
 }
 
 /* Citation links styling */
-.prose a[href*="gesetze-im-internet.de"] {
+.prose a[href*='gesetze-im-internet.de'] {
   font-weight: 600;
   background: rgba(242, 183, 108, 0.15);
   padding: 0.1em 0.3em;
@@ -291,7 +292,7 @@ body {
   border-bottom: 2px solid #f2b76c;
 }
 
-.prose a[href*="gesetze-im-internet.de"]:hover {
+.prose a[href*='gesetze-im-internet.de']:hover {
   background: rgba(242, 183, 108, 0.25);
   border-bottom-color: #e89f4f;
 }
