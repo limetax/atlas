@@ -65,10 +65,23 @@ export class RAGService {
     const { documents: taxDocs, citations } = await this.searchTaxLaw(query);
     const taxContext = this.formatTaxContext(taxDocs);
 
-    // Search DATEV data (vector search)
-    const [datevClientsResult, datevOrdersResult] = await Promise.all([
+    // Search DATEV data (vector search) - Phase 1.2: Extended with tax, analytics, HR
+    const [
+      datevClientsResult,
+      datevAddresseesResult,
+      datevOrdersResult,
+      datevCorpTaxResult,
+      datevTradeTaxResult,
+      datevAnalyticsResult,
+      datevHrResult,
+    ] = await Promise.all([
       this.searchDatevClients(query, 3),
+      this.searchDatevAddressees(query, 3),
       this.searchDatevOrders(query, 5),
+      this.searchDatevCorpTax(query, 5),
+      this.searchDatevTradeTax(query, 5),
+      this.searchDatevAnalytics(query, 5),
+      this.searchDatevHrEmployees(query, 5),
     ]);
 
     // Combine DATEV context
@@ -76,8 +89,23 @@ export class RAGService {
     if (datevClientsResult.context) {
       datevParts.push('=== DATEV Mandanten ===\n' + datevClientsResult.context);
     }
+    if (datevAddresseesResult.context) {
+      datevParts.push('=== DATEV Kontaktpersonen ===\n' + datevAddresseesResult.context);
+    }
     if (datevOrdersResult.context) {
       datevParts.push('=== DATEV Aufträge ===\n' + datevOrdersResult.context);
+    }
+    if (datevCorpTaxResult.context) {
+      datevParts.push('=== Körperschaftssteuer ===\n' + datevCorpTaxResult.context);
+    }
+    if (datevTradeTaxResult.context) {
+      datevParts.push('=== Gewerbesteuer ===\n' + datevTradeTaxResult.context);
+    }
+    if (datevAnalyticsResult.context) {
+      datevParts.push('=== Analytics ===\n' + datevAnalyticsResult.context);
+    }
+    if (datevHrResult.context) {
+      datevParts.push('=== Mitarbeiter ===\n' + datevHrResult.context);
     }
     const datevContext = datevParts.join('\n\n');
 
@@ -165,6 +193,38 @@ export class RAGService {
   }
 
   /**
+   * Search DATEV addressees using semantic vector search
+   * Phase 1.1: New method for finding contact persons, managing directors
+   */
+  async searchDatevAddressees(
+    query: string,
+    maxResults: number = 3
+  ): Promise<{
+    addressees: import('@rag/domain/vector-store.interface').DatevAddresseeMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const addressees = await this.vectorStore.searchDatevAddressees(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
+
+      if (!addressees || addressees.length === 0) {
+        return { addressees: [], context: '' };
+      }
+
+      const context = this.formatDatevAddresseesContext(addressees);
+      return { addressees, context };
+    } catch (err) {
+      this.logger.error('DATEV addressee search failed:', err);
+      return { addressees: [], context: '' };
+    }
+  }
+
+  /**
    * Search DATEV orders using semantic vector search
    */
   async searchDatevOrders(
@@ -218,14 +278,73 @@ export class RAGService {
         if (client.company_form) {
           parts.push(`Rechtsform: ${client.company_form}`);
         }
-        parts.push(`Typ: ${clientTypeNames[client.client_type] || 'Unbekannt'}`);
+        if (client.client_type !== null) {
+          parts.push(`Typ: ${clientTypeNames[client.client_type] ?? 'Unbekannt'}`);
+        }
+        // Managing director info (Phase 1.1 enrichment)
+        if (client.managing_director_name) {
+          const directorParts = [client.managing_director_name];
+          if (client.managing_director_email) directorParts.push(client.managing_director_email);
+          if (client.managing_director_phone) directorParts.push(client.managing_director_phone);
+          parts.push(`Geschäftsführer/Partner: ${directorParts.join(', ')}`);
+        }
         if (client.industry_description) {
           parts.push(`Branche: ${client.industry_description}`);
         }
         if (client.correspondence_city) {
           parts.push(`Standort: ${client.correspondence_city}`);
         }
+        if (client.main_email) {
+          parts.push(`Email: ${client.main_email}`);
+        }
+        if (client.main_phone) {
+          parts.push(`Tel: ${client.main_phone}`);
+        }
+        if (client.organization_name) {
+          parts.push(`Organisation: ${client.organization_name}`);
+        }
         parts.push(`(${Math.round(client.similarity * 100)}% relevant)`);
+        return parts.join(' | ');
+      })
+      .join('\n');
+  }
+
+  /**
+   * Format DATEV addressees as context string
+   * Phase 1.1: New formatter for contact persons/managing directors
+   */
+  private formatDatevAddresseesContext(
+    addressees: import('@rag/domain/vector-store.interface').DatevAddresseeMatch[]
+  ): string {
+    if (addressees.length === 0) return '';
+
+    const typeNames: Record<number, string> = {
+      1: 'Natürliche Person',
+      2: 'Juristische Person',
+    };
+
+    return addressees
+      .map((addressee) => {
+        const parts = [`${addressee.full_name}`];
+        if (addressee.addressee_type) {
+          parts.push(`(${typeNames[addressee.addressee_type] ?? 'Unbekannt'})`);
+        }
+        if (addressee.company_entity_type) {
+          parts.push(`Rechtsform: ${addressee.company_entity_type}`);
+        }
+        if (addressee.is_legal_representative_of_company) {
+          parts.push(`Geschäftsführer`);
+        }
+        if (addressee.main_email) {
+          parts.push(`Email: ${addressee.main_email}`);
+        }
+        if (addressee.main_phone) {
+          parts.push(`Tel: ${addressee.main_phone}`);
+        }
+        if (addressee.correspondence_city) {
+          parts.push(`Standort: ${addressee.correspondence_city}`);
+        }
+        parts.push(`(${Math.round(addressee.similarity * 100)}% relevant)`);
         return parts.join(' | ');
       })
       .join('\n');
@@ -252,5 +371,176 @@ export class RAGService {
         return parts.join(' | ');
       })
       .join('\n');
+  }
+
+  // ============================================
+  // Phase 1.2: Additional Search Methods
+  // ============================================
+
+  /**
+   * Search DATEV corporate tax returns using semantic vector search
+   * Phase 1.2: Tax data search
+   */
+  async searchDatevCorpTax(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    corpTax: import('@rag/domain/vector-store.interface').DatevCorpTaxMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const corpTax = await this.vectorStore.searchDatevCorpTax(queryEmbedding, 0.3, maxResults);
+
+      if (!corpTax || corpTax.length === 0) {
+        return { corpTax: [], context: '' };
+      }
+
+      const context = corpTax
+        .map((tax) => {
+          const parts = [
+            `${tax.client_name} - Jahr ${tax.year}`,
+            // Only show human-readable transmission_status (numeric status is not a status code)
+            tax.transmission_status ? `Status: ${tax.transmission_status}` : '',
+            `(${Math.round(tax.similarity * 100)}% relevant)`,
+          ];
+          return parts.filter(Boolean).join(' | ');
+        })
+        .join('\n');
+
+      return { corpTax, context };
+    } catch (err) {
+      this.logger.error('DATEV corp tax search failed:', err);
+      return { corpTax: [], context: '' };
+    }
+  }
+
+  /**
+   * Search DATEV trade tax returns using semantic vector search
+   * Phase 1.2: Tax data search
+   */
+  async searchDatevTradeTax(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    tradeTax: import('@rag/domain/vector-store.interface').DatevTradeTaxMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const tradeTax = await this.vectorStore.searchDatevTradeTax(queryEmbedding, 0.3, maxResults);
+
+      if (!tradeTax || tradeTax.length === 0) {
+        return { tradeTax: [], context: '' };
+      }
+
+      const context = tradeTax
+        .map((tax) => {
+          const parts = [
+            `${tax.client_name} - Jahr ${tax.year}`,
+            // Only show human-readable transmission_status (numeric status is not a status code)
+            tax.transmission_status ? `Status: ${tax.transmission_status}` : '',
+            `(${Math.round(tax.similarity * 100)}% relevant)`,
+          ];
+          return parts.filter(Boolean).join(' | ');
+        })
+        .join('\n');
+
+      return { tradeTax, context };
+    } catch (err) {
+      this.logger.error('DATEV trade tax search failed:', err);
+      return { tradeTax: [], context: '' };
+    }
+  }
+
+  /**
+   * Search DATEV analytics order values using semantic vector search
+   * Phase 1.2: Business intelligence search
+   */
+  async searchDatevAnalytics(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    analytics: import('@rag/domain/vector-store.interface').DatevAnalyticsOrderValuesMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const analytics = await this.vectorStore.searchDatevAnalyticsOrderValues(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
+
+      if (!analytics || analytics.length === 0) {
+        return { analytics: [], context: '' };
+      }
+
+      const context = analytics
+        .map((item) => {
+          const avgValue = item.order_count > 0 ? item.order_value / item.order_count : 0;
+          return [
+            `${item.client_name} - ${item.year}/${item.month}`,
+            `Volumen: ${item.order_value.toLocaleString('de-DE')} EUR`,
+            `Aufträge: ${item.order_count}`,
+            `Ø: ${avgValue.toLocaleString('de-DE')} EUR`,
+            `(${Math.round(item.similarity * 100)}% relevant)`,
+          ].join(' | ');
+        })
+        .join('\n');
+
+      return { analytics, context };
+    } catch (err) {
+      this.logger.error('DATEV analytics search failed:', err);
+      return { analytics: [], context: '' };
+    }
+  }
+
+  /**
+   * Search DATEV HR employees using semantic vector search
+   * Phase 1.2: Employee search
+   */
+  async searchDatevHrEmployees(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    employees: import('@rag/domain/vector-store.interface').DatevHrEmployeeMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const employees = await this.vectorStore.searchDatevHrEmployees(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
+
+      if (!employees || employees.length === 0) {
+        return { employees: [], context: '' };
+      }
+
+      const context = employees
+        .map((emp) => {
+          const parts = [
+            emp.full_name,
+            `Position: ${emp.position}`,
+            emp.department ? `Abteilung: ${emp.department}` : '',
+            emp.email ? `Email: ${emp.email}` : '',
+            `Status: ${emp.is_active ? 'aktiv' : 'inaktiv'}`,
+            `(${Math.round(emp.similarity * 100)}% relevant)`,
+          ];
+          return parts.filter(Boolean).join(' | ');
+        })
+        .join('\n');
+
+      return { employees, context };
+    } catch (err) {
+      this.logger.error('DATEV HR employees search failed:', err);
+      return { employees: [], context: '' };
+    }
   }
 }

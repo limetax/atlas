@@ -43,8 +43,10 @@ export class KlardatenDatevAdapter implements IDatevAdapter {
 
   /**
    * Fetch orders (Aufträge) for a specific year
+   * Phase 1.1: Not implemented - orders postponed to Phase 1.2/2
    */
   async getOrders(year: number): Promise<DatevOrder[]> {
-    return await this.klardatenClient.getOrders(year);
+    this.logger.warn('getOrders not implemented in Phase 1.1 - orders postponed to Phase 1.2');
+    return [];
   }
 }

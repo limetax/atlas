@@ -1,0 +1,159 @@
+---
+description: Strict TypeScript coding standards and style guide
+globs: **/*.ts,**/*.tsx,**/*.mts,**/*.cts
+alwaysApply: false
+---
+
+# TypeScript Coding Standards
+
+## 1. Types Over Interfaces
+
+Always use `type` instead of `interface` for better consistency and union/intersection support.
+
+```typescript
+// ✅ GOOD
+export type UserProfile = {
+  id: string;
+  username: string;
+  isActive: boolean;
+};
+
+// ❌ BAD
+export interface UserProfile {
+  id: string;
+  username: string;
+  isActive: boolean;
+}
+```
+
+## 2. No Type Assertions
+
+Never use `as` or `<Type>` assertions. Use explicit typing or type guards instead.
+
+```typescript
+// ❌ BAD
+const data = record as UserProfile;
+
+// ✅ GOOD
+const initializeUser = (data: UserProfile): UserProfile => {
+  return data;
+};
+```
+
+## 3. Nullish Coalescing Over OR
+
+Use `??` instead of `||` to avoid bugs with falsy values like `0` or `""`.
+
+```typescript
+// ✅ GOOD
+const timeout = settings.timeout ?? 30; // Preserves 0 if set
+
+// ❌ BAD
+const timeout = settings.timeout || 30; // Overwrites 0 with 30
+```
+
+## 4. Constant Naming
+
+- `SCREAMING_SNAKE_CASE` for global constants
+- `camelCase` for local constants
+
+```typescript
+export const MAX_RETRY_ATTEMPTS = 5;
+const localConfig = { timeout: 30 };
+```
+
+## 5. Type Guards with 'is'
+
+Use the `is` keyword for type-safe conditionals.
+
+```typescript
+// ✅ GOOD
+export const isUserProfile = (input: any): input is UserProfile => {
+  return (
+    typeof input === 'object' &&
+    input !== null &&
+    'id' in input &&
+    typeof input.isActive === 'boolean'
+  );
+};
+```
+
+## 6. Error Handling: Result Pattern (No Try-Catch)
+
+Use Result types or tuple returns instead of try-catch blocks for explicit error handling.
+
+```typescript
+// ✅ GOOD
+export type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
+
+export const fetchData = async (url: string): Promise<Result<string>> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    return { ok: false, error: new Error('Fetch failed') };
+  }
+  const data = await response.text();
+  return { ok: true, value: data };
+};
+
+// Usage
+const result = await fetchData('/api/data');
+if (result.ok) {
+  console.log(result.value);
+} else {
+  console.error(result.error);
+}
+
+// ❌ BAD
+try {
+  const data = await fetchData();
+} catch (e) {
+  console.error(e);
+}
+```
+
+## 7. Naming Conventions
+
+- **Booleans**: Prefix with `is`, `has`, `should`, or `can`
+- **Functions**: Use action verbs (`getUser`, `handleClick`, `validateInput`)
+- **Components**: PascalCase
+
+```typescript
+// ✅ GOOD
+const hasPermission = true;
+const canEdit = false;
+const getUserById = (id: string) => {
+  /* ... */
+};
+
+// ❌ BAD
+const permission = true;
+const edit = false;
+const user = (id: string) => {
+  /* ... */
+};
+```
+
+## 8. Explicit Return Types
+
+Always define return types for exported functions.
+
+```typescript
+// ✅ GOOD
+export function calculateTotal(price: number, tax: number): number {
+  return price + tax;
+}
+
+// ❌ BAD
+export function calculateTotal(price: number, tax: number) {
+  return price + tax;
+}
+```
+
+## Summary
+
+- Use `type` over `interface`
+- No `as` type assertions
+- Use `??` instead of `||`
+- Result pattern over try-catch
+- Boolean names: `is`, `has`, `should`, `can`
+- Always add explicit return types to exported functions
