@@ -44,6 +44,82 @@ export abstract class IVectorStore {
     matchThreshold: number,
     matchCount: number
   ): Promise<DatevOrderMatch[]>;
+
+  /**
+   * Search for similar DATEV addressees using vector similarity
+   * Phase 1.1: Addressee search with optional type filtering
+   */
+  abstract searchDatevAddressees(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: AddresseeSearchFilters
+  ): Promise<DatevAddresseeMatch[]>;
+
+  /**
+   * Search for similar accounting postings using vector similarity
+   * Phase 1.1: Posting search with extensive metadata filtering
+   */
+  abstract searchDatevPostings(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: PostingSearchFilters
+  ): Promise<DatevPostingMatch[]>;
+
+  /**
+   * Search for similar SUSA entries using vector similarity
+   * Phase 1.1: Trial balance search with account and balance filtering
+   */
+  abstract searchDatevSusa(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: SusaSearchFilters
+  ): Promise<DatevSusaMatch[]>;
+
+  /**
+   * Search for similar document metadata using vector similarity
+   * Phase 1.1: Document search with type and date filtering
+   */
+  abstract searchDatevDocuments(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: DocumentSearchFilters
+  ): Promise<DatevDocumentMatch[]>;
+}
+
+// ============================================
+// Filter Types for Metadata Filtering
+// ============================================
+
+export interface AddresseeSearchFilters {
+  addressee_type?: 1 | 2;
+  is_legal_representative?: number;
+}
+
+export interface PostingSearchFilters {
+  client_id?: string;
+  fiscal_year?: number;
+  account_number?: number;
+  date_from?: string;
+  date_to?: string;
+  min_amount?: number;
+}
+
+export interface SusaSearchFilters {
+  client_id?: string;
+  fiscal_year?: number;
+  account_number?: number;
+  negative_balance?: boolean;
+}
+
+export interface DocumentSearchFilters {
+  client_id?: string;
+  year?: number;
+  extension?: string;
+  date_from?: string;
 }
 
 /**
@@ -59,18 +135,95 @@ export interface TaxDocumentMatch {
 }
 
 /**
- * DATEV Client Match - Result from vector search
+ * DATEV Client Match - Result from vector search (Phase 1.1 enhanced)
  */
 export interface DatevClientMatch {
   id: string;
   client_id: string;
   client_number: number;
   client_name: string;
-  client_type: number;
+  client_type: number | null;
+  client_status: string;
   company_form: string | null;
   industry_description: string | null;
   main_email: string | null;
+  main_phone: string | null;
   correspondence_city: string | null;
+  organization_name: string | null;
+  managing_director_name: string | null;
+  managing_director_email: string | null;
+  managing_director_phone: string | null;
+  similarity: number;
+}
+
+/**
+ * DATEV Addressee Match - Result from vector search
+ */
+export interface DatevAddresseeMatch {
+  id: string;
+  addressee_id: string;
+  full_name: string;
+  addressee_type: number;
+  main_email: string | null;
+  main_phone: string | null;
+  correspondence_city: string | null;
+  company_entity_type: string | null;
+  is_legal_representative_of_company: number | null;
+  similarity: number;
+}
+
+/**
+ * DATEV Posting Match - Result from vector search
+ */
+export interface DatevPostingMatch {
+  id: string;
+  client_id: string;
+  client_name: string;
+  date: string;
+  account_number: number;
+  account_name: string | null;
+  posting_description: string;
+  amount: number;
+  debit_credit_indicator: string;
+  document_field_1: string;
+  fiscal_year: number;
+  similarity: number;
+}
+
+/**
+ * DATEV SUSA Match - Result from vector search
+ */
+export interface DatevSusaMatch {
+  id: string;
+  client_id: string;
+  client_name: string;
+  fiscal_year: number;
+  month: number | null;
+  account_number: number;
+  label: string;
+  opening_balance: number;
+  debit_total: number;
+  credit_total: number;
+  closing_balance: number;
+  transaction_count: number;
+  similarity: number;
+}
+
+/**
+ * DATEV Document Match - Result from vector search
+ */
+export interface DatevDocumentMatch {
+  id: string;
+  document_id: string;
+  document_number: number;
+  client_id: string;
+  description: string;
+  extension: string;
+  file_name: string | null;
+  keywords: string | null;
+  year: number | null;
+  import_date_time: string | null;
+  s3_key: string | null;
   similarity: number;
 }
 

@@ -1,71 +1,39 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DatevClient, DatevOrder, KlardatenAuthResponse } from '@atlas/shared';
+import axios, { type AxiosInstance } from 'axios';
+import axiosRetry from 'axios-retry';
+import { isAfter, parseISO } from 'date-fns';
+import {
+  DatevClient,
+  DatevAddressee,
+  DatevPosting,
+  DatevSusa,
+  DatevDocument,
+  KlardatenAuthResponse,
+} from '@atlas/shared';
 
 /**
  * Klardaten Client - HTTP client for Klardaten Gateway API
- * Handles authentication and raw API communication
+ * Uses axios with automatic retry logic for resilient API communication
  *
  * Environment Variables:
  * - KLARDATEN_EMAIL: Login email for Klardaten
  * - KLARDATEN_PASSWORD: Login password for Klardaten
- * - KLARDATEN_INSTANCE_ID: Client instance ID for DATEVconnect
+ * - KLARDATEN_INSTANCE_ID: Client instance ID for API access
+ *
+ * Phase 1.1 Features:
+ * - Axios HTTP client with exponential backoff retry
+ * - 2025-01-01+ date filtering for all data
+ * - Pagination for high-volume endpoints (postings)
+ * - Comprehensive error handling with logging
  */
 
 const KLARDATEN_BASE_URL = 'https://api.klardaten.com';
-
-/**
- * Raw client response from DATEV Master Data API
- * Field names differ from our internal DatevClient type
- */
-interface DatevClientApiResponse {
-  id: string;
-  number: number;
-  name: string;
-  differing_name?: string;
-  type: 'natural_person' | 'individual_enterprise' | 'legal_person';
-  status: 'active' | 'inactive';
-  client_since?: string;
-  client_to?: string;
-  timestamp?: string;
-}
-
-/**
- * Map DATEV API client type to our internal type
- */
-function mapClientType(type: string): 1 | 2 | 3 {
-  switch (type) {
-    case 'natural_person':
-      return 1;
-    case 'individual_enterprise':
-      return 2;
-    case 'legal_person':
-      return 3;
-    default:
-      return 3; // Default to legal person
-  }
-}
-
-/**
- * Transform raw DATEV API response to our internal DatevClient type
- */
-function transformClient(raw: DatevClientApiResponse): DatevClient {
-  return {
-    client_id: raw.id,
-    client_number: raw.number,
-    client_name: raw.name,
-    differing_name: raw.differing_name,
-    client_type: mapClientType(raw.type),
-    client_status: raw.status === 'active' ? '1' : '0',
-    status: raw.status === 'active' ? 'aktiv' : 'inaktiv',
-    client_from: raw.client_since,
-    client_until: raw.client_to,
-    updated_at: raw.timestamp,
-  };
-}
+const DATE_FILTER_FROM = '2025-01-01'; // Only sync data from 2025 onwards
 
 @Injectable()
 export class KlardatenClient {
   private readonly logger = new Logger(KlardatenClient.name);
+  private readonly httpClient: AxiosInstance;
   private accessToken: string | null = null;
   private tokenExpiresAt: number = 0;
   private readonly instanceId: string;
@@ -83,6 +51,75 @@ export class KlardatenClient {
         '⚠️ Klardaten credentials not fully configured. Set KLARDATEN_EMAIL, KLARDATEN_PASSWORD, KLARDATEN_INSTANCE_ID'
       );
     }
+
+    // Initialize axios client with retry logic
+    this.httpClient = axios.create({
+      baseURL: KLARDATEN_BASE_URL,
+      timeout: 30000, // 30 second timeout
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Configure automatic retry with exponential backoff
+    axiosRetry(this.httpClient, {
+      retries: 3,
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) => {
+        // Retry on network errors or 5xx server errors
+        return (
+          axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+          (error.response?.status ?? 0) >= 500
+        );
+      },
+      onRetry: (retryCount, error) => {
+        this.logger.warn(`Retry attempt ${retryCount} for ${error.config?.url}: ${error.message}`);
+      },
+    });
+
+    // Request interceptor for authentication
+    this.httpClient.interceptors.request.use(
+      async (config) => {
+        // Skip auth for login endpoint
+        if (config.url?.includes('/auth/login')) {
+          return config;
+        }
+
+        // Ensure authenticated
+        if (!this.isAuthenticated()) {
+          await this.authenticate();
+        }
+
+        // Add auth headers
+        config.headers.Authorization = `Bearer ${this.accessToken}`;
+        config.headers['x-client-instance-id'] = this.instanceId;
+
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Response interceptor for logging
+    this.httpClient.interceptors.response.use(
+      (response) => {
+        this.logger.debug(
+          `✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`
+        );
+        return response;
+      },
+      (error) => {
+        if (error.response) {
+          this.logger.error(
+            `❌ ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response.status}: ${error.response.data}`
+          );
+        } else {
+          this.logger.error(
+            `❌ ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.message}`
+          );
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
   /**
@@ -93,7 +130,7 @@ export class KlardatenClient {
   }
 
   /**
-   * Authenticate with Klardaten API
+   * Authenticate with Klardaten API using axios
    */
   async authenticate(): Promise<void> {
     if (this.isAuthenticated()) {
@@ -103,98 +140,369 @@ export class KlardatenClient {
 
     this.logger.log('🔐 Authenticating with Klardaten...');
 
-    const response = await fetch(`${KLARDATEN_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: this.email,
-        password: this.password,
-      }),
-    });
+    try {
+      const response = await axios.post<KlardatenAuthResponse>(
+        `${KLARDATEN_BASE_URL}/api/auth/login`,
+        {
+          email: this.email,
+          password: this.password,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Klardaten authentication failed: ${response.status} - ${errorText}`);
+      const authData = response.data;
+      this.accessToken = authData.access_token;
+      // Set expiry with 60 second buffer
+      this.tokenExpiresAt = Date.now() + (authData.access_token_expires_in - 60) * 1000;
+
+      this.logger.log('✅ Authenticated with Klardaten');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `Klardaten authentication failed: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
     }
-
-    const authData: KlardatenAuthResponse = await response.json();
-    this.accessToken = authData.access_token;
-    // Set expiry with 60 second buffer
-    this.tokenExpiresAt = Date.now() + (authData.access_token_expires_in - 60) * 1000;
-
-    this.logger.log('✅ Authenticated with Klardaten');
   }
 
   /**
-   * Make an authenticated request to Klardaten/DATEVconnect
-   */
-  private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    if (!this.isAuthenticated()) {
-      await this.authenticate();
-    }
-
-    const url = `${KLARDATEN_BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${this.accessToken}`,
-        'x-client-instance-id': this.instanceId,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Klardaten request failed: ${response.status} - ${errorText}`);
-    }
-
-    return response.json();
-  }
-
-  /**
-   * Fetch all clients (Mandanten) from DATEV via Klardaten
-   * Uses DATEVconnect Master Data V1 API
+   * Fetch all clients (Mandanten) from Klardaten API with pagination
+   * Uses Klardaten /api/master-data/clients (NOT DATEVconnect)
+   * Returns raw client data - will be transformed in sync service
    */
   async getClients(): Promise<DatevClient[]> {
-    this.logger.log('📥 Fetching clients from DATEV via Klardaten...');
+    this.logger.log('📥 Fetching clients from Klardaten API with pagination...');
 
-    const endpoint = `/datevconnect/master-data/v1/clients`;
-    const rawClients = await this.makeRequest<DatevClientApiResponse[]>(endpoint);
+    try {
+      const allClients: DatevClient[] = [];
+      let skip = 0;
+      const top = 100; // Page size
 
-    const clients = rawClients.map(transformClient);
-    this.logger.log(`✅ Fetched ${clients.length} clients from DATEV`);
-    return clients;
+      while (true) {
+        const page = Math.floor(skip / top) + 1;
+        const response = await this.httpClient.get<DatevClient[]>('/api/master-data/clients', {
+          params: {
+            page: page,
+            page_size: top,
+          },
+        });
+
+        const batch = response.data;
+
+        if (!batch || batch.length === 0) {
+          break;
+        }
+
+        allClients.push(...batch);
+
+        // If we got less than the page size, we're done
+        if (batch.length < top) {
+          break;
+        }
+
+        skip += top;
+        this.logger.log(`  → Fetched ${skip} clients so far...`);
+      }
+
+      this.logger.log(`✅ Fetched ${allClients.length} total clients from Klardaten`);
+      return allClients;
+    } catch (error) {
+      this.logger.error('Failed to fetch clients:', error);
+      throw error;
+    }
   }
 
   /**
-   * Fetch orders (Aufträge) for a specific year from DATEV via Klardaten
-   * Uses the DATEVconnect order-management API
+   * Fetch all addressees from Klardaten API with pagination
+   * Source: /api/master-data/addressees
+   * Used for client enrichment (managing directors, contact persons)
    */
-  async getOrders(year: number): Promise<DatevOrder[]> {
-    this.logger.log(`📥 Fetching orders for year ${year} from DATEV via Klardaten...`);
+  async getAddressees(): Promise<DatevAddressee[]> {
+    this.logger.log('📥 Fetching addressees from Klardaten API with pagination...');
 
-    const allOrders: DatevOrder[] = [];
-    let skip = 0;
-    const top = 100;
-    let hasMore = true;
+    try {
+      const allAddressees: DatevAddressee[] = [];
+      let skip = 0;
+      const top = 100; // Page size
 
-    while (hasMore) {
-      const endpoint = `/datevconnect/order-management/v1/orders?filter=creation_year eq ${year}&top=${top}&skip=${skip}`;
-      const response = await this.makeRequest<DatevOrder[]>(endpoint);
+      while (true) {
+        const page = Math.floor(skip / top) + 1;
+        const response = await this.httpClient.get<DatevAddressee[]>(
+          '/api/master-data/addressees',
+          {
+            params: {
+              page: page,
+              page_size: top,
+            },
+          }
+        );
 
-      if (Array.isArray(response)) {
-        allOrders.push(...response);
-        hasMore = response.length === top;
+        const batch = response.data;
+
+        if (!batch || batch.length === 0) {
+          break;
+        }
+
+        allAddressees.push(...batch);
+
+        // If we got less than the page size, we're done
+        if (batch.length < top) {
+          break;
+        }
+
         skip += top;
-      } else {
-        hasMore = false;
+        this.logger.log(`  → Fetched ${skip} addressees so far...`);
       }
-    }
 
-    this.logger.log(`✅ Fetched ${allOrders.length} orders for year ${year}`);
-    return allOrders;
+      this.logger.log(`✅ Fetched ${allAddressees.length} total addressees from Klardaten`);
+      return allAddressees;
+    } catch (error) {
+      this.logger.error('Failed to fetch addressees:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch accounting postings for a specific client and fiscal year
+   * Source: /api/accounting/postings
+   * Filters: 2025-01-01+ only
+   *
+   * WARNING: High volume! Can be 10k-100k+ postings per client per year
+   * Uses pagination to prevent memory issues
+   */
+  async getAccountingPostings(clientId: string, fiscalYear: number): Promise<DatevPosting[]> {
+    this.logger.log(`📥 Fetching postings for client ${clientId}, year ${fiscalYear}...`);
+
+    try {
+      const allPostings: DatevPosting[] = [];
+      let skip = 0;
+      const top = 1000; // Page size
+
+      while (true) {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'klardaten.client.ts:230',
+            message: 'Before API call',
+            data: { clientId, fiscalYear, skip, top },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            hypothesisId: 'B,D',
+          }),
+        }).catch(() => {});
+        // #endregion
+
+        const response = await this.httpClient.get<DatevPosting[]>('/api/accounting/postings', {
+          params: {
+            clientId,
+            fiscalYear,
+            $skip: skip,
+            $top: top,
+          },
+        });
+
+        const batch = response.data;
+
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'klardaten.client.ts:247',
+            message: 'API response received',
+            data: { batchSize: batch?.length ?? 0, isArray: Array.isArray(batch), fiscalYear },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            hypothesisId: 'D',
+          }),
+        }).catch(() => {});
+        // #endregion
+
+        // Filter by date (2025-01-01+)
+        const filtered = batch.filter((posting) => {
+          try {
+            const postingDate = parseISO(posting.date);
+            const cutoffDate = parseISO(DATE_FILTER_FROM);
+            return (
+              isAfter(postingDate, cutoffDate) || postingDate.getTime() === cutoffDate.getTime()
+            );
+          } catch {
+            return false; // Skip invalid dates
+          }
+        });
+
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'klardaten.client.ts:264',
+            message: 'After date filtering',
+            data: {
+              originalCount: batch?.length ?? 0,
+              filteredCount: filtered.length,
+              filterDate: DATE_FILTER_FROM,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            hypothesisId: 'A',
+          }),
+        }).catch(() => {});
+        // #endregion
+
+        allPostings.push(...filtered);
+
+        // Check if more pages exist
+        if (!batch || batch.length < top) {
+          break;
+        }
+
+        skip += top;
+        this.logger.debug(`  → Fetched ${skip} postings so far...`);
+      }
+
+      this.logger.log(`✅ Fetched ${allPostings.length} postings (filtered for 2025+)`);
+
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'klardaten.client.ts:278',
+          message: 'getAccountingPostings SUCCESS',
+          data: { totalPostings: allPostings.length, clientId, fiscalYear },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          hypothesisId: 'A,D',
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      return allPostings;
+    } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'klardaten.client.ts:286',
+          message: 'getAccountingPostings ERROR',
+          data: {
+            error: error instanceof Error ? error.message : String(error),
+            clientId,
+            isAxiosError: axios.isAxiosError(error),
+            statusCode: axios.isAxiosError(error) ? error.response?.status : null,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          hypothesisId: 'B',
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      // Handle 403 Forbidden gracefully - accounting API may not be available
+      if (axios.isAxiosError(error) && error.response?.status === 403) {
+        this.logger.warn(
+          `⚠️ Accounting postings API returned 403 Forbidden for client ${clientId} - endpoint may not be available in your Klardaten plan`
+        );
+        return []; // Return empty array instead of throwing
+      }
+
+      this.logger.error(`Failed to fetch postings for client ${clientId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch trial balance (SUSA) for a specific client and fiscal year
+   * Source: /api/accounting/susa/monthly/{clientId}/{year}/{month}
+   * Note: Can fetch annual or monthly SUSA
+   */
+  async getSusa(clientId: string, fiscalYear: number): Promise<DatevSusa[]> {
+    this.logger.log(`📥 Fetching SUSA for client ${clientId}, year ${fiscalYear}...`);
+
+    try {
+      // Fetch monthly SUSA for all 12 months
+      const allSusa: DatevSusa[] = [];
+
+      for (let month = 1; month <= 12; month++) {
+        try {
+          const response = await this.httpClient.get<DatevSusa[]>(
+            `/api/accounting/susa/monthly/${clientId}/${fiscalYear}/${month}`
+          );
+
+          if (response.data && Array.isArray(response.data)) {
+            allSusa.push(...response.data);
+          }
+        } catch (error) {
+          // Month might not have data yet - continue
+          this.logger.debug(`  → No SUSA data for month ${month}`);
+        }
+      }
+
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'klardaten.client.ts:318',
+          message: 'getSusa result',
+          data: { totalSusa: allSusa.length, clientId, fiscalYear },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          hypothesisId: 'D',
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      this.logger.log(`✅ Fetched ${allSusa.length} SUSA entries`);
+      return allSusa;
+    } catch (error) {
+      this.logger.error(`Failed to fetch SUSA for client ${clientId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch document metadata for a specific client
+   * Source: /api/master-data/documents
+   * Returns metadata only - actual files stored in S3 (Phase 1.2)
+   */
+  async getDocuments(clientId?: string): Promise<DatevDocument[]> {
+    this.logger.log(`📥 Fetching documents${clientId ? ` for client ${clientId}` : ''}...`);
+
+    try {
+      const response = await this.httpClient.get<DatevDocument[]>('/api/master-data/documents', {
+        params: clientId ? { clientId } : {},
+      });
+
+      const documents = response.data;
+
+      // Filter by import date (2025-01-01+)
+      const filtered = documents.filter((doc) => {
+        if (!doc.import_date_time) return true; // Include docs without import date
+
+        try {
+          const importDate = parseISO(doc.import_date_time);
+          const cutoffDate = parseISO(DATE_FILTER_FROM);
+          return isAfter(importDate, cutoffDate) || importDate.getTime() === cutoffDate.getTime();
+        } catch {
+          return true; // Include on date parse errors
+        }
+      });
+
+      this.logger.log(`✅ Fetched ${filtered.length} documents (filtered for 2025+)`);
+      return filtered;
+    } catch (error) {
+      this.logger.error('Failed to fetch documents:', error);
+      throw error;
+    }
   }
 }

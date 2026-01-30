@@ -65,9 +65,10 @@ export class RAGService {
     const { documents: taxDocs, citations } = await this.searchTaxLaw(query);
     const taxContext = this.formatTaxContext(taxDocs);
 
-    // Search DATEV data (vector search)
-    const [datevClientsResult, datevOrdersResult] = await Promise.all([
+    // Search DATEV data (vector search) - Phase 1.1: Added addressees
+    const [datevClientsResult, datevAddresseesResult, datevOrdersResult] = await Promise.all([
       this.searchDatevClients(query, 3),
+      this.searchDatevAddressees(query, 3),
       this.searchDatevOrders(query, 5),
     ]);
 
@@ -75,6 +76,9 @@ export class RAGService {
     const datevParts: string[] = [];
     if (datevClientsResult.context) {
       datevParts.push('=== DATEV Mandanten ===\n' + datevClientsResult.context);
+    }
+    if (datevAddresseesResult.context) {
+      datevParts.push('=== DATEV Kontaktpersonen ===\n' + datevAddresseesResult.context);
     }
     if (datevOrdersResult.context) {
       datevParts.push('=== DATEV Aufträge ===\n' + datevOrdersResult.context);
@@ -165,6 +169,38 @@ export class RAGService {
   }
 
   /**
+   * Search DATEV addressees using semantic vector search
+   * Phase 1.1: New method for finding contact persons, managing directors
+   */
+  async searchDatevAddressees(
+    query: string,
+    maxResults: number = 3
+  ): Promise<{
+    addressees: import('@rag/domain/vector-store.interface').DatevAddresseeMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const addressees = await this.vectorStore.searchDatevAddressees(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
+
+      if (!addressees || addressees.length === 0) {
+        return { addressees: [], context: '' };
+      }
+
+      const context = this.formatDatevAddresseesContext(addressees);
+      return { addressees, context };
+    } catch (err) {
+      this.logger.error('DATEV addressee search failed:', err);
+      return { addressees: [], context: '' };
+    }
+  }
+
+  /**
    * Search DATEV orders using semantic vector search
    */
   async searchDatevOrders(
@@ -218,14 +254,73 @@ export class RAGService {
         if (client.company_form) {
           parts.push(`Rechtsform: ${client.company_form}`);
         }
-        parts.push(`Typ: ${clientTypeNames[client.client_type] || 'Unbekannt'}`);
+        if (client.client_type !== null) {
+          parts.push(`Typ: ${clientTypeNames[client.client_type] ?? 'Unbekannt'}`);
+        }
+        // Managing director info (Phase 1.1 enrichment)
+        if (client.managing_director_name) {
+          const directorParts = [client.managing_director_name];
+          if (client.managing_director_email) directorParts.push(client.managing_director_email);
+          if (client.managing_director_phone) directorParts.push(client.managing_director_phone);
+          parts.push(`Geschäftsführer/Partner: ${directorParts.join(', ')}`);
+        }
         if (client.industry_description) {
           parts.push(`Branche: ${client.industry_description}`);
         }
         if (client.correspondence_city) {
           parts.push(`Standort: ${client.correspondence_city}`);
         }
+        if (client.main_email) {
+          parts.push(`Email: ${client.main_email}`);
+        }
+        if (client.main_phone) {
+          parts.push(`Tel: ${client.main_phone}`);
+        }
+        if (client.organization_name) {
+          parts.push(`Organisation: ${client.organization_name}`);
+        }
         parts.push(`(${Math.round(client.similarity * 100)}% relevant)`);
+        return parts.join(' | ');
+      })
+      .join('\n');
+  }
+
+  /**
+   * Format DATEV addressees as context string
+   * Phase 1.1: New formatter for contact persons/managing directors
+   */
+  private formatDatevAddresseesContext(
+    addressees: import('@rag/domain/vector-store.interface').DatevAddresseeMatch[]
+  ): string {
+    if (addressees.length === 0) return '';
+
+    const typeNames: Record<number, string> = {
+      1: 'Natürliche Person',
+      2: 'Juristische Person',
+    };
+
+    return addressees
+      .map((addressee) => {
+        const parts = [`${addressee.full_name}`];
+        if (addressee.addressee_type) {
+          parts.push(`(${typeNames[addressee.addressee_type] ?? 'Unbekannt'})`);
+        }
+        if (addressee.company_entity_type) {
+          parts.push(`Rechtsform: ${addressee.company_entity_type}`);
+        }
+        if (addressee.is_legal_representative_of_company) {
+          parts.push(`Geschäftsführer`);
+        }
+        if (addressee.main_email) {
+          parts.push(`Email: ${addressee.main_email}`);
+        }
+        if (addressee.main_phone) {
+          parts.push(`Tel: ${addressee.main_phone}`);
+        }
+        if (addressee.correspondence_city) {
+          parts.push(`Standort: ${addressee.correspondence_city}`);
+        }
+        parts.push(`(${Math.round(addressee.similarity * 100)}% relevant)`);
         return parts.join(' | ');
       })
       .join('\n');
