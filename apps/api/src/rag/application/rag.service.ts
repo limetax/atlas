@@ -65,11 +65,23 @@ export class RAGService {
     const { documents: taxDocs, citations } = await this.searchTaxLaw(query);
     const taxContext = this.formatTaxContext(taxDocs);
 
-    // Search DATEV data (vector search) - Phase 1.1: Added addressees
-    const [datevClientsResult, datevAddresseesResult, datevOrdersResult] = await Promise.all([
+    // Search DATEV data (vector search) - Phase 1.2: Extended with tax, analytics, HR
+    const [
+      datevClientsResult,
+      datevAddresseesResult,
+      datevOrdersResult,
+      datevCorpTaxResult,
+      datevTradeTaxResult,
+      datevAnalyticsResult,
+      datevHrResult,
+    ] = await Promise.all([
       this.searchDatevClients(query, 3),
       this.searchDatevAddressees(query, 3),
       this.searchDatevOrders(query, 5),
+      this.searchDatevCorpTax(query, 5),
+      this.searchDatevTradeTax(query, 5),
+      this.searchDatevAnalytics(query, 5),
+      this.searchDatevHrEmployees(query, 5),
     ]);
 
     // Combine DATEV context
@@ -82,6 +94,18 @@ export class RAGService {
     }
     if (datevOrdersResult.context) {
       datevParts.push('=== DATEV Aufträge ===\n' + datevOrdersResult.context);
+    }
+    if (datevCorpTaxResult.context) {
+      datevParts.push('=== Körperschaftssteuer ===\n' + datevCorpTaxResult.context);
+    }
+    if (datevTradeTaxResult.context) {
+      datevParts.push('=== Gewerbesteuer ===\n' + datevTradeTaxResult.context);
+    }
+    if (datevAnalyticsResult.context) {
+      datevParts.push('=== Analytics ===\n' + datevAnalyticsResult.context);
+    }
+    if (datevHrResult.context) {
+      datevParts.push('=== Mitarbeiter ===\n' + datevHrResult.context);
     }
     const datevContext = datevParts.join('\n\n');
 
@@ -347,5 +371,176 @@ export class RAGService {
         return parts.join(' | ');
       })
       .join('\n');
+  }
+
+  // ============================================
+  // Phase 1.2: Additional Search Methods
+  // ============================================
+
+  /**
+   * Search DATEV corporate tax returns using semantic vector search
+   * Phase 1.2: Tax data search
+   */
+  async searchDatevCorpTax(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    corpTax: import('@rag/domain/vector-store.interface').DatevCorpTaxMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const corpTax = await this.vectorStore.searchDatevCorpTax(queryEmbedding, 0.3, maxResults);
+
+      if (!corpTax || corpTax.length === 0) {
+        return { corpTax: [], context: '' };
+      }
+
+      const context = corpTax
+        .map((tax) => {
+          const parts = [
+            `${tax.client_name} - Jahr ${tax.year}`,
+            // Only show human-readable transmission_status (numeric status is not a status code)
+            tax.transmission_status ? `Status: ${tax.transmission_status}` : '',
+            `(${Math.round(tax.similarity * 100)}% relevant)`,
+          ];
+          return parts.filter(Boolean).join(' | ');
+        })
+        .join('\n');
+
+      return { corpTax, context };
+    } catch (err) {
+      this.logger.error('DATEV corp tax search failed:', err);
+      return { corpTax: [], context: '' };
+    }
+  }
+
+  /**
+   * Search DATEV trade tax returns using semantic vector search
+   * Phase 1.2: Tax data search
+   */
+  async searchDatevTradeTax(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    tradeTax: import('@rag/domain/vector-store.interface').DatevTradeTaxMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const tradeTax = await this.vectorStore.searchDatevTradeTax(queryEmbedding, 0.3, maxResults);
+
+      if (!tradeTax || tradeTax.length === 0) {
+        return { tradeTax: [], context: '' };
+      }
+
+      const context = tradeTax
+        .map((tax) => {
+          const parts = [
+            `${tax.client_name} - Jahr ${tax.year}`,
+            // Only show human-readable transmission_status (numeric status is not a status code)
+            tax.transmission_status ? `Status: ${tax.transmission_status}` : '',
+            `(${Math.round(tax.similarity * 100)}% relevant)`,
+          ];
+          return parts.filter(Boolean).join(' | ');
+        })
+        .join('\n');
+
+      return { tradeTax, context };
+    } catch (err) {
+      this.logger.error('DATEV trade tax search failed:', err);
+      return { tradeTax: [], context: '' };
+    }
+  }
+
+  /**
+   * Search DATEV analytics order values using semantic vector search
+   * Phase 1.2: Business intelligence search
+   */
+  async searchDatevAnalytics(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    analytics: import('@rag/domain/vector-store.interface').DatevAnalyticsOrderValuesMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const analytics = await this.vectorStore.searchDatevAnalyticsOrderValues(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
+
+      if (!analytics || analytics.length === 0) {
+        return { analytics: [], context: '' };
+      }
+
+      const context = analytics
+        .map((item) => {
+          const avgValue = item.order_count > 0 ? item.order_value / item.order_count : 0;
+          return [
+            `${item.client_name} - ${item.year}/${item.month}`,
+            `Volumen: ${item.order_value.toLocaleString('de-DE')} EUR`,
+            `Aufträge: ${item.order_count}`,
+            `Ø: ${avgValue.toLocaleString('de-DE')} EUR`,
+            `(${Math.round(item.similarity * 100)}% relevant)`,
+          ].join(' | ');
+        })
+        .join('\n');
+
+      return { analytics, context };
+    } catch (err) {
+      this.logger.error('DATEV analytics search failed:', err);
+      return { analytics: [], context: '' };
+    }
+  }
+
+  /**
+   * Search DATEV HR employees using semantic vector search
+   * Phase 1.2: Employee search
+   */
+  async searchDatevHrEmployees(
+    query: string,
+    maxResults: number = 5
+  ): Promise<{
+    employees: import('@rag/domain/vector-store.interface').DatevHrEmployeeMatch[];
+    context: string;
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      const employees = await this.vectorStore.searchDatevHrEmployees(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
+
+      if (!employees || employees.length === 0) {
+        return { employees: [], context: '' };
+      }
+
+      const context = employees
+        .map((emp) => {
+          const parts = [
+            emp.full_name,
+            `Position: ${emp.position}`,
+            emp.department ? `Abteilung: ${emp.department}` : '',
+            emp.email ? `Email: ${emp.email}` : '',
+            `Status: ${emp.is_active ? 'aktiv' : 'inaktiv'}`,
+            `(${Math.round(emp.similarity * 100)}% relevant)`,
+          ];
+          return parts.filter(Boolean).join(' | ');
+        })
+        .join('\n');
+
+      return { employees, context };
+    } catch (err) {
+      this.logger.error('DATEV HR employees search failed:', err);
+      return { employees: [], context: '' };
+    }
   }
 }

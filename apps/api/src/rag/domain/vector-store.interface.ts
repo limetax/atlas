@@ -88,6 +88,50 @@ export abstract class IVectorStore {
     matchCount: number,
     filters?: DocumentSearchFilters
   ): Promise<DatevDocumentMatch[]>;
+
+  /**
+   * Search for similar corporate tax returns using vector similarity
+   * Phase 1.2: Corp tax search with status filtering
+   */
+  abstract searchDatevCorpTax(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: CorpTaxSearchFilters
+  ): Promise<DatevCorpTaxMatch[]>;
+
+  /**
+   * Search for similar trade tax returns using vector similarity
+   * Phase 1.2: Trade tax search with status filtering
+   */
+  abstract searchDatevTradeTax(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: TradeTaxSearchFilters
+  ): Promise<DatevTradeTaxMatch[]>;
+
+  /**
+   * Search for similar analytics order values using vector similarity
+   * Phase 1.2: Analytics search for business intelligence
+   */
+  abstract searchDatevAnalyticsOrderValues(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: AnalyticsSearchFilters
+  ): Promise<DatevAnalyticsOrderValuesMatch[]>;
+
+  /**
+   * Search for similar HR employees using vector similarity
+   * Phase 1.2: Employee search with department and status filtering
+   */
+  abstract searchDatevHrEmployees(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: HrEmployeeSearchFilters
+  ): Promise<DatevHrEmployeeMatch[]>;
 }
 
 // ============================================
@@ -120,6 +164,31 @@ export interface DocumentSearchFilters {
   year?: number;
   extension?: string;
   date_from?: string;
+}
+
+// Phase 1.2: Additional Filter Types
+
+export interface CorpTaxSearchFilters {
+  client_id?: string;
+  year?: number;
+  status?: number;
+}
+
+export interface TradeTaxSearchFilters {
+  client_id?: string;
+  year?: number;
+  status?: number;
+}
+
+export interface AnalyticsSearchFilters {
+  client_id?: string;
+  year?: number;
+}
+
+export interface HrEmployeeSearchFilters {
+  client_id?: string;
+  department?: string;
+  is_active?: boolean;
 }
 
 /**
@@ -241,5 +310,67 @@ export interface DatevOrderMatch {
   client_name: string;
   completion_status: string;
   billing_status: string;
+  similarity: number;
+}
+
+// ============================================
+// Phase 1.2: Additional Match Types
+// ============================================
+
+/**
+ * DATEV Corp Tax Match - Result from vector search
+ */
+export interface DatevCorpTaxMatch {
+  id: string;
+  corp_tax_id: string;
+  client_id: string;
+  client_name: string;
+  year: number;
+  status: number;
+  transmission_status: string;
+  similarity: number;
+}
+
+/**
+ * DATEV Trade Tax Match - Result from vector search
+ */
+export interface DatevTradeTaxMatch {
+  id: string;
+  trade_tax_id: string;
+  client_id: string;
+  client_name: string;
+  year: number;
+  status: number;
+  transmission_status: string;
+  similarity: number;
+}
+
+/**
+ * DATEV Analytics Order Values Match - Result from vector search
+ */
+export interface DatevAnalyticsOrderValuesMatch {
+  id: string;
+  client_id: string;
+  client_name: string;
+  year: number;
+  month: number;
+  order_value: number;
+  order_count: number;
+  similarity: number;
+}
+
+/**
+ * DATEV HR Employee Match - Result from vector search
+ */
+export interface DatevHrEmployeeMatch {
+  id: string;
+  employee_id: string;
+  client_id: string;
+  client_name: string;
+  full_name: string;
+  position: string;
+  department: string;
+  email: string;
+  is_active: boolean;
   similarity: number;
 }

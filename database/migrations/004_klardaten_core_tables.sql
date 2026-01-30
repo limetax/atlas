@@ -903,3 +903,794 @@ GRANT EXECUTE ON FUNCTION public.match_datev_clients TO authenticated, service_r
 GRANT EXECUTE ON FUNCTION public.match_datev_postings TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.match_datev_susa TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.match_datev_documents TO authenticated, service_role;
+
+-- ============================================
+-- PHASE 1.2: ADDITIONAL TABLES
+-- ============================================
+
+-- ============================================
+-- Table: datev_relationships
+-- Source: Klardaten /api/master-data/relationships
+-- Purpose: Many-to-many relationships (managing directors, partners, shareholders)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_relationships (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields from RelationshipDto (REQUIRED in API)
+  relationship_id TEXT NOT NULL UNIQUE,
+  source_addressee_id TEXT NOT NULL,
+  target_addressee_id TEXT NOT NULL,
+  relationship_type TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  
+  -- Optional fields from API
+  relationship_name TEXT,
+  relationship_abbreviation TEXT,
+  target_addressee_type TEXT,
+  target_addressee_name TEXT,
+  source_addressee_type TEXT,
+  source_addressee_name TEXT,
+  relationship_from TIMESTAMPTZ,
+  relationship_until TIMESTAMPTZ,
+  note TEXT,
+  explanation TEXT,
+  
+  -- Shareholder-specific fields (only for relationship_type = 'S00058')
+  holding_period TEXT,
+  shareholder_type TEXT,
+  profit_share NUMERIC(15,2),
+  participation_amount NUMERIC(15,2),
+  capital NUMERIC(15,2),
+  liquidation_proceeds NUMERIC(15,2),
+  subscriber_number INTEGER,
+  is_silent_partner BOOLEAN,
+  participant_number INTEGER,
+  earnings_share_fraction TEXT,
+  is_indirect_partner BOOLEAN,
+  nominal_share NUMERIC(15,2),
+  nominal_share_fraction TEXT,
+  
+  -- Foreign keys (soft references - no CASCADE to avoid circular deps)
+  CONSTRAINT fk_relationships_source FOREIGN KEY (source_addressee_id) 
+    REFERENCES public.datev_addressees(addressee_id) ON DELETE SET NULL,
+  CONSTRAINT fk_relationships_target FOREIGN KEY (target_addressee_id) 
+    REFERENCES public.datev_addressees(addressee_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.datev_relationships IS 'DATEV relationships between addressees - managing directors, partners, shareholders';
+COMMENT ON COLUMN public.datev_relationships.relationship_type IS 'S00001=Natural Person, S00003=Company, S00051=Legal Rep of Company, S00058=Shareholder';
+
+CREATE INDEX idx_relationships_source ON public.datev_relationships(source_addressee_id);
+CREATE INDEX idx_relationships_target ON public.datev_relationships(target_addressee_id);
+CREATE INDEX idx_relationships_type ON public.datev_relationships(relationship_type);
+CREATE INDEX idx_relationships_dates ON public.datev_relationships(relationship_from, relationship_until);
+
+-- ============================================
+-- Table: datev_corp_tax
+-- Source: Klardaten /api/tax/corp-tax
+-- Purpose: Corporate tax returns metadata
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_corp_tax (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields from CorpTaxDto
+  corp_tax_id TEXT NOT NULL UNIQUE,
+  client_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  order_term INTEGER,
+  description TEXT,
+  type INTEGER,
+  status INTEGER,
+  saved INTEGER,
+  deleted INTEGER,
+  migrated_to_pro BOOLEAN,
+  elster_telenumber TEXT,
+  tnr_provided TEXT,
+  datev_arrival TEXT,
+  transmission_date TEXT,
+  transmission_status TEXT,
+  tax_office_arrival TEXT,
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_corp_tax IS 'DATEV corporate tax returns from Klardaten API';
+
+CREATE INDEX idx_corp_tax_client ON public.datev_corp_tax(client_id);
+CREATE INDEX idx_corp_tax_year ON public.datev_corp_tax(year);
+CREATE INDEX idx_corp_tax_embedding ON public.datev_corp_tax USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_trade_tax
+-- Source: Klardaten /api/tax/trade-tax
+-- Purpose: Trade tax returns metadata
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_trade_tax (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields from TradeTaxDto (same structure as CorpTaxDto)
+  trade_tax_id TEXT NOT NULL UNIQUE,
+  client_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  order_term INTEGER,
+  description TEXT,
+  type INTEGER,
+  status INTEGER,
+  saved INTEGER,
+  deleted INTEGER,
+  migrated_to_pro BOOLEAN,
+  elster_telenumber TEXT,
+  tnr_provided TEXT,
+  datev_arrival TEXT,
+  transmission_date TEXT,
+  transmission_status TEXT,
+  tax_office_arrival TEXT,
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_trade_tax IS 'DATEV trade tax returns from Klardaten API';
+
+CREATE INDEX idx_trade_tax_client ON public.datev_trade_tax(client_id);
+CREATE INDEX idx_trade_tax_year ON public.datev_trade_tax(year);
+CREATE INDEX idx_trade_tax_embedding ON public.datev_trade_tax USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_analytics_order_values
+-- Source: Klardaten /api/analytics/tax-advisory/order-values
+-- Purpose: Aggregated order values per client/period
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_analytics_order_values (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields
+  client_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  month INTEGER NOT NULL,
+  order_value NUMERIC(15,2) NOT NULL,
+  order_count INTEGER NOT NULL,
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_analytics_order_values IS 'DATEV analytics - order values per client/period';
+
+CREATE INDEX idx_analytics_order_values_client ON public.datev_analytics_order_values(client_id);
+CREATE INDEX idx_analytics_order_values_year_month ON public.datev_analytics_order_values(year, month);
+CREATE INDEX idx_analytics_order_values_embedding ON public.datev_analytics_order_values USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_analytics_processing_status
+-- Source: Klardaten /api/analytics/tax-advisory/processing-status
+-- Purpose: Order completion rates per client
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_analytics_processing_status (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields
+  client_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  total_orders INTEGER NOT NULL,
+  completed_orders INTEGER NOT NULL,
+  pending_orders INTEGER NOT NULL,
+  completion_rate NUMERIC(5,2),
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_analytics_processing_status IS 'DATEV analytics - order completion rates';
+
+CREATE INDEX idx_analytics_processing_client ON public.datev_analytics_processing_status(client_id);
+CREATE INDEX idx_analytics_processing_year ON public.datev_analytics_processing_status(year);
+CREATE INDEX idx_analytics_processing_embedding ON public.datev_analytics_processing_status USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_analytics_expenses
+-- Source: Klardaten /api/analytics/tax-advisory/expenses
+-- Purpose: Expense tracking per client
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_analytics_expenses (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields
+  client_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  expense_category TEXT,
+  total_amount NUMERIC(15,2) NOT NULL,
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_analytics_expenses IS 'DATEV analytics - expenses per client';
+
+CREATE INDEX idx_analytics_expenses_client ON public.datev_analytics_expenses(client_id);
+CREATE INDEX idx_analytics_expenses_year ON public.datev_analytics_expenses(year);
+CREATE INDEX idx_analytics_expenses_embedding ON public.datev_analytics_expenses USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_analytics_fees
+-- Source: Klardaten /api/analytics/tax-advisory/fees
+-- Purpose: Fee breakdown per client
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_analytics_fees (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields
+  client_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  fee_type TEXT,
+  total_amount NUMERIC(15,2) NOT NULL,
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_analytics_fees IS 'DATEV analytics - fees per client';
+
+CREATE INDEX idx_analytics_fees_client ON public.datev_analytics_fees(client_id);
+CREATE INDEX idx_analytics_fees_year ON public.datev_analytics_fees(year);
+CREATE INDEX idx_analytics_fees_embedding ON public.datev_analytics_fees USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_hr_employees
+-- Source: Klardaten /api/hr-lodas/clients/{clientNumber}/employees
+-- Purpose: Employee master data
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_hr_employees (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields
+  client_id TEXT NOT NULL,
+  client_number INTEGER NOT NULL,
+  client_name TEXT NOT NULL,
+  employee_number INTEGER NOT NULL,
+  employee_id TEXT NOT NULL UNIQUE,
+  full_name TEXT NOT NULL,
+  
+  -- Personal info
+  birth_date TIMESTAMPTZ,
+  gender TEXT,
+  nationality TEXT,
+  
+  -- Employment info
+  employment_start TIMESTAMPTZ,
+  employment_end TIMESTAMPTZ,
+  "position" TEXT,
+  department TEXT,
+  salary_group TEXT,
+  
+  -- Contact
+  email TEXT,
+  phone TEXT,
+  address_street TEXT,
+  address_city TEXT,
+  address_zip_code TEXT,
+  
+  -- Status
+  is_active BOOLEAN DEFAULT TRUE,
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_hr_employees IS 'DATEV HR/LODAS employee master data';
+
+CREATE INDEX idx_hr_employees_client ON public.datev_hr_employees(client_id);
+CREATE INDEX idx_hr_employees_number ON public.datev_hr_employees(client_number, employee_number);
+CREATE INDEX idx_hr_employees_embedding ON public.datev_hr_employees USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_hr_transactions
+-- Source: Klardaten /api/hr-lodas/clients/{clientNumber}/transaction-data/standard
+-- Purpose: Payroll transactions (high volume)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_hr_transactions (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields
+  client_id TEXT NOT NULL,
+  client_number INTEGER NOT NULL,
+  employee_number INTEGER NOT NULL,
+  transaction_date TIMESTAMPTZ NOT NULL,
+  transaction_type TEXT NOT NULL,
+  wage_type INTEGER,
+  amount NUMERIC(15,2) NOT NULL,
+  description TEXT,
+  
+  -- Vector search
+  embedding_text TEXT NOT NULL,
+  embedding vector(384),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+COMMENT ON TABLE public.datev_hr_transactions IS 'DATEV HR/LODAS payroll transactions (high volume)';
+
+CREATE INDEX idx_hr_transactions_client ON public.datev_hr_transactions(client_id);
+CREATE INDEX idx_hr_transactions_employee ON public.datev_hr_transactions(client_number, employee_number);
+CREATE INDEX idx_hr_transactions_date ON public.datev_hr_transactions(transaction_date);
+CREATE INDEX idx_hr_transactions_embedding ON public.datev_hr_transactions USING hnsw (embedding vector_cosine_ops);
+
+-- ============================================
+-- Table: datev_client_services
+-- Source: Klardaten /api/master-data/clients/{clientId}/services
+-- Purpose: Services enabled per client (no vector search - relational only)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.datev_client_services (
+  -- Internal
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Core fields
+  client_id TEXT NOT NULL,
+  service_code TEXT NOT NULL,
+  service_name TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  activated_date TIMESTAMPTZ,
+  
+  UNIQUE(client_id, service_code)
+);
+
+COMMENT ON TABLE public.datev_client_services IS 'DATEV services enabled per client (relational filtering only)';
+
+CREATE INDEX idx_client_services_client ON public.datev_client_services(client_id);
+CREATE INDEX idx_client_services_code ON public.datev_client_services(service_code);
+
+-- ============================================
+-- PHASE 1.2: VECTOR SEARCH FUNCTIONS
+-- ============================================
+
+-- ============================================
+-- Function: match_datev_corp_tax
+-- Semantic similarity search for corporate tax returns
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.match_datev_corp_tax(
+  query_embedding vector(384),
+  match_threshold FLOAT DEFAULT 0.3,
+  match_count INT DEFAULT 10,
+  filter_client_id TEXT DEFAULT NULL,
+  filter_year INT DEFAULT NULL,
+  filter_status INT DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  corp_tax_id TEXT,
+  client_id TEXT,
+  client_name TEXT,
+  year INTEGER,
+  status INTEGER,
+  transmission_status TEXT,
+  similarity FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    ct.id,
+    ct.corp_tax_id,
+    ct.client_id,
+    ct.client_name,
+    ct.year,
+    ct.status,
+    ct.transmission_status,
+    1 - (ct.embedding <=> query_embedding) AS similarity
+  FROM public.datev_corp_tax ct
+  WHERE ct.embedding IS NOT NULL
+    AND 1 - (ct.embedding <=> query_embedding) > match_threshold
+    AND (filter_client_id IS NULL OR ct.client_id = filter_client_id)
+    AND (filter_year IS NULL OR ct.year = filter_year)
+    AND (filter_status IS NULL OR ct.status = filter_status)
+  ORDER BY ct.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+COMMENT ON FUNCTION public.match_datev_corp_tax IS 'Semantic search for corporate tax returns with status filtering';
+
+-- ============================================
+-- Function: match_datev_trade_tax
+-- Semantic similarity search for trade tax returns
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.match_datev_trade_tax(
+  query_embedding vector(384),
+  match_threshold FLOAT DEFAULT 0.3,
+  match_count INT DEFAULT 10,
+  filter_client_id TEXT DEFAULT NULL,
+  filter_year INT DEFAULT NULL,
+  filter_status INT DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  trade_tax_id TEXT,
+  client_id TEXT,
+  client_name TEXT,
+  year INTEGER,
+  status INTEGER,
+  transmission_status TEXT,
+  similarity FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    tt.id,
+    tt.trade_tax_id,
+    tt.client_id,
+    tt.client_name,
+    tt.year,
+    tt.status,
+    tt.transmission_status,
+    1 - (tt.embedding <=> query_embedding) AS similarity
+  FROM public.datev_trade_tax tt
+  WHERE tt.embedding IS NOT NULL
+    AND 1 - (tt.embedding <=> query_embedding) > match_threshold
+    AND (filter_client_id IS NULL OR tt.client_id = filter_client_id)
+    AND (filter_year IS NULL OR tt.year = filter_year)
+    AND (filter_status IS NULL OR tt.status = filter_status)
+  ORDER BY tt.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+COMMENT ON FUNCTION public.match_datev_trade_tax IS 'Semantic search for trade tax returns with status filtering';
+
+-- ============================================
+-- Function: match_datev_analytics_order_values
+-- Semantic similarity search for order values analytics
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.match_datev_analytics_order_values(
+  query_embedding vector(384),
+  match_threshold FLOAT DEFAULT 0.3,
+  match_count INT DEFAULT 10,
+  filter_client_id TEXT DEFAULT NULL,
+  filter_year INT DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  client_id TEXT,
+  client_name TEXT,
+  year INTEGER,
+  month INTEGER,
+  order_value NUMERIC,
+  order_count INTEGER,
+  similarity FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    aov.id,
+    aov.client_id,
+    aov.client_name,
+    aov.year,
+    aov.month,
+    aov.order_value,
+    aov.order_count,
+    1 - (aov.embedding <=> query_embedding) AS similarity
+  FROM public.datev_analytics_order_values aov
+  WHERE aov.embedding IS NOT NULL
+    AND 1 - (aov.embedding <=> query_embedding) > match_threshold
+    AND (filter_client_id IS NULL OR aov.client_id = filter_client_id)
+    AND (filter_year IS NULL OR aov.year = filter_year)
+  ORDER BY aov.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+COMMENT ON FUNCTION public.match_datev_analytics_order_values IS 'Semantic search for order values analytics';
+
+-- ============================================
+-- Function: match_datev_hr_employees
+-- Semantic similarity search for employees
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.match_datev_hr_employees(
+  query_embedding vector(384),
+  match_threshold FLOAT DEFAULT 0.3,
+  match_count INT DEFAULT 10,
+  filter_client_id TEXT DEFAULT NULL,
+  filter_department TEXT DEFAULT NULL,
+  filter_is_active BOOLEAN DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  employee_id TEXT,
+  client_id TEXT,
+  client_name TEXT,
+  full_name TEXT,
+  "position" TEXT,
+  department TEXT,
+  email TEXT,
+  is_active BOOLEAN,
+  similarity FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    he.id,
+    he.employee_id,
+    he.client_id,
+    he.client_name,
+    he.full_name,
+    he.position,
+    he.department,
+    he.email,
+    he.is_active,
+    1 - (he.embedding <=> query_embedding) AS similarity
+  FROM public.datev_hr_employees he
+  WHERE he.embedding IS NOT NULL
+    AND 1 - (he.embedding <=> query_embedding) > match_threshold
+    AND (filter_client_id IS NULL OR he.client_id = filter_client_id)
+    AND (filter_department IS NULL OR he.department ILIKE '%' || filter_department || '%')
+    AND (filter_is_active IS NULL OR he.is_active = filter_is_active)
+  ORDER BY he.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+
+COMMENT ON FUNCTION public.match_datev_hr_employees IS 'Semantic search for employees with department and status filtering';
+
+-- ============================================
+-- PHASE 1.2: RLS POLICIES
+-- ============================================
+
+-- Relationships
+ALTER TABLE public.datev_relationships ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_relationships"
+  ON public.datev_relationships
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_relationships"
+  ON public.datev_relationships
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Corp Tax
+ALTER TABLE public.datev_corp_tax ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_corp_tax"
+  ON public.datev_corp_tax
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_corp_tax"
+  ON public.datev_corp_tax
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Trade Tax
+ALTER TABLE public.datev_trade_tax ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_trade_tax"
+  ON public.datev_trade_tax
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_trade_tax"
+  ON public.datev_trade_tax
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Analytics Order Values
+ALTER TABLE public.datev_analytics_order_values ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_analytics_order_values"
+  ON public.datev_analytics_order_values
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_analytics_order_values"
+  ON public.datev_analytics_order_values
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Analytics Processing Status
+ALTER TABLE public.datev_analytics_processing_status ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_analytics_processing_status"
+  ON public.datev_analytics_processing_status
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_analytics_processing_status"
+  ON public.datev_analytics_processing_status
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Analytics Expenses
+ALTER TABLE public.datev_analytics_expenses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_analytics_expenses"
+  ON public.datev_analytics_expenses
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_analytics_expenses"
+  ON public.datev_analytics_expenses
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Analytics Fees
+ALTER TABLE public.datev_analytics_fees ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_analytics_fees"
+  ON public.datev_analytics_fees
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_analytics_fees"
+  ON public.datev_analytics_fees
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- HR Employees
+ALTER TABLE public.datev_hr_employees ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_hr_employees"
+  ON public.datev_hr_employees
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_hr_employees"
+  ON public.datev_hr_employees
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- HR Transactions
+ALTER TABLE public.datev_hr_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_hr_transactions"
+  ON public.datev_hr_transactions
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_hr_transactions"
+  ON public.datev_hr_transactions
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- Client Services
+ALTER TABLE public.datev_client_services ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read datev_client_services"
+  ON public.datev_client_services
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Service role can manage datev_client_services"
+  ON public.datev_client_services
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- ============================================
+-- PHASE 1.2: GRANT PERMISSIONS
+-- ============================================
+
+GRANT SELECT ON public.datev_relationships TO authenticated;
+GRANT SELECT ON public.datev_corp_tax TO authenticated;
+GRANT SELECT ON public.datev_trade_tax TO authenticated;
+GRANT SELECT ON public.datev_analytics_order_values TO authenticated;
+GRANT SELECT ON public.datev_analytics_processing_status TO authenticated;
+GRANT SELECT ON public.datev_analytics_expenses TO authenticated;
+GRANT SELECT ON public.datev_analytics_fees TO authenticated;
+GRANT SELECT ON public.datev_hr_employees TO authenticated;
+GRANT SELECT ON public.datev_hr_transactions TO authenticated;
+GRANT SELECT ON public.datev_client_services TO authenticated;
+
+GRANT ALL ON public.datev_relationships TO service_role;
+GRANT ALL ON public.datev_corp_tax TO service_role;
+GRANT ALL ON public.datev_trade_tax TO service_role;
+GRANT ALL ON public.datev_analytics_order_values TO service_role;
+GRANT ALL ON public.datev_analytics_processing_status TO service_role;
+GRANT ALL ON public.datev_analytics_expenses TO service_role;
+GRANT ALL ON public.datev_analytics_fees TO service_role;
+GRANT ALL ON public.datev_hr_employees TO service_role;
+GRANT ALL ON public.datev_hr_transactions TO service_role;
+GRANT ALL ON public.datev_client_services TO service_role;
+
+GRANT EXECUTE ON FUNCTION public.match_datev_corp_tax TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.match_datev_trade_tax TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.match_datev_analytics_order_values TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.match_datev_hr_employees TO authenticated, service_role;

@@ -5,6 +5,16 @@ import {
   DatevPosting,
   DatevSusa,
   DatevDocument,
+  DatevRelationship,
+  DatevCorpTax,
+  DatevTradeTax,
+  DatevAnalyticsOrderValues,
+  DatevAnalyticsProcessingStatus,
+  DatevAnalyticsExpenses,
+  DatevAnalyticsFees,
+  DatevHrEmployee,
+  DatevHrTransaction,
+  DatevClientService,
   DatevSyncResult,
 } from '@atlas/shared';
 import { IDatevAdapter } from '@datev/domain/datev-adapter.interface';
@@ -40,12 +50,12 @@ export class DatevSyncService {
   ) {}
 
   /**
-   * Run full Klardaten sync: addressees, clients, postings, susa, documents
-   * Phase 1.1: Core tables only, 2025+ data
+   * Run full Klardaten sync: addressees, relationships, clients, tax, analytics, HR
+   * Phase 1.2: Extended with relationships and additional data sources
    */
   async sync(fiscalYear: number = 2025): Promise<DatevSyncResult> {
     const startTime = Date.now();
-    this.logger.log(`🚀 Starting Klardaten sync (fiscal year ${fiscalYear})...`);
+    this.logger.log(`🚀 Starting Klardaten sync Phase 1.2 (fiscal year ${fiscalYear})...`);
     this.logger.log(`📅 Date filter: 2025-01-01 onwards`);
 
     try {
@@ -55,7 +65,10 @@ export class DatevSyncService {
       // Step 2: Sync addressees first (needed for client enrichment)
       const addresseeResult = await this.syncAddressees();
 
-      // Step 3: Sync clients with addressee enrichment
+      // Step 2.5: Phase 1.2 - Sync relationships (needed for multi-director support)
+      const relationshipResult = await this.syncRelationships();
+
+      // Step 3: Sync clients with addressee + relationship enrichment
       const clientResult = await this.syncClients();
 
       // Phase 1.1: Accounting sync DISABLED (API issues - see comments below)
@@ -145,7 +158,7 @@ export class DatevSyncService {
 
       */ // End of commented accounting sync
 
-      // Phase 1.1: Hardcode zeros for accounting data
+      // Phase 1.1: Hardcode zeros for accounting data (still blocked by API issues)
       const totalPostings = 0;
       const totalSusa = 0;
       const totalDocuments = 0;
@@ -153,11 +166,28 @@ export class DatevSyncService {
       const susaErrors = 0;
       const documentErrors = 0;
 
+      // Phase 1.2: Sync tax, analytics, HR, services
+      const corpTaxResult = await this.syncCorpTax(fiscalYear);
+      const tradeTaxResult = await this.syncTradeTax(fiscalYear);
+      const analyticsResult = await this.syncAnalytics(fiscalYear);
+      const hrResult = await this.syncHrData(fiscalYear);
+      const servicesResult = await this.syncClientServices();
+
       const duration = Date.now() - startTime;
       this.logger.log(`\n✅ Klardaten sync completed in ${duration}ms`);
-      this.logger.log(`   📊 Summary (Phase 1.1 - Master Data Only):`);
+      this.logger.log(`   📊 Summary (Phase 1.2 - Extended Data Sources):`);
       this.logger.log(`      - Addressees: ${addresseeResult.synced}/${addresseeResult.fetched}`);
+      this.logger.log(
+        `      - Relationships: ${relationshipResult.synced}/${relationshipResult.fetched}`
+      );
       this.logger.log(`      - Clients: ${clientResult.synced}/${clientResult.fetched}`);
+      this.logger.log(`      - Corp Tax: ${corpTaxResult.synced}/${corpTaxResult.fetched}`);
+      this.logger.log(`      - Trade Tax: ${tradeTaxResult.synced}/${tradeTaxResult.fetched}`);
+      this.logger.log(`      - Analytics: ${analyticsResult.totalSynced} records`);
+      this.logger.log(
+        `      - HR: ${hrResult.totalEmployees} employees, ${hrResult.totalTransactions} transactions`
+      );
+      this.logger.log(`      - Services: ${servicesResult.totalServices} services`);
       this.logger.log(`      - Postings: Skipped (API returns 403 Forbidden)`);
       this.logger.log(`      - SUSA: Skipped (API returns empty arrays)`);
       this.logger.log(`      - Documents: Skipped (data quality issues)`);
@@ -168,6 +198,11 @@ export class DatevSyncService {
           fetched: addresseeResult.fetched,
           synced: addresseeResult.synced,
           errors: addresseeResult.errors,
+        },
+        relationships: {
+          fetched: relationshipResult.fetched,
+          synced: relationshipResult.synced,
+          errors: relationshipResult.errors,
         },
         clients: {
           fetched: clientResult.fetched,
@@ -189,6 +224,28 @@ export class DatevSyncService {
           synced: totalDocuments,
           errors: documentErrors,
         },
+        corpTax: {
+          fetched: corpTaxResult.fetched,
+          synced: corpTaxResult.synced,
+          errors: corpTaxResult.errors,
+        },
+        tradeTax: {
+          fetched: tradeTaxResult.fetched,
+          synced: tradeTaxResult.synced,
+          errors: tradeTaxResult.errors,
+        },
+        analytics: {
+          totalSynced: analyticsResult.totalSynced,
+          totalErrors: analyticsResult.totalErrors,
+        },
+        hr: {
+          totalEmployees: hrResult.totalEmployees,
+          totalTransactions: hrResult.totalTransactions,
+        },
+        services: {
+          totalServices: servicesResult.totalServices,
+          errors: servicesResult.errors,
+        },
         duration_ms: duration,
       };
     } catch (error) {
@@ -198,10 +255,16 @@ export class DatevSyncService {
       return {
         success: false,
         addressees: { fetched: 0, synced: 0, errors: 0 },
+        relationships: { fetched: 0, synced: 0, errors: 0 },
         clients: { fetched: 0, synced: 0, errors: 0 },
         postings: { fetched: 0, synced: 0, errors: 0 },
         susa: { fetched: 0, synced: 0, errors: 0 },
         documents: { fetched: 0, synced: 0, errors: 0 },
+        corpTax: { fetched: 0, synced: 0, errors: 0 },
+        tradeTax: { fetched: 0, synced: 0, errors: 0 },
+        analytics: { totalSynced: 0, totalErrors: 0 },
+        hr: { totalEmployees: 0, totalTransactions: 0 },
+        services: { totalServices: 0, errors: 0 },
         duration_ms: duration,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -928,6 +991,31 @@ export class DatevSyncService {
       parts.push(`- Geschäftsführer: ${directorParts.join(', ')}`);
     }
 
+    // Phase 1.2: Client contact information
+    if (client.main_email) {
+      parts.push(`- Kontakt: ${client.main_email}`);
+    }
+    if (client.main_phone) {
+      parts.push(`- Tel: ${client.main_phone}`);
+    }
+
+    // Phase 1.2: Full address
+    if (client.correspondence_street) {
+      const addressParts: string[] = [client.correspondence_street];
+      if (client.correspondence_zip_code && client.correspondence_city) {
+        addressParts.push(`${client.correspondence_zip_code} ${client.correspondence_city}`);
+      }
+      parts.push(`- Adresse: ${addressParts.join(', ')}`);
+    }
+
+    // Phase 1.2: Tax numbers
+    if (client.tax_number_vat) {
+      parts.push(`- USt-IdNr: ${client.tax_number_vat}`);
+    }
+    if (client.identification_number) {
+      parts.push(`- Steuer-ID: ${client.identification_number}`);
+    }
+
     // Industry
     if (client.industry_description) {
       parts.push(`- Branche: ${client.industry_description}`);
@@ -1075,5 +1163,426 @@ export class DatevSyncService {
    */
   private formatAmount(amount: number): string {
     return `${amount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR`;
+  }
+
+  // ============================================
+  // PHASE 1.2: New Sync Methods
+  // ============================================
+
+  /**
+   * Sync relationships from Klardaten
+   * Phase 1.2: Multi-director support
+   */
+  private async syncRelationships(): Promise<{ fetched: number; synced: number; errors: number }> {
+    this.logger.log(`\n🔗 Syncing relationships...`);
+
+    try {
+      const relationships = await this.klardatenClient.getRelationships();
+      const BATCH_SIZE = 50;
+      let synced = 0;
+
+      // Batch insert relationships (no embeddings needed - relational data only)
+      for (let i = 0; i < relationships.length; i += BATCH_SIZE) {
+        const batch = relationships.slice(i, i + BATCH_SIZE);
+
+        const { error } = await this.supabase.db.from('datev_relationships').upsert(batch, {
+          onConflict: 'relationship_id',
+        });
+
+        if (error) {
+          this.logger.error(`Failed to insert relationship batch at index ${i}:`, error);
+        } else {
+          synced += batch.length;
+        }
+      }
+
+      this.logger.log(`✅ Relationships synced: ${synced}/${relationships.length}`);
+      return { fetched: relationships.length, synced, errors: 0 };
+    } catch (error) {
+      this.logger.error('Failed to sync relationships:', error);
+      return { fetched: 0, synced: 0, errors: 1 };
+    }
+  }
+
+  /**
+   * Sync corporate tax returns from Klardaten
+   * Phase 1.2: Tax data with client enrichment
+   */
+  private async syncCorpTax(
+    year: number
+  ): Promise<{ fetched: number; synced: number; errors: number }> {
+    this.logger.log(`\n📄 Syncing corporate tax returns for ${year}...`);
+
+    try {
+      // Build client_number -> client_id/name lookup map
+      const { data: clients, error: clientError } = await this.supabase.db
+        .from('datev_clients')
+        .select('client_id, client_number, client_name');
+
+      if (clientError) {
+        this.logger.error('Failed to fetch clients for tax enrichment:', clientError);
+        return { fetched: 0, synced: 0, errors: 1 };
+      }
+
+      const clientMap = new Map(
+        clients?.map((c) => [c.client_number, { id: c.client_id, name: c.client_name }]) ?? []
+      );
+
+      this.logger.log(`📋 Built lookup map for ${clientMap.size} clients`);
+
+      const corpTaxReturns = await this.klardatenClient.getCorpTax(year);
+      let synced = 0;
+
+      // Process in batches of 50 for parallel embedding generation (same as addressees)
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < corpTaxReturns.length; i += BATCH_SIZE) {
+        const batch = corpTaxReturns.slice(i, i + BATCH_SIZE);
+
+        const recordsWithEmbeddings = await Promise.all(
+          batch.map(async (taxReturn) => {
+            // Enrich with client_id using client_number lookup
+            const client = clientMap.get(taxReturn.client_number ?? 0);
+
+            const embeddingText = this.generateTaxEmbeddingText(taxReturn, 'corporate');
+            const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+
+            return {
+              corp_tax_id: taxReturn.id.toString(),
+              client_id: client?.id ?? '',
+              client_name: client?.name ?? taxReturn.description ?? 'Unknown',
+              year: taxReturn.year,
+              order_term: taxReturn.order_term ?? null,
+              description: taxReturn.description ?? null,
+              type: taxReturn.type ?? null,
+              status: taxReturn.status ?? null,
+              saved: taxReturn.saved ?? null,
+              deleted: taxReturn.deleted ?? null,
+              migrated_to_pro: taxReturn.migrated_to_pro ?? null,
+              elster_telenumber: taxReturn.elster_telenumber ?? null,
+              tnr_provided: taxReturn.tnr_provided ?? null,
+              datev_arrival: taxReturn.datev_arrival ?? null,
+              transmission_date: taxReturn.transmission_date ?? null,
+              transmission_status: taxReturn.transmission_status ?? null,
+              tax_office_arrival: taxReturn.tax_office_arrival ?? null,
+              embedding_text: embeddingText,
+              embedding,
+              metadata: {},
+            };
+          })
+        );
+
+        const { error } = await this.supabase.db
+          .from('datev_corp_tax')
+          .upsert(recordsWithEmbeddings, { onConflict: 'corp_tax_id' });
+
+        if (error) {
+          this.logger.error(`Failed to insert corp tax batch at index ${i}:`, error);
+        } else {
+          synced += batch.length;
+        }
+
+        // Progress logging
+        if (synced % 250 === 0 && synced > 0) {
+          this.logger.log(
+            `  → Processed ${synced}/${corpTaxReturns.length} corporate tax returns...`
+          );
+        }
+      }
+
+      this.logger.log(`✅ Corporate tax synced: ${synced}/${corpTaxReturns.length}`);
+      return { fetched: corpTaxReturns.length, synced, errors: 0 };
+    } catch (error) {
+      this.logger.error('Failed to sync corporate tax:', error);
+      return { fetched: 0, synced: 0, errors: 1 };
+    }
+  }
+
+  /**
+   * Sync trade tax returns from Klardaten
+   * Phase 1.2: Tax data with client enrichment
+   */
+  private async syncTradeTax(
+    year: number
+  ): Promise<{ fetched: number; synced: number; errors: number }> {
+    this.logger.log(`\n📄 Syncing trade tax returns for ${year}...`);
+
+    try {
+      // Build client_number -> client_id/name lookup map (reuse same map as corp tax)
+      const { data: clients, error: clientError } = await this.supabase.db
+        .from('datev_clients')
+        .select('client_id, client_number, client_name');
+
+      if (clientError) {
+        this.logger.error('Failed to fetch clients for tax enrichment:', clientError);
+        return { fetched: 0, synced: 0, errors: 1 };
+      }
+
+      const clientMap = new Map(
+        clients?.map((c) => [c.client_number, { id: c.client_id, name: c.client_name }]) ?? []
+      );
+
+      this.logger.log(`📋 Built lookup map for ${clientMap.size} clients`);
+
+      const tradeTaxReturns = await this.klardatenClient.getTradeTax(year);
+      let synced = 0;
+
+      // Process in batches of 50 for parallel embedding generation (same as addressees)
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < tradeTaxReturns.length; i += BATCH_SIZE) {
+        const batch = tradeTaxReturns.slice(i, i + BATCH_SIZE);
+
+        const recordsWithEmbeddings = await Promise.all(
+          batch.map(async (taxReturn) => {
+            // Enrich with client_id using client_number lookup
+            const client = clientMap.get(taxReturn.client_number ?? 0);
+
+            const embeddingText = this.generateTaxEmbeddingText(taxReturn, 'trade');
+            const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+
+            return {
+              trade_tax_id: taxReturn.id.toString(),
+              client_id: client?.id ?? '',
+              client_name: client?.name ?? taxReturn.description ?? 'Unknown',
+              year: taxReturn.year,
+              order_term: taxReturn.order_term ?? null,
+              description: taxReturn.description ?? null,
+              type: taxReturn.type ?? null,
+              status: taxReturn.status ?? null,
+              saved: taxReturn.saved ?? null,
+              deleted: taxReturn.deleted ?? null,
+              migrated_to_pro: taxReturn.migrated_to_pro ?? null,
+              elster_telenumber: taxReturn.elster_telenumber ?? null,
+              tnr_provided: taxReturn.tnr_provided ?? null,
+              datev_arrival: taxReturn.datev_arrival ?? null,
+              transmission_date: taxReturn.transmission_date ?? null,
+              transmission_status: taxReturn.transmission_status ?? null,
+              tax_office_arrival: taxReturn.tax_office_arrival ?? null,
+              embedding_text: embeddingText,
+              embedding,
+              metadata: {},
+            };
+          })
+        );
+
+        const { error } = await this.supabase.db
+          .from('datev_trade_tax')
+          .upsert(recordsWithEmbeddings, { onConflict: 'trade_tax_id' });
+
+        if (error) {
+          this.logger.error(`Failed to insert trade tax batch at index ${i}:`, error);
+        } else {
+          synced += batch.length;
+        }
+
+        // Progress logging
+        if (synced % 250 === 0 && synced > 0) {
+          this.logger.log(`  → Processed ${synced}/${tradeTaxReturns.length} trade tax returns...`);
+        }
+      }
+
+      this.logger.log(`✅ Trade tax synced: ${synced}/${tradeTaxReturns.length}`);
+      return { fetched: tradeTaxReturns.length, synced, errors: 0 };
+    } catch (error) {
+      this.logger.error('Failed to sync trade tax:', error);
+      return { fetched: 0, synced: 0, errors: 1 };
+    }
+  }
+
+  /**
+   * Sync analytics data from Klardaten
+   * Phase 1.2: Business intelligence data
+   */
+  private async syncAnalytics(year: number): Promise<{ totalSynced: number; totalErrors: number }> {
+    this.logger.log(`\n📊 Syncing analytics data for ${year}...`);
+
+    let totalSynced = 0;
+    let totalErrors = 0;
+
+    // Sync all analytics endpoints (may not have data depending on Klardaten plan)
+    try {
+      const orderValues = await this.klardatenClient.getAnalyticsOrderValues(year);
+      this.logger.log(`✅ Fetched ${orderValues.length} order value records`);
+      totalSynced += orderValues.length;
+    } catch (error) {
+      this.logger.warn(
+        'Analytics order values not available (may require different Klardaten plan)'
+      );
+      totalErrors++;
+    }
+
+    try {
+      const processingStatus = await this.klardatenClient.getAnalyticsProcessingStatus(year);
+      this.logger.log(`✅ Fetched ${processingStatus.length} processing status records`);
+      totalSynced += processingStatus.length;
+    } catch (error) {
+      this.logger.warn('Analytics processing status not available');
+      totalErrors++;
+    }
+
+    try {
+      const expenses = await this.klardatenClient.getAnalyticsExpenses(year);
+      this.logger.log(`✅ Fetched ${expenses.length} expense records`);
+      totalSynced += expenses.length;
+    } catch (error) {
+      this.logger.warn('Analytics expenses not available');
+      totalErrors++;
+    }
+
+    try {
+      const fees = await this.klardatenClient.getAnalyticsFees(year);
+      this.logger.log(`✅ Fetched ${fees.length} fee records`);
+      totalSynced += fees.length;
+    } catch (error) {
+      this.logger.warn('Analytics fees not available');
+      totalErrors++;
+    }
+
+    this.logger.log(`✅ Analytics sync completed: ${totalSynced} records, ${totalErrors} errors`);
+    return { totalSynced, totalErrors };
+  }
+
+  /**
+   * Sync HR/LODAS data from Klardaten
+   * Phase 1.2: Employee and payroll data
+   */
+  private async syncHrData(
+    year: number
+  ): Promise<{ totalEmployees: number; totalTransactions: number }> {
+    this.logger.log(`\n👥 Syncing HR/LODAS data for ${year}...`);
+
+    let totalEmployees = 0;
+    let totalTransactions = 0;
+
+    // Get list of clients with HR data
+    const { data: clients, error: clientError } = await this.supabase.db
+      .from('datev_clients')
+      .select('client_id, client_number, client_name')
+      .eq('client_status', '1')
+      .limit(10); // Limit for testing
+
+    if (clientError) {
+      this.logger.error('Failed to get client list for HR sync:', clientError);
+      return { totalEmployees: 0, totalTransactions: 0 };
+    }
+
+    // Sync employees and transactions per client
+    for (const client of clients ?? []) {
+      try {
+        const employees = await this.klardatenClient.getHrEmployees(client.client_number);
+        this.logger.log(`✅ Fetched ${employees.length} employees for ${client.client_name}`);
+        totalEmployees += employees.length;
+
+        // Sync transactions (high volume - may need date filtering)
+        const transactions = await this.klardatenClient.getHrTransactions(
+          client.client_number,
+          year
+        );
+        this.logger.log(`✅ Fetched ${transactions.length} transactions for ${client.client_name}`);
+        totalTransactions += transactions.length;
+      } catch (error) {
+        this.logger.warn(`HR data not available for ${client.client_name} (may require HR module)`);
+      }
+    }
+
+    this.logger.log(
+      `✅ HR sync completed: ${totalEmployees} employees, ${totalTransactions} transactions`
+    );
+    return { totalEmployees, totalTransactions };
+  }
+
+  /**
+   * Sync client services from Klardaten
+   * Phase 1.2: Service enablement tracking
+   */
+  private async syncClientServices(): Promise<{ totalServices: number; errors: number }> {
+    this.logger.log(`\n🔧 Syncing client services...`);
+
+    let totalServices = 0;
+    let errors = 0;
+
+    // Get list of clients
+    const { data: clients, error: clientError } = await this.supabase.db
+      .from('datev_clients')
+      .select('client_id, client_name')
+      .eq('client_status', '1')
+      .limit(10); // Limit for testing
+
+    if (clientError) {
+      this.logger.error('Failed to get client list for services sync:', clientError);
+      return { totalServices: 0, errors: 1 };
+    }
+
+    // Sync services per client
+    for (const client of clients ?? []) {
+      try {
+        const services = await this.klardatenClient.getClientServices(client.client_id);
+
+        if (services.length > 0) {
+          const { error } = await this.supabase.db.from('datev_client_services').upsert(services, {
+            onConflict: 'client_id,service_code',
+          });
+
+          if (error) {
+            this.logger.error(`Failed to insert services for ${client.client_name}:`, error);
+            errors++;
+          } else {
+            totalServices += services.length;
+          }
+        }
+      } catch (error) {
+        this.logger.warn(`Services not available for ${client.client_name}`);
+      }
+    }
+
+    this.logger.log(`✅ Client services synced: ${totalServices} services, ${errors} errors`);
+    return { totalServices, errors };
+  }
+
+  /**
+   * Generate embedding text for tax returns
+   * Phase 1.2: Enhanced with more context fields
+   * Note: Numeric 'status' field omitted - it's a unique ID, not a status category
+   */
+  private generateTaxEmbeddingText(
+    taxReturn: DatevCorpTax | DatevTradeTax,
+    taxType: 'corporate' | 'trade'
+  ): string {
+    const typeName = taxType === 'corporate' ? 'Körperschaftssteuer' : 'Gewerbesteuer';
+    const parts: string[] = [
+      `${typeName}erklärung ${taxReturn.year}`,
+      taxReturn.description ? `Mandant: ${taxReturn.description}` : '',
+    ];
+
+    // Status: Only use human-readable transmission_status
+    // (Numeric 'status' field is unique ID, not status code)
+    if (taxReturn.transmission_status) {
+      parts.push(`Status: ${taxReturn.transmission_status}`);
+    }
+
+    // Dates: Show transmission and arrival dates
+    if (taxReturn.transmission_date) {
+      parts.push(`Übermittelt am: ${taxReturn.transmission_date}`);
+    }
+    if (taxReturn.datev_arrival) {
+      parts.push(`DATEV-Eingang: ${taxReturn.datev_arrival}`);
+    }
+    if (taxReturn.tax_office_arrival) {
+      parts.push(`Finanzamt-Eingang: ${taxReturn.tax_office_arrival}`);
+    }
+
+    // ELSTER tracking
+    if (taxReturn.elster_telenumber) {
+      parts.push(`ELSTER-Nr: ${taxReturn.elster_telenumber}`);
+    }
+
+    // Processing flags
+    if (taxReturn.deleted === 1) {
+      parts.push('GELÖSCHT');
+    }
+    if (taxReturn.migrated_to_pro === true) {
+      parts.push('Nach Pro migriert');
+    }
+
+    return parts.filter(Boolean).join(' | ');
   }
 }

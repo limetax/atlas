@@ -9,10 +9,18 @@ import {
   DatevPostingMatch,
   DatevSusaMatch,
   DatevDocumentMatch,
+  DatevCorpTaxMatch,
+  DatevTradeTaxMatch,
+  DatevAnalyticsOrderValuesMatch,
+  DatevHrEmployeeMatch,
   AddresseeSearchFilters,
   PostingSearchFilters,
   SusaSearchFilters,
   DocumentSearchFilters,
+  CorpTaxSearchFilters,
+  TradeTaxSearchFilters,
+  AnalyticsSearchFilters,
+  HrEmployeeSearchFilters,
 } from '@rag/domain/vector-store.interface';
 
 /**
@@ -246,6 +254,137 @@ export class SupabaseVectorAdapter implements IVectorStore {
       return (data as DatevDocumentMatch[]) || [];
     } catch (err) {
       this.logger.error('DATEV document search failed:', err);
+      return [];
+    }
+  }
+
+  // ============================================
+  // Phase 1.2: Additional Search Methods
+  // ============================================
+
+  /**
+   * Search for similar corporate tax returns using vector similarity
+   * Phase 1.2: Corp tax search with status filtering
+   */
+  async searchDatevCorpTax(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: CorpTaxSearchFilters
+  ): Promise<DatevCorpTaxMatch[]> {
+    try {
+      const { data, error } = await this.supabase.db.rpc('match_datev_corp_tax', {
+        query_embedding: queryEmbedding,
+        match_threshold: matchThreshold,
+        match_count: matchCount,
+        filter_client_id: filters?.client_id || null,
+        filter_year: filters?.year || null,
+        filter_status: filters?.status || null,
+      });
+
+      if (error) {
+        this.logger.error('DATEV corp tax search error:', error);
+        return [];
+      }
+
+      return (data as DatevCorpTaxMatch[]) || [];
+    } catch (err) {
+      this.logger.error('DATEV corp tax search failed:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Search for similar trade tax returns using vector similarity
+   * Phase 1.2: Trade tax search with status filtering
+   */
+  async searchDatevTradeTax(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: TradeTaxSearchFilters
+  ): Promise<DatevTradeTaxMatch[]> {
+    try {
+      const { data, error } = await this.supabase.db.rpc('match_datev_trade_tax', {
+        query_embedding: queryEmbedding,
+        match_threshold: matchThreshold,
+        match_count: matchCount,
+        filter_client_id: filters?.client_id || null,
+        filter_year: filters?.year || null,
+        filter_status: filters?.status || null,
+      });
+
+      if (error) {
+        this.logger.error('DATEV trade tax search error:', error);
+        return [];
+      }
+
+      return (data as DatevTradeTaxMatch[]) || [];
+    } catch (err) {
+      this.logger.error('DATEV trade tax search failed:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Search for similar analytics order values using vector similarity
+   * Phase 1.2: Analytics search for business intelligence
+   */
+  async searchDatevAnalyticsOrderValues(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: AnalyticsSearchFilters
+  ): Promise<DatevAnalyticsOrderValuesMatch[]> {
+    try {
+      const { data, error } = await this.supabase.db.rpc('match_datev_analytics_order_values', {
+        query_embedding: queryEmbedding,
+        match_threshold: matchThreshold,
+        match_count: matchCount,
+        filter_client_id: filters?.client_id || null,
+        filter_year: filters?.year || null,
+      });
+
+      if (error) {
+        this.logger.error('DATEV analytics order values search error:', error);
+        return [];
+      }
+
+      return (data as DatevAnalyticsOrderValuesMatch[]) || [];
+    } catch (err) {
+      this.logger.error('DATEV analytics order values search failed:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Search for similar HR employees using vector similarity
+   * Phase 1.2: Employee search with department and status filtering
+   */
+  async searchDatevHrEmployees(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filters?: HrEmployeeSearchFilters
+  ): Promise<DatevHrEmployeeMatch[]> {
+    try {
+      const { data, error } = await this.supabase.db.rpc('match_datev_hr_employees', {
+        query_embedding: queryEmbedding,
+        match_threshold: matchThreshold,
+        match_count: matchCount,
+        filter_client_id: filters?.client_id || null,
+        filter_department: filters?.department || null,
+        filter_is_active: filters?.is_active ?? null,
+      });
+
+      if (error) {
+        this.logger.error('DATEV HR employees search error:', error);
+        return [];
+      }
+
+      return (data as DatevHrEmployeeMatch[]) || [];
+    } catch (err) {
+      this.logger.error('DATEV HR employees search failed:', err);
       return [];
     }
   }

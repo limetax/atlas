@@ -8,6 +8,16 @@ import {
   DatevPosting,
   DatevSusa,
   DatevDocument,
+  DatevRelationship,
+  DatevCorpTax,
+  DatevTradeTax,
+  DatevAnalyticsOrderValues,
+  DatevAnalyticsProcessingStatus,
+  DatevAnalyticsExpenses,
+  DatevAnalyticsFees,
+  DatevHrEmployee,
+  DatevHrTransaction,
+  DatevClientService,
   KlardatenAuthResponse,
 } from '@atlas/shared';
 
@@ -502,6 +512,340 @@ export class KlardatenClient {
       return filtered;
     } catch (error) {
       this.logger.error('Failed to fetch documents:', error);
+      throw error;
+    }
+  }
+
+  // ============================================
+  // PHASE 1.2: Additional API Methods
+  // ============================================
+
+  /**
+   * Fetch all relationships between addressees with pagination
+   * Source: /api/master-data/relationships
+   * Returns: Managing directors, partners, shareholders, etc.
+   */
+  async getRelationships(): Promise<DatevRelationship[]> {
+    this.logger.log('📥 Fetching relationships from Klardaten API with pagination...');
+
+    try {
+      const allRelationships: DatevRelationship[] = [];
+      let skip = 0;
+      const top = 100; // Page size
+
+      while (true) {
+        const page = Math.floor(skip / top) + 1;
+        const response = await this.httpClient.get<DatevRelationship[]>(
+          '/api/master-data/relationships',
+          {
+            params: {
+              page,
+              page_size: top,
+            },
+          }
+        );
+
+        const batch = response.data;
+
+        if (!batch || batch.length === 0) {
+          break;
+        }
+
+        allRelationships.push(...batch);
+
+        // If we got less than the page size, we're done
+        if (batch.length < top) {
+          break;
+        }
+
+        skip += top;
+        if (skip % 500 === 0) {
+          this.logger.log(`  → Fetched ${skip} relationships so far...`);
+        }
+      }
+
+      this.logger.log(`✅ Fetched ${allRelationships.length} total relationships from Klardaten`);
+      return allRelationships;
+    } catch (error) {
+      this.logger.error('Failed to fetch relationships:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch corporate tax returns with pagination
+   * Source: /api/tax/corp-tax
+   */
+  async getCorpTax(year?: number): Promise<DatevCorpTax[]> {
+    this.logger.log(
+      `📥 Fetching corporate tax returns${year ? ` for ${year}` : ''} with pagination...`
+    );
+
+    try {
+      const allCorpTax: DatevCorpTax[] = [];
+      let skip = 0;
+      const top = 100; // Page size
+
+      while (true) {
+        const page = Math.floor(skip / top) + 1;
+        const response = await this.httpClient.get<DatevCorpTax[]>('/api/tax/corp-tax', {
+          params: {
+            page,
+            page_size: top,
+            ...(year ? { year } : {}),
+          },
+        });
+
+        const batch = response.data;
+
+        if (!batch || batch.length === 0) {
+          break;
+        }
+
+        allCorpTax.push(...batch);
+
+        // If we got less than the page size, we're done
+        if (batch.length < top) {
+          break;
+        }
+
+        skip += top;
+        this.logger.log(`  → Fetched ${skip} corporate tax returns so far...`);
+      }
+
+      this.logger.log(`✅ Fetched ${allCorpTax.length} total corporate tax returns from Klardaten`);
+      return allCorpTax;
+    } catch (error) {
+      this.logger.error('Failed to fetch corporate tax returns:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch trade tax returns with pagination
+   * Source: /api/tax/trade-tax
+   */
+  async getTradeTax(year?: number): Promise<DatevTradeTax[]> {
+    this.logger.log(
+      `📥 Fetching trade tax returns${year ? ` for ${year}` : ''} with pagination...`
+    );
+
+    try {
+      const allTradeTax: DatevTradeTax[] = [];
+      let skip = 0;
+      const top = 100; // Page size
+
+      while (true) {
+        const page = Math.floor(skip / top) + 1;
+        const response = await this.httpClient.get<DatevTradeTax[]>('/api/tax/trade-tax', {
+          params: {
+            page,
+            page_size: top,
+            ...(year ? { year } : {}),
+          },
+        });
+
+        const batch = response.data;
+
+        if (!batch || batch.length === 0) {
+          break;
+        }
+
+        allTradeTax.push(...batch);
+
+        // If we got less than the page size, we're done
+        if (batch.length < top) {
+          break;
+        }
+
+        skip += top;
+        this.logger.log(`  → Fetched ${skip} trade tax returns so far...`);
+      }
+
+      this.logger.log(`✅ Fetched ${allTradeTax.length} total trade tax returns from Klardaten`);
+      return allTradeTax;
+    } catch (error) {
+      this.logger.error('Failed to fetch trade tax returns:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch analytics: order values
+   * Source: /api/analytics/tax-advisory/order-values
+   */
+  async getAnalyticsOrderValues(year?: number): Promise<DatevAnalyticsOrderValues[]> {
+    this.logger.log(`📥 Fetching analytics order values${year ? ` for ${year}` : ''}...`);
+
+    try {
+      const response = await this.httpClient.get<DatevAnalyticsOrderValues[]>(
+        '/api/analytics/tax-advisory/order-values',
+        {
+          params: year ? { year } : {},
+        }
+      );
+
+      const orderValues = response.data;
+      this.logger.log(`✅ Fetched ${orderValues.length} order value records`);
+      return orderValues;
+    } catch (error) {
+      this.logger.error('Failed to fetch analytics order values:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch analytics: processing status
+   * Source: /api/analytics/tax-advisory/processing-status
+   */
+  async getAnalyticsProcessingStatus(year?: number): Promise<DatevAnalyticsProcessingStatus[]> {
+    this.logger.log(`📥 Fetching analytics processing status${year ? ` for ${year}` : ''}...`);
+
+    try {
+      const response = await this.httpClient.get<DatevAnalyticsProcessingStatus[]>(
+        '/api/analytics/tax-advisory/processing-status',
+        {
+          params: year ? { year } : {},
+        }
+      );
+
+      const processingStatus = response.data;
+      this.logger.log(`✅ Fetched ${processingStatus.length} processing status records`);
+      return processingStatus;
+    } catch (error) {
+      this.logger.error('Failed to fetch analytics processing status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch analytics: expenses
+   * Source: /api/analytics/tax-advisory/expenses
+   */
+  async getAnalyticsExpenses(year?: number): Promise<DatevAnalyticsExpenses[]> {
+    this.logger.log(`📥 Fetching analytics expenses${year ? ` for ${year}` : ''}...`);
+
+    try {
+      const response = await this.httpClient.get<DatevAnalyticsExpenses[]>(
+        '/api/analytics/tax-advisory/expenses',
+        {
+          params: year ? { year } : {},
+        }
+      );
+
+      const expenses = response.data;
+      this.logger.log(`✅ Fetched ${expenses.length} expense records`);
+      return expenses;
+    } catch (error) {
+      this.logger.error('Failed to fetch analytics expenses:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch analytics: fees
+   * Source: /api/analytics/tax-advisory/fees
+   */
+  async getAnalyticsFees(year?: number): Promise<DatevAnalyticsFees[]> {
+    this.logger.log(`📥 Fetching analytics fees${year ? ` for ${year}` : ''}...`);
+
+    try {
+      const response = await this.httpClient.get<DatevAnalyticsFees[]>(
+        '/api/analytics/tax-advisory/fees',
+        {
+          params: year ? { year } : {},
+        }
+      );
+
+      const fees = response.data;
+      this.logger.log(`✅ Fetched ${fees.length} fee records`);
+      return fees;
+    } catch (error) {
+      this.logger.error('Failed to fetch analytics fees:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch HR/LODAS employees for a specific client
+   * Source: /api/hr-lodas/clients/{clientNumber}/employees
+   */
+  async getHrEmployees(clientNumber: number): Promise<DatevHrEmployee[]> {
+    this.logger.log(`📥 Fetching HR employees for client ${clientNumber}...`);
+
+    try {
+      const response = await this.httpClient.get<DatevHrEmployee[]>(
+        `/api/hr-lodas/clients/${clientNumber}/employees`
+      );
+
+      const employees = response.data;
+      this.logger.log(`✅ Fetched ${employees.length} employees for client ${clientNumber}`);
+      return employees;
+    } catch (error) {
+      this.logger.error(`Failed to fetch HR employees for client ${clientNumber}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch HR/LODAS payroll transactions for a specific client
+   * Source: /api/hr-lodas/clients/{clientNumber}/transaction-data/standard
+   */
+  async getHrTransactions(clientNumber: number, year?: number): Promise<DatevHrTransaction[]> {
+    this.logger.log(
+      `📥 Fetching HR transactions for client ${clientNumber}${year ? ` year ${year}` : ''}...`
+    );
+
+    try {
+      const response = await this.httpClient.get<DatevHrTransaction[]>(
+        `/api/hr-lodas/clients/${clientNumber}/transaction-data/standard`,
+        {
+          params: year ? { year } : {},
+        }
+      );
+
+      const transactions = response.data;
+
+      // Filter by date (2025-01-01+)
+      const filtered = transactions.filter((txn) => {
+        if (!txn.transaction_date) return true;
+
+        try {
+          const txnDate = parseISO(txn.transaction_date);
+          const cutoffDate = parseISO(DATE_FILTER_FROM);
+          return isAfter(txnDate, cutoffDate) || txnDate.getTime() === cutoffDate.getTime();
+        } catch {
+          return true;
+        }
+      });
+
+      this.logger.log(
+        `✅ Fetched ${filtered.length} HR transactions for client ${clientNumber} (filtered for 2025+)`
+      );
+      return filtered;
+    } catch (error) {
+      this.logger.error(`Failed to fetch HR transactions for client ${clientNumber}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch services enabled for a specific client
+   * Source: /api/master-data/clients/{clientId}/services
+   */
+  async getClientServices(clientId: string): Promise<DatevClientService[]> {
+    this.logger.log(`📥 Fetching services for client ${clientId}...`);
+
+    try {
+      const response = await this.httpClient.get<DatevClientService[]>(
+        `/api/master-data/clients/${clientId}/services`
+      );
+
+      const services = response.data;
+      this.logger.log(`✅ Fetched ${services.length} services for client ${clientId}`);
+      return services;
+    } catch (error) {
+      this.logger.error(`Failed to fetch services for client ${clientId}:`, error);
       throw error;
     }
   }
