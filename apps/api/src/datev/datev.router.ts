@@ -21,6 +21,18 @@ export class DatevRouter {
     input: SyncInputSchema,
   })
   async sync(@Input('orderYear') orderYear: number) {
-    return await this.datevSync.sync(orderYear);
+    // Run sync in background to prevent blocking the API server
+    // Embedding generation is CPU-intensive and would block all requests
+    setImmediate(() => {
+      this.datevSync.sync(orderYear).catch((err) => {
+        console.error('Background DATEV sync failed:', err);
+      });
+    });
+
+    return {
+      success: true,
+      message: `DATEV sync started in background for fiscal year ${orderYear}`,
+      fiscalYear: orderYear,
+    };
   }
 }
