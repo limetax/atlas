@@ -22,14 +22,23 @@ export class SupabaseService implements OnModuleInit {
     }
 
     // Initialize with service role key (server-side only)
+    // Service role bypasses RLS automatically
     this.client = createClient<Database>(supabaseUrl, supabaseKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          apikey: supabaseKey, // Explicitly set service role key
+        },
+      },
     });
 
-    this.logger.log('✅ Supabase client initialized');
+    this.logger.log('✅ Supabase client initialized with service role');
   }
 
   // Expose Supabase database client
