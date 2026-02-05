@@ -7,6 +7,7 @@ export interface Message {
   role: MessageRole;
   content: string;
   citations?: Citation[];
+  toolCalls?: Array<{ name: string; status: 'started' | 'completed' }>;
   timestamp?: Date | string;
 }
 
@@ -64,7 +65,14 @@ export interface ChatRequest {
   assistantId?: string;
 }
 
-export const CHAT_STREAM_CHUNK_TYPES = ['text', 'citation', 'citations', 'done', 'error'] as const;
+export const CHAT_STREAM_CHUNK_TYPES = [
+  'text',
+  'citation',
+  'citations',
+  'done',
+  'error',
+  'tool_call',
+] as const;
 export type ChatStreamChunkType = (typeof CHAT_STREAM_CHUNK_TYPES)[number];
 
 export interface ChatStreamChunk {
@@ -73,6 +81,7 @@ export interface ChatStreamChunk {
   citation?: Citation;
   citations?: Citation[];
   error?: string;
+  toolCall?: { name: string; status: 'started' | 'completed' };
 }
 
 // LLM Adapter types

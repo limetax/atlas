@@ -4,9 +4,10 @@ import remarkGfm from 'remark-gfm';
 import { Message } from '@atlas/shared';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { User, ExternalLink } from 'lucide-react';
+import { User, ExternalLink, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LAW_BOOKS } from '@/constants/law-books';
+import { getToolLabel } from './tool-labels';
 
 interface ChatMessageProps {
   message: Message;
@@ -64,6 +65,18 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
       )}
 
       <div className={cn('flex flex-col gap-2 max-w-[75%]', isUser ? 'items-end' : 'items-start')}>
+        {/* Tool calls — rendered above assistant message bubble */}
+        {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
+          <div className="flex flex-col gap-1 mb-1">
+            {message.toolCalls.map((tc) => (
+              <div key={tc.name} className="flex items-center gap-2 text-xs text-gray-500">
+                <Check className="w-3 h-3 text-lime-600 flex-shrink-0" />
+                <span>{getToolLabel(tc.name)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <Card
           className={cn(
             'px-4 py-3 rounded-2xl border',

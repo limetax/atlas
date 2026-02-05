@@ -9,11 +9,17 @@ import { ContextToggles } from './context/ContextToggles';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ChatScrollAnchor } from './ChatScrollAnchor';
 
+export interface ToolCallState {
+  name: string;
+  status: 'started' | 'completed';
+}
+
 interface ChatInterfaceProps {
   messages: Message[];
   onSendMessage: (message: string) => void;
   onCancelRequest?: () => void;
   isLoading?: boolean;
+  activeToolCalls?: ToolCallState[];
   initialContent?: string;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
@@ -24,6 +30,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSendMessage,
   onCancelRequest,
   isLoading = false,
+  activeToolCalls = [],
   initialContent,
   context,
   onContextChange,
@@ -69,7 +76,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white overflow-hidden">
-      <MessagesArea messages={messages} isLoading={isLoading} messagesEndRef={messagesEndRef} />
+      <MessagesArea
+        messages={messages}
+        isLoading={isLoading}
+        activeToolCalls={activeToolCalls}
+        messagesEndRef={messagesEndRef}
+      />
 
       <InputArea
         inputValue={inputValue}
@@ -89,14 +101,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 interface MessagesAreaProps {
   messages: Message[];
   isLoading: boolean;
+  activeToolCalls: ToolCallState[];
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const MessagesArea = ({ messages, isLoading, messagesEndRef }: MessagesAreaProps) => {
+const MessagesArea = ({
+  messages,
+  isLoading,
+  activeToolCalls,
+  messagesEndRef,
+}: MessagesAreaProps) => {
   // Show minimal empty state when no messages
   if (messages.length === 0) {
     return <ChatEmptyState />;
   }
+
+  // Only show indicator when loading AND no assistant message is streaming yet
+  const lastMessage = messages[messages.length - 1];
+  const showIndicator = isLoading && lastMessage?.role !== 'assistant';
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
@@ -105,7 +127,7 @@ const MessagesArea = ({ messages, isLoading, messagesEndRef }: MessagesAreaProps
           <ChatMessage key={message.id} message={message} />
         ))}
 
-        {isLoading && <ChatStreamingIndicator />}
+        {showIndicator && <ChatStreamingIndicator activeToolCalls={activeToolCalls} />}
 
         <ChatScrollAnchor trackVisibility />
         <div ref={messagesEndRef} />

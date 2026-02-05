@@ -59,7 +59,11 @@ export class ChatService {
 
     // 5. Stream response from LLM with context for tool access
     for await (const chunk of this.llm.streamCompletion(llmMessages, systemPrompt, chatContext)) {
-      yield { type: 'text', content: chunk };
+      if (typeof chunk === 'string') {
+        yield { type: 'text', content: chunk };
+      } else {
+        yield { type: 'tool_call', toolCall: { name: chunk.name, status: chunk.status } };
+      }
     }
 
     // 6. Yield done signal

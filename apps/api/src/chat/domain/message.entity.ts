@@ -17,6 +17,7 @@ export interface Message {
 export type ChatStreamChunk =
   | { type: 'text'; content: string }
   | { type: 'citations'; citations: Citation[] }
+  | { type: 'tool_call'; toolCall: { name: string; status: 'started' | 'completed' } }
   | { type: 'done' }
   | { type: 'error'; error: string };
 

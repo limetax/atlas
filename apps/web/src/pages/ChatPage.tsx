@@ -45,6 +45,9 @@ export const ChatPage: React.FC = () => {
   } = useChatSessions();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [activeToolCalls, setActiveToolCalls] = useState<
+    Array<{ name: string; status: 'started' | 'completed' }>
+  >([]);
   const hasCreatedInitialSession = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -121,6 +124,7 @@ export const ChatPage: React.FC = () => {
     try {
       let assistantContent = '';
       let citations: Message['citations'] = [];
+      let collectedToolCalls: Message['toolCalls'] = [];
 
       // Pass assistantId, context, and abort signal to streaming API
       for await (const chunk of streamChatMessage(
@@ -133,23 +137,50 @@ export const ChatPage: React.FC = () => {
         if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
-          const streamingMessage: Message = {
-            id: generateMessageId(),
-            role: 'assistant',
-            content: assistantContent,
-            citations,
-            timestamp: new Date(),
-          };
+          // Only show the assistant bubble once there's visible text
+          if (assistantContent.trim()) {
+            const streamingMessage: Message = {
+              id: generateMessageId(),
+              role: 'assistant',
+              content: assistantContent,
+              citations,
+              toolCalls: collectedToolCalls,
+              timestamp: new Date(),
+            };
 
-          updateCurrentSessionMessages([...updatedMessages, streamingMessage]);
+            updateCurrentSessionMessages([...updatedMessages, streamingMessage]);
+          }
         } else if (chunk.type === 'citations' && chunk.citations) {
           citations = chunk.citations;
+        } else if (chunk.type === 'tool_call' && chunk.toolCall) {
+          // Update local collection for persisting on message
+          const existingIdx = collectedToolCalls?.findIndex(
+            (tc) => tc.name === chunk.toolCall!.name
+          );
+          if (existingIdx !== undefined && existingIdx >= 0 && collectedToolCalls) {
+            collectedToolCalls[existingIdx] = chunk.toolCall;
+          } else {
+            collectedToolCalls = [...(collectedToolCalls || []), chunk.toolCall];
+          }
+
+          // Update state for streaming indicator
+          setActiveToolCalls((prev) => {
+            const existing = prev.findIndex((tc) => tc.name === chunk.toolCall!.name);
+            if (existing >= 0) {
+              const updated = [...prev];
+              updated[existing] = chunk.toolCall!;
+              return updated;
+            }
+            return [...prev, chunk.toolCall!];
+          });
         } else if (chunk.type === 'done') {
+          setActiveToolCalls([]);
           const finalMessage: Message = {
             id: generateMessageId(),
             role: 'assistant',
             content: assistantContent,
             citations,
+            toolCalls: collectedToolCalls,
             timestamp: new Date(),
           };
 
@@ -179,6 +210,7 @@ export const ChatPage: React.FC = () => {
       updateCurrentSessionMessages([...updatedMessages, errorMessage]);
     } finally {
       setIsLoading(false);
+      setActiveToolCalls([]);
       abortControllerRef.current = null;
     }
   };
@@ -231,6 +263,7 @@ export const ChatPage: React.FC = () => {
           onSendMessage={handleSendMessage}
           onCancelRequest={handleCancelRequest}
           isLoading={isLoading}
+          activeToolCalls={activeToolCalls}
           initialContent={templateContent}
           context={chatContext}
           onContextChange={handleContextChange}
