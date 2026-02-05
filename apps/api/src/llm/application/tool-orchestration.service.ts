@@ -7,6 +7,15 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { BaseMessage, HumanMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 
 /**
+ * Event emitted when a tool call starts or completes
+ */
+export interface ToolCallEvent {
+  type: 'tool_call';
+  name: string;
+  status: 'started' | 'completed';
+}
+
+/**
  * Tool Orchestration Service - LangChain-based implementation
  * Uses ChatAnthropic, bindTools(), and LangChain message types
  */
@@ -26,7 +35,7 @@ export class ToolOrchestrationService {
     messages: LlmMessage[],
     systemPrompt: string,
     context?: ChatContext
-  ): AsyncGenerator<string, void, unknown> {
+  ): AsyncGenerator<string | ToolCallEvent, void, unknown> {
     const tools = await this.toolResolution.resolveTools(context);
 
     const allMessages = [
@@ -68,6 +77,8 @@ export class ToolOrchestrationService {
 
       // Execute tools via domain providers
       for (const call of response.tool_calls) {
+        yield { type: 'tool_call' as const, name: call.name, status: 'started' as const };
+
         try {
           const provider = this.toolResolution.getProviderForTool(call.name);
           const result = await provider.executeTool({
@@ -91,6 +102,8 @@ export class ToolOrchestrationService {
             })
           );
         }
+
+        yield { type: 'tool_call' as const, name: call.name, status: 'completed' as const };
       }
 
       yield '\n\n';
@@ -110,10 +123,12 @@ export class ToolOrchestrationService {
     systemPrompt: string,
     context?: ChatContext
   ): Promise<string> {
-    // Collect all chunks from streaming
+    // Collect text chunks from streaming (filter out tool call events)
     const chunks: string[] = [];
     for await (const chunk of this.streamCompletionWithTools(messages, systemPrompt, context)) {
-      chunks.push(chunk);
+      if (typeof chunk === 'string') {
+        chunks.push(chunk);
+      }
     }
     return chunks.join('');
   }

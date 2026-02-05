@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LlmMessage } from '@llm/domain/llm-provider.interface';
 import { ChatContext } from '@atlas/shared';
-import { ToolOrchestrationService } from './tool-orchestration.service';
+import { ToolOrchestrationService, ToolCallEvent } from './tool-orchestration.service';
 
 /**
  * LLM Service - Application layer for language model operations
@@ -29,7 +29,7 @@ export class LlmService {
     messages: LlmMessage[],
     systemPrompt: string,
     context?: ChatContext
-  ): AsyncGenerator<string, void, unknown> {
+  ): AsyncGenerator<string | ToolCallEvent, void, unknown> {
     this.logger.debug(`Streaming completion for ${messages.length} messages`, {
       context: context
         ? {
