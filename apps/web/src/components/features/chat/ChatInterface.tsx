@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Message, ChatContext } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, StopCircle } from 'lucide-react';
 import { ChatEmptyState } from './ChatEmptyState';
 import { ContextToggles } from './context/ContextToggles';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
@@ -12,9 +12,8 @@ import { ChatScrollAnchor } from './ChatScrollAnchor';
 interface ChatInterfaceProps {
   messages: Message[];
   onSendMessage: (message: string) => void;
+  onCancelRequest?: () => void;
   isLoading?: boolean;
-  systemPrompt?: string;
-  dataSources?: readonly string[];
   initialContent?: string;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
@@ -23,6 +22,7 @@ interface ChatInterfaceProps {
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   messages,
   onSendMessage,
+  onCancelRequest,
   isLoading = false,
   initialContent,
   context,
@@ -33,10 +33,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Update input when initialContent changes (template insertion from navigation)
-  useEffect(() => {
-    if (initialContent) {
+  useLayoutEffect(() => {
+    if (initialContent && inputRef.current) {
       setInputValue(initialContent);
-      setTimeout(() => inputRef.current?.focus(), 0);
+      inputRef.current.focus();
     }
   }, [initialContent]);
 
@@ -78,6 +78,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         isLoading={isLoading}
         onSubmit={handleSubmit}
         onKeyDown={handleKeyDown}
+        onCancelRequest={onCancelRequest}
         context={context}
         onContextChange={onContextChange}
       />
@@ -104,17 +105,13 @@ const MessagesArea = ({ messages, isLoading, messagesEndRef }: MessagesAreaProps
           <ChatMessage key={message.id} message={message} />
         ))}
 
-        {isLoading && <LoadingIndicator />}
+        {isLoading && <ChatStreamingIndicator />}
 
         <ChatScrollAnchor trackVisibility />
         <div ref={messagesEndRef} />
       </div>
     </div>
   );
-};
-
-const LoadingIndicator = () => {
-  return <ChatStreamingIndicator />;
 };
 
 interface InputAreaProps {
@@ -124,6 +121,7 @@ interface InputAreaProps {
   isLoading: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onCancelRequest?: () => void;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
 }
@@ -135,6 +133,7 @@ const InputArea = ({
   isLoading,
   onSubmit,
   onKeyDown,
+  onCancelRequest,
   context,
   onContextChange,
 }: InputAreaProps) => {
@@ -164,18 +163,21 @@ const InputArea = ({
               )}
             </div>
           </div>
-          <Button
-            type="submit"
-            variant="default"
-            size="default"
-            disabled={!inputValue.trim() || isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
+          {isLoading ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              onClick={onCancelRequest}
+              className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+            >
+              <StopCircle className="w-5 h-5" />
+            </Button>
+          ) : (
+            <Button type="submit" variant="default" size="default" disabled={!inputValue.trim()}>
               <Send className="w-5 h-5" />
-            )}
-          </Button>
+            </Button>
+          )}
         </div>
 
         {/* Context toggles */}

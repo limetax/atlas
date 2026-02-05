@@ -1,7 +1,10 @@
 // Message types
+export const MESSAGE_ROLES = ['user', 'assistant'] as const;
+export type MessageRole = (typeof MESSAGE_ROLES)[number];
+
 export interface Message {
   id?: string;
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
   citations?: Citation[];
   timestamp?: Date | string;
@@ -15,8 +18,12 @@ export interface Citation {
 }
 
 // Context types for chat
-export type ResearchSource = 'handelsregister' | 'german_law' | 'law_publishers';
-export type IntegrationType = 'datev';
+export const RESEARCH_SOURCES = ['handelsregister', 'german_law', 'law_publishers'] as const;
+export type ResearchSource = (typeof RESEARCH_SOURCES)[number];
+
+export const INTEGRATION_TYPES = ['datev'] as const;
+export type IntegrationType = (typeof INTEGRATION_TYPES)[number];
+
 export type MandantId = string;
 
 export interface ChatContext {
@@ -37,12 +44,15 @@ export interface ChatSession {
 }
 
 // RAG types
+export const TAX_DOCUMENT_CATEGORIES = ['AO', 'EStG', 'UStG', 'Other'] as const;
+export type TaxDocumentCategory = (typeof TAX_DOCUMENT_CATEGORIES)[number];
+
 export interface TaxDocument {
   id: string;
   citation: string;
   title: string;
   content: string;
-  category: 'AO' | 'EStG' | 'UStG' | 'Other';
+  category: TaxDocumentCategory;
 }
 
 // API types
@@ -54,8 +64,11 @@ export interface ChatRequest {
   assistantId?: string;
 }
 
+export const CHAT_STREAM_CHUNK_TYPES = ['text', 'citation', 'citations', 'done', 'error'] as const;
+export type ChatStreamChunkType = (typeof CHAT_STREAM_CHUNK_TYPES)[number];
+
 export interface ChatStreamChunk {
-  type: 'text' | 'citation' | 'citations' | 'done' | 'error';
+  type: ChatStreamChunkType;
   content?: string;
   citation?: Citation;
   citations?: Citation[];
@@ -63,8 +76,11 @@ export interface ChatStreamChunk {
 }
 
 // LLM Adapter types
+export const LLM_MESSAGE_ROLES = ['user', 'assistant', 'system'] as const;
+export type LlmMessageRole = (typeof LLM_MESSAGE_ROLES)[number];
+
 export interface LLMMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: LlmMessageRole;
   content: string;
 }
 
