@@ -154,13 +154,13 @@ export const ChatPage: React.FC = () => {
           citations = chunk.citations;
         } else if (chunk.type === 'tool_call' && chunk.toolCall) {
           // Update local collection for persisting on message
-          const existingIdx = collectedToolCalls?.findIndex(
+          const existingIdx = collectedToolCalls.findIndex(
             (tc) => tc.name === chunk.toolCall!.name
           );
-          if (existingIdx !== undefined && existingIdx >= 0 && collectedToolCalls) {
+          if (existingIdx >= 0) {
             collectedToolCalls[existingIdx] = chunk.toolCall;
           } else {
-            collectedToolCalls = [...(collectedToolCalls || []), chunk.toolCall];
+            collectedToolCalls = [...collectedToolCalls, chunk.toolCall];
           }
 
           // Update state for streaming indicator

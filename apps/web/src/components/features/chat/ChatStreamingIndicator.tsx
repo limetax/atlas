@@ -28,8 +28,8 @@ export const ChatStreamingIndicator: React.FC<ChatStreamingIndicatorProps> = ({
       {activeToolCalls.length > 0 && (
         <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl rounded-tl-sm">
           <div className="flex flex-col gap-1.5">
-            {activeToolCalls.map((tc) => (
-              <div key={tc.name} className="flex items-center gap-2">
+            {activeToolCalls.map((tc, index) => (
+              <div key={`${tc.name}-${index}`} className="flex items-center gap-2">
                 {tc.status === 'started' ? (
                   <Loader2 className="w-4 h-4 text-lime-500 animate-spin flex-shrink-0" />
                 ) : (

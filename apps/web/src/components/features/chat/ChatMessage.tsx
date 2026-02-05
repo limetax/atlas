@@ -68,8 +68,11 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
         {/* Tool calls — rendered above assistant message bubble */}
         {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
           <div className="flex flex-col gap-1 mb-1">
-            {message.toolCalls.map((tc) => (
-              <div key={tc.name} className="flex items-center gap-2 text-xs text-gray-500">
+            {message.toolCalls.map((tc, index) => (
+              <div
+                key={`${tc.name}-${index}`}
+                className="flex items-center gap-2 text-xs text-gray-500"
+              >
                 <Check className="w-3 h-3 text-lime-600 flex-shrink-0" />
                 <span>{getToolLabel(tc.name)}</span>
               </div>
