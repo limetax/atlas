@@ -1,3 +1,5 @@
+import { LlmMessageRole } from '@atlas/shared';
+
 /**
  * Message Entity - Domain representation of a chat message
  *
@@ -5,7 +7,7 @@
  * independent of how it's transmitted or stored
  */
 export interface Message {
-  role: 'user' | 'assistant' | 'system';
+  role: LlmMessageRole;
   content: string;
 }
 

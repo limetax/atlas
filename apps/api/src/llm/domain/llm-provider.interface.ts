@@ -1,3 +1,4 @@
+import { MessageRole } from '@atlas/shared';
 import { ToolCall } from './tool.types';
 
 /**
@@ -10,7 +11,7 @@ import { ToolCall } from './tool.types';
  * Represents a message in a conversation
  */
 export interface LlmMessage {
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
 }
 

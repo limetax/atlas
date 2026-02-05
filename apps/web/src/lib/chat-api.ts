@@ -1,7 +1,7 @@
-import { Message, ChatStreamChunk, ChatContext } from '@atlas/shared';
 import { env } from '@/config/env';
-import { STORAGE_KEYS, API_ENDPOINTS } from '@/constants';
+import { API_ENDPOINTS, STORAGE_KEYS } from '@/constants';
 import { logger } from '@/utils/logger';
+import { CHAT_STREAM_CHUNK_TYPES, ChatContext, ChatStreamChunk, Message } from '@atlas/shared';
 
 /**
  * Chat API client using Server-Sent Events (SSE)
@@ -49,6 +49,17 @@ function handleHttpError(status: number, statusText: string): never {
 }
 
 /**
+ * Type guard to validate ChatStreamChunk structure
+ */
+function isChatStreamChunk(data: unknown): data is ChatStreamChunk {
+  if (typeof data !== 'object' || data === null) return false;
+
+  const chunk = data as Record<string, unknown>;
+
+  return typeof chunk.type === 'string' && CHAT_STREAM_CHUNK_TYPES.includes(chunk.type);
+}
+
+/**
  * Processes a single SSE line and parses the JSON data
  */
 function* processSSELine(line: string): Generator<ChatStreamChunk, void, unknown> {
@@ -56,7 +67,12 @@ function* processSSELine(line: string): Generator<ChatStreamChunk, void, unknown
 
   try {
     const data = JSON.parse(line.slice(6));
-    yield data as ChatStreamChunk;
+
+    if (isChatStreamChunk(data)) {
+      yield data;
+    } else {
+      logger.error('Invalid ChatStreamChunk structure:', { data });
+    }
   } catch (error) {
     logger.error('Failed to parse SSE chunk:', error, { line });
     // Continue processing other chunks instead of crashing

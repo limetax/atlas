@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 import { LlmService } from '@llm/application/llm.service';
 import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
-import { ChatContext } from '@atlas/shared';
+import { ChatContext, MessageRole } from '@atlas/shared';
 
 interface LlmMessage {
-  role: 'user' | 'assistant';
+  role: MessageRole;
   content: string;
 }
 
@@ -73,7 +73,7 @@ export class ChatService {
   private filterUserAssistantMessages(history: Message[]): LlmMessage[] {
     return history
       .filter(
-        (msg): msg is Message & { role: 'user' | 'assistant' } =>
+        (msg): msg is Message & { role: MessageRole } =>
           msg.role === 'user' || msg.role === 'assistant'
       )
       .map((msg) => ({
