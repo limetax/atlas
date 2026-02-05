@@ -17,6 +17,14 @@ export default [
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+
+      // === React Hooks Best Practices ===
+
+      // Enforce hook dependencies (upgrade from recommended 'warn' to 'error')
+      'react-hooks/exhaustive-deps': 'error',
+
+      // Enforce rules of hooks
+      'react-hooks/rules-of-hooks': 'error',
     },
   },
 ];

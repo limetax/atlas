@@ -6,29 +6,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { User, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LAW_BOOKS } from '@/constants/law-books';
 
 interface ChatMessageProps {
   message: Message;
 }
 
-// Helper function to generate law book URLs
+// Helper function to generate law book URLs using configured patterns
 function getLawBookUrl(citation: string): string | null {
-  // Extract paragraph number and law type
-  const aoMatch = citation.match(/§\s*(\d+[a-z]?)\s*AO/i);
-  const ustgMatch = citation.match(/§\s*(\d+[a-z]?)\s*UStG/i);
-  const estgMatch = citation.match(/§\s*(\d+[a-z]?)\s*EStG/i);
-
-  if (aoMatch) {
-    const paragraph = aoMatch[1].toLowerCase();
-    return `https://www.gesetze-im-internet.de/ao_1977/__${paragraph}.html`;
-  } else if (ustgMatch) {
-    const paragraph = ustgMatch[1].toLowerCase();
-    return `https://www.gesetze-im-internet.de/ustg_1980/__${paragraph}.html`;
-  } else if (estgMatch) {
-    const paragraph = estgMatch[1].toLowerCase();
-    return `https://www.gesetze-im-internet.de/estg/__${paragraph}.html`;
+  for (const book of Object.values(LAW_BOOKS)) {
+    const match = citation.match(book.pattern);
+    if (match) {
+      const paragraph = match[1].toLowerCase();
+      return book.urlTemplate.replace('${paragraph}', paragraph);
+    }
   }
-
   return null;
 }
 
@@ -37,20 +29,28 @@ function enrichContentWithLinks(content: string, citations: Message['citations']
   if (!citations || citations.length === 0) return content;
 
   let enrichedContent = content;
+  const replacements = new Map<string, string>();
 
+  // Build replacement map first to avoid repeated processing
   citations.forEach((citation) => {
     const url = getLawBookUrl(citation.source);
-    if (url) {
-      // Replace citation references in text with markdown links
-      const regex = new RegExp(`(${citation.source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g');
-      enrichedContent = enrichedContent.replace(regex, `[$1](${url} "${citation.title}")`);
+    if (url && !replacements.has(citation.source)) {
+      replacements.set(citation.source, `[${citation.source}](${url} "${citation.title}")`);
     }
+  });
+
+  // Apply all replacements
+  replacements.forEach((replacement, source) => {
+    const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedSource})`, 'g');
+    enrichedContent = enrichedContent.replace(regex, replacement);
   });
 
   return enrichedContent;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+// React.memo prevents re-rendering all messages when a new one is added
+export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
   const isUser = message.role === 'user';
   const enrichedContent = enrichContentWithLinks(message.content, message.citations);
 
@@ -119,4 +119,4 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       )}
     </div>
   );
-};
+});

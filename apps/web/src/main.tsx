@@ -7,7 +7,11 @@ import { trpc, trpcClient } from '@/lib/trpc';
 import { queryClient } from '@/lib/query-client';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { initGlobalErrorHandlers } from '@/utils/error-handlers';
 import '@/styles/globals.css';
+
+// Initialize global error handlers
+initGlobalErrorHandlers();
 
 // Import generated route tree
 import { routeTree } from './routeTree.gen';

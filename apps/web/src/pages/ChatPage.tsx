@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
@@ -8,10 +8,10 @@ import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
 import { truncateText } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
+import { generateMessageId } from '@/utils/id-generator';
 import { Assistant, useAssistant } from '@/hooks/useAssistants';
 import { ICON_MAP } from '@/constants/icons';
 import { Bot } from 'lucide-react';
-import { APP_CONFIG } from '@/constants';
 import { TEMPLATES } from '@/data/templates';
 
 export const ChatPage: React.FC = () => {
@@ -45,17 +45,11 @@ export const ChatPage: React.FC = () => {
   } = useChatSessions();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [chatContext, setChatContext] = useState<ChatContext>(() => currentSession?.context ?? {});
   const hasCreatedInitialSession = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Update local context when session changes
-  useEffect(() => {
-    if (currentSession?.context) {
-      setChatContext(currentSession.context);
-    } else {
-      setChatContext({});
-    }
-  }, [currentSession]);
+  // Derive context from session instead of maintaining duplicate state
+  const chatContext = currentSession?.context ?? {};
 
   // Set current session based on URL param or create first session
   useEffect(() => {
@@ -90,16 +84,22 @@ export const ChatPage: React.FC = () => {
   };
 
   // Handle context changes from ChatInterface
-  const handleContextChange = (newContext: ChatContext) => {
-    setChatContext(newContext);
-    if (currentSessionId) {
-      updateSessionContext(currentSessionId, newContext);
-    }
-  };
+  const handleContextChange = useCallback(
+    (newContext: ChatContext) => {
+      if (currentSessionId) {
+        updateSessionContext(currentSessionId, newContext);
+      }
+    },
+    [currentSessionId, updateSessionContext]
+  );
 
   const handleSendMessage = async (content: string) => {
+    // Create abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     const userMessage: Message = {
-      id: `msg-${Date.now()}`,
+      id: generateMessageId(),
       role: 'user',
       content,
       timestamp: new Date(),
@@ -122,13 +122,19 @@ export const ChatPage: React.FC = () => {
       let assistantContent = '';
       let citations: Message['citations'] = [];
 
-      // Pass assistantId and context to streaming API
-      for await (const chunk of streamChatMessage(content, messages, assistantId, chatContext)) {
+      // Pass assistantId, context, and abort signal to streaming API
+      for await (const chunk of streamChatMessage(
+        content,
+        messages,
+        assistantId,
+        chatContext,
+        abortController.signal
+      )) {
         if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
           const streamingMessage: Message = {
-            id: `msg-${Date.now()}-assistant`,
+            id: generateMessageId(),
             role: 'assistant',
             content: assistantContent,
             citations,
@@ -140,7 +146,7 @@ export const ChatPage: React.FC = () => {
           citations = chunk.citations;
         } else if (chunk.type === 'done') {
           const finalMessage: Message = {
-            id: `msg-${Date.now()}-assistant`,
+            id: generateMessageId(),
             role: 'assistant',
             content: assistantContent,
             citations,
@@ -153,10 +159,16 @@ export const ChatPage: React.FC = () => {
         }
       }
     } catch (error) {
+      // Don't show error message if stream was cancelled by user
+      if (error instanceof Error && error.message.includes('cancelled')) {
+        logger.info('Stream cancelled by user');
+        return;
+      }
+
       logger.error('Error sending message:', error);
 
       const errorMessage: Message = {
-        id: `msg-${Date.now()}-error`,
+        id: generateMessageId(),
         role: 'assistant',
         content: `Entschuldigung, es ist ein Fehler aufgetreten: ${
           error instanceof Error ? error.message : 'Unbekannter Fehler'
@@ -167,7 +179,20 @@ export const ChatPage: React.FC = () => {
       updateCurrentSessionMessages([...updatedMessages, errorMessage]);
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  // Cleanup: abort any running stream on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // Handle cancel request from UI
+  const handleCancelRequest = () => {
+    abortControllerRef.current?.abort();
   };
 
   // If session not found, redirect to home
@@ -204,9 +229,8 @@ export const ChatPage: React.FC = () => {
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}
+          onCancelRequest={handleCancelRequest}
           isLoading={isLoading}
-          systemPrompt={!assistantId ? APP_CONFIG.SYSTEM_PROMPT : undefined}
-          dataSources={!assistantId ? APP_CONFIG.DATA_SOURCES : undefined}
           initialContent={templateContent}
           context={chatContext}
           onContextChange={handleContextChange}

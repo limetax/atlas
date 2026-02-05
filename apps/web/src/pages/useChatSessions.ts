@@ -8,6 +8,7 @@ import { useState, useCallback } from 'react';
 import { ChatSession, Message, ChatContext } from '@atlas/shared';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants';
+import { generateSessionId } from '@/utils/id-generator';
 
 export interface UseChatSessionsReturn {
   sessions: ChatSession[];
@@ -60,35 +61,39 @@ export function useChatSessions(): UseChatSessionsReturn {
   // Create new chat without assistant - returns session ID
   const handleNewChat = useCallback((): string => {
     const newSession: ChatSession = {
-      id: `session-${Date.now()}`,
+      id: generateSessionId(),
       title: 'Neuer Chat',
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
+      context: {},
     };
-    setSessions([newSession, ...sessions]);
+    // Use functional update to avoid stale closure
+    setSessions((prevSessions) => [newSession, ...prevSessions]);
     setCurrentSessionId(newSession.id);
     setMessages([]);
     return newSession.id;
-  }, [sessions, setSessions]);
+  }, [setSessions]);
 
   // Create new chat WITH assistant - returns session ID
   const handleNewChatWithAssistant = useCallback(
     (assistantId: string): string => {
       const newSession: ChatSession = {
-        id: `session-${Date.now()}`,
+        id: generateSessionId(),
         title: 'Neuer Chat',
         messages: [],
         createdAt: new Date(),
         updatedAt: new Date(),
         assistantId,
+        context: {},
       };
-      setSessions([newSession, ...sessions]);
+      // Use functional update to avoid stale closure
+      setSessions((prevSessions) => [newSession, ...prevSessions]);
       setCurrentSessionId(newSession.id);
       setMessages([]);
       return newSession.id;
     },
-    [sessions, setSessions]
+    [setSessions]
   );
 
   const handleSessionSelect = useCallback(
