@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { Message } from '@atlas/shared';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { User, ExternalLink, Check } from 'lucide-react';
+import { ExternalLink, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LAW_BOOKS } from '@/constants/law-books';
 import { getToolLabel } from './tool-labels';
@@ -125,14 +125,6 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
             : ''}
         </span>
       </div>
-
-      {isUser && (
-        <Avatar className="flex-shrink-0 border-2 border-white shadow-md bg-purple-400">
-          <AvatarFallback className="bg-purple-400 text-white">
-            <User className="w-5 h-5" />
-          </AvatarFallback>
-        </Avatar>
-      )}
     </div>
   );
 });

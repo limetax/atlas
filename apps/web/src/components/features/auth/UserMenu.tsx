@@ -1,12 +1,9 @@
 import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { trpc } from '@/lib/trpc';
-import { useAuthToken } from '@/hooks/useAuthToken';
-import { ROUTES } from '@/constants';
-import { getInitials } from '@/utils/formatters';
-import { ChevronDown, LogOut, User, Building2 } from 'lucide-react';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
-import type { Advisor } from '@atlas/shared';
+
+import { Building2, ChevronDown, LogOut, User } from 'lucide-react';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
+import { ROUTES } from '@/constants';
+import { useAuthToken } from '@/hooks/useAuthToken';
+import { trpc } from '@/lib/trpc';
+import { getInitials } from '@/utils/formatters';
+import type { Advisor } from '@atlas/shared';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useNavigate } from '@tanstack/react-router';
 
 interface UserMenuProps {
   user: SupabaseUser;
@@ -44,9 +47,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2 px-3 py-2 h-auto">
-          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-sm">
-            {initials}
-          </div>
+          <Avatar className="w-8 h-8">
+            {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
+            <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold text-sm">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
 
           <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">
             {displayName}
@@ -60,9 +66,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
         {/* User Info Header */}
         <div className="px-3 py-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold">
-              {initials}
-            </div>
+            <Avatar className="w-10 h-10">
+              {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
+              <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
               <p className="text-xs text-gray-500 truncate">{user.email}</p>

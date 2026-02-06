@@ -11,6 +11,7 @@ export interface Advisor {
   advisory_id: string | null;
   role: 'user' | 'admin';
   created_at: string;
+  image_url: string | null;
 }
 
 /**

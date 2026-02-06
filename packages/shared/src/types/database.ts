@@ -42,6 +42,7 @@ export interface Database {
           advisory_id: string | null;
           role: 'user' | 'admin';
           created_at: string;
+          image_url: string | null;
         };
         Insert: {
           id: string;
@@ -50,6 +51,7 @@ export interface Database {
           advisory_id?: string | null;
           role?: 'user' | 'admin';
           created_at?: string;
+          image_url?: string | null;
         };
         Update: {
           id?: string;
@@ -58,6 +60,7 @@ export interface Database {
           advisory_id?: string | null;
           role?: 'user' | 'admin';
           created_at?: string;
+          image_url?: string | null;
         };
         Relationships: [
           {
