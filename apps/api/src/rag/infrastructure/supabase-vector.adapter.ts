@@ -143,6 +143,7 @@ export class SupabaseVectorAdapter implements IVectorStore {
         match_count: matchCount,
         filter_addressee_type: filters?.addressee_type || null,
         filter_is_legal_representative: filters?.is_legal_representative || null,
+        filter_client_id: filters?.client_id || null,
       });
 
       if (error) {

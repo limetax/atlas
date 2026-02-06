@@ -2,7 +2,7 @@ import React from 'react';
 import { ChatContext } from '@atlas/shared';
 import { ResearchDropdown } from './ResearchDropdown';
 import { IntegrationToggle } from './IntegrationToggle';
-import { MandantenDropdown } from './MandantenDropdown';
+import { ClientDropdown } from './ClientDropdown';
 
 interface ContextTogglesProps {
   context: ChatContext;
@@ -25,7 +25,7 @@ export const ContextToggles: React.FC<ContextTogglesProps> = ({ context, onConte
           })
         }
       />
-      <MandantenDropdown
+      <ClientDropdown
         selected={context.mandant}
         onChange={(mandantId) => onContextChange({ ...context, mandant: mandantId })}
       />

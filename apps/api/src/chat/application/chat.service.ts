@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 import { LlmService } from '@llm/application/llm.service';
+import { ClientService } from '@datev/application/client.service';
 import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
 import { ChatContext, MessageRole } from '@atlas/shared';
 
@@ -21,7 +22,8 @@ export class ChatService {
 
   constructor(
     private readonly llm: LlmService,
-    private readonly rag: RAGService
+    private readonly rag: RAGService,
+    private readonly clientService: ClientService
   ) {}
 
   /**
@@ -38,26 +40,58 @@ export class ChatService {
     customSystemPrompt?: string,
     chatContext?: ChatContext
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
-    // 1. Search for relevant context using RAG
-    const { context: ragContext, citations } = await this.rag.searchContext(userMessage);
+    // 1. Extract and validate client filter
+    let clientIdFilter: string | undefined;
+    let selectedClientName: string | undefined;
 
-    // 2. Build system prompt with context
+    if (chatContext?.mandant) {
+      const client = await this.clientService.getClientById(chatContext.mandant);
+      if (!client) {
+        yield {
+          type: 'error',
+          error: 'Der ausgewählte Mandant wurde nicht gefunden.',
+        };
+        yield { type: 'done' };
+        return;
+      }
+      clientIdFilter = chatContext.mandant;
+      selectedClientName = client.client_name;
+
+      // Detect client name conflicts
+      const conflictDetection = await this.detectClientConflict(userMessage, client.client_name);
+      if (conflictDetection.hasConflict) {
+        yield {
+          type: 'text',
+          content: `Ich habe bemerkt, dass Sie über "${conflictDetection.mentionedClient}" sprechen, aber aktuell ist "${client.client_name}" ausgewählt. Möchten Sie den Mandanten wechseln oder die Auswahl aufheben?`,
+        };
+        yield { type: 'done' };
+        return;
+      }
+    }
+
+    // 2. Search for relevant context using RAG with client filter
+    const { context: ragContext, citations } = await this.rag.searchContext(
+      userMessage,
+      clientIdFilter
+    );
+
+    // 3. Build system prompt with context
     const systemPrompt = customSystemPrompt
-      ? this.buildAssistantPrompt(customSystemPrompt, ragContext, chatContext)
-      : this.buildSystemPrompt(ragContext, chatContext);
+      ? this.buildAssistantPrompt(customSystemPrompt, ragContext, chatContext, selectedClientName)
+      : this.buildSystemPrompt(ragContext, chatContext, selectedClientName);
 
-    // 3. Convert message history to LLM format (type-safe, no assertions)
+    // 4. Convert message history to LLM format (type-safe, no assertions)
     const llmMessages: LlmMessage[] = [
       ...this.filterUserAssistantMessages(history),
       { role: 'user', content: userMessage },
     ];
 
-    // 4. Yield citations first (if any)
+    // 5. Yield citations first (if any)
     if (citations.length > 0) {
       yield { type: 'citations', citations };
     }
 
-    // 5. Stream response from LLM with context for tool access
+    // 6. Stream response from LLM with context for tool access
     for await (const chunk of this.llm.streamCompletion(llmMessages, systemPrompt, chatContext)) {
       if (typeof chunk === 'string') {
         yield { type: 'text', content: chunk };
@@ -66,8 +100,52 @@ export class ChatService {
       }
     }
 
-    // 6. Yield done signal
+    // 7. Yield done signal
     yield { type: 'done' };
+  }
+
+  /**
+   * Detect if user message mentions a different client than the selected one
+   * Uses simple case-insensitive string matching
+   */
+  private async detectClientConflict(
+    userMessage: string,
+    selectedClientName: string
+  ): Promise<{ hasConflict: boolean; mentionedClient?: string }> {
+    const messageLower = userMessage.toLowerCase();
+    const selectedNameLower = selectedClientName.toLowerCase();
+
+    // If message contains selected client name, no conflict
+    if (messageLower.includes(selectedNameLower)) {
+      return { hasConflict: false };
+    }
+
+    // Extract potential company names (GmbH, AG, etc.) - case-insensitive
+    const companyNamePattern =
+      /([a-zäöü][\wäöüß]*(?:\s+[\wäöüß]+)*\s+(?:gmbh|ag|kg|ohg|gbr|ug|e\.v\.|ev))\b/gi;
+    const matches = userMessage.match(companyNamePattern);
+
+    if (!matches || matches.length === 0) {
+      return { hasConflict: false };
+    }
+
+    // Check if any mentioned company matches a different client
+    for (const mentionedName of matches) {
+      if (mentionedName.toLowerCase() === selectedNameLower) {
+        continue;
+      }
+
+      const matchingClients = await this.clientService.searchClientsByName(mentionedName);
+
+      if (matchingClients.length > 0) {
+        return {
+          hasConflict: true,
+          mentionedClient: mentionedName,
+        };
+      }
+    }
+
+    return { hasConflict: false };
   }
 
   /**
@@ -92,7 +170,8 @@ export class ChatService {
   private buildAssistantPrompt(
     assistantPrompt: string,
     ragContext: string,
-    chatContext?: ChatContext
+    chatContext?: ChatContext,
+    selectedClientName?: string
   ): string {
     let prompt = assistantPrompt;
 
@@ -115,12 +194,14 @@ HANDELSREGISTER-ZUGRIFF:
 - Präsentiere die Daten strukturiert und lesefreundlich`;
     }
 
-    if (chatContext?.mandant) {
+    if (chatContext?.mandant && selectedClientName) {
       prompt += `
 
-MANDANTENKONTEXT:
-- Mandanten-ID: ${chatContext.mandant}
-- Berücksichtige mandantenspezifische Informationen`;
+WICHTIG - MANDANTENKONTEXT:
+- Der Benutzer hat den Mandanten "${selectedClientName}" ausgewählt
+- Alle bereitgestellten DATEV-Daten beziehen sich ausschließlich auf diesen Mandanten
+- Fokussiere deine Antworten auf "${selectedClientName}"
+- Falls der Benutzer nach einem anderen Unternehmen fragt, weise darauf hin, dass aktuell "${selectedClientName}" ausgewählt ist`;
     }
 
     prompt += `
@@ -141,7 +222,11 @@ Beantworte die Frage des Nutzers basierend auf dem obigen Kontext.`;
   /**
    * Build system prompt with RAG context and chat context
    */
-  private buildSystemPrompt(ragContext: string, chatContext?: ChatContext): string {
+  private buildSystemPrompt(
+    ragContext: string,
+    chatContext?: ChatContext,
+    selectedClientName?: string
+  ): string {
     let basePrompt = `Du bist limetaxIQ, ein KI-Assistent für deutsche Steuerberater und Steuerkanzleien.
 
 Deine Aufgaben:
@@ -181,12 +266,15 @@ WICHTIG - Antwortformat:
 - Erkläre die Bedeutung der Daten im steuerrechtlichen Kontext wenn relevant`;
     }
 
-    if (chatContext?.mandant) {
+    if (chatContext?.mandant && selectedClientName) {
       basePrompt += `
 
-MANDANTENKONTEXT:
-- Mandanten-ID: ${chatContext.mandant}
-- Berücksichtige mandantenspezifische Informationen`;
+WICHTIG - MANDANTENKONTEXT:
+- Der Benutzer hat den Mandanten "${selectedClientName}" ausgewählt
+- Alle bereitgestellten DATEV-Daten beziehen sich ausschließlich auf diesen Mandanten
+- Fokussiere deine Antworten auf "${selectedClientName}"
+- Falls der Benutzer nach einem anderen Unternehmen fragt, weise darauf hin, dass aktuell "${selectedClientName}" ausgewählt ist
+- Verwechsle nicht verschiedene Mandanten - bleibe beim ausgewählten Mandanten`;
     }
 
     basePrompt += `
@@ -225,7 +313,10 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     history: Message[],
     chatContext?: ChatContext
   ): Promise<string> {
-    const { context: ragContext } = await this.rag.searchContext(userMessage);
+    // Extract client filter if present
+    const clientIdFilter = chatContext?.mandant;
+
+    const { context: ragContext } = await this.rag.searchContext(userMessage, clientIdFilter);
     const systemPrompt = this.buildSystemPrompt(ragContext, chatContext);
 
     const llmMessages: LlmMessage[] = this.filterUserAssistantMessages(history);

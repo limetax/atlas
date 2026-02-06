@@ -1,11 +1,11 @@
+import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
 import { Injectable, Logger } from '@nestjs/common';
+import { type Citation, type TaxDocument } from '@rag/domain/citation.entity';
 import {
-  IVectorStore,
   type DatevClientMatch,
   type DatevOrderMatch,
+  IVectorStore,
 } from '@rag/domain/vector-store.interface';
-import { type Citation, type TaxDocument } from '@rag/domain/citation.entity';
-import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
 
 /**
  * RAG Service - Application layer for Retrieval-Augmented Generation
@@ -22,14 +22,17 @@ export class RAGService {
   ) {}
 
   /**
-   * Search for relevant context based on user query
+   * Search for relevant context based on user query with optional client filtering
    * Returns formatted context and citations
    */
-  async searchContext(query: string): Promise<{
+  async searchContext(
+    query: string,
+    clientIdFilter?: string
+  ): Promise<{
     context: string;
     citations: Citation[];
   }> {
-    const { taxContext, datevContext, citations } = await this.buildContext(query);
+    const { taxContext, datevContext, citations } = await this.buildContext(query, clientIdFilter);
 
     // Combine contexts
     let combinedContext = '';
@@ -53,10 +56,13 @@ export class RAGService {
   }
 
   /**
-   * Build context for RAG-augmented prompt
+   * Build context for RAG-augmented prompt with optional client filtering
    * Includes tax law documents and DATEV client/order data from vector search
    */
-  async buildContext(query: string): Promise<{
+  async buildContext(
+    query: string,
+    clientIdFilter?: string
+  ): Promise<{
     taxContext: string;
     datevContext: string;
     citations: Citation[];
@@ -75,13 +81,16 @@ export class RAGService {
       datevAnalyticsResult,
       datevHrResult,
     ] = await Promise.all([
-      this.searchDatevClients(query, 3),
-      this.searchDatevAddressees(query, 3),
-      this.searchDatevOrders(query, 5),
-      this.searchDatevCorpTax(query, 5),
-      this.searchDatevTradeTax(query, 5),
-      this.searchDatevAnalytics(query, 5),
-      this.searchDatevHrEmployees(query, 5),
+      // Skip client search when a specific client is selected
+      clientIdFilter
+        ? Promise.resolve({ clients: [], context: '' })
+        : this.searchDatevClients(query, 3),
+      this.searchDatevAddressees(query, 3, clientIdFilter),
+      this.searchDatevOrders(query, 5), // add clientId filter after we enabled datev orders
+      this.searchDatevCorpTax(query, 5, clientIdFilter),
+      this.searchDatevTradeTax(query, 5, clientIdFilter),
+      this.searchDatevAnalytics(query, 5, clientIdFilter),
+      this.searchDatevHrEmployees(query, 5, clientIdFilter),
     ]);
 
     // Combine DATEV context
@@ -198,7 +207,8 @@ export class RAGService {
    */
   async searchDatevAddressees(
     query: string,
-    maxResults: number = 3
+    maxResults: number = 3,
+    clientIdFilter?: string
   ): Promise<{
     addressees: import('@rag/domain/vector-store.interface').DatevAddresseeMatch[];
     context: string;
@@ -206,10 +216,13 @@ export class RAGService {
     try {
       const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
+      const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
+
       const addressees = await this.vectorStore.searchDatevAddressees(
         queryEmbedding,
         0.3,
-        maxResults
+        maxResults,
+        filters
       );
 
       if (!addressees || addressees.length === 0) {
@@ -383,7 +396,8 @@ export class RAGService {
    */
   async searchDatevCorpTax(
     query: string,
-    maxResults: number = 5
+    maxResults: number = 5,
+    clientIdFilter?: string
   ): Promise<{
     corpTax: import('@rag/domain/vector-store.interface').DatevCorpTaxMatch[];
     context: string;
@@ -391,7 +405,14 @@ export class RAGService {
     try {
       const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
-      const corpTax = await this.vectorStore.searchDatevCorpTax(queryEmbedding, 0.3, maxResults);
+      const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
+
+      const corpTax = await this.vectorStore.searchDatevCorpTax(
+        queryEmbedding,
+        0.3,
+        maxResults,
+        filters
+      );
 
       if (!corpTax || corpTax.length === 0) {
         return { corpTax: [], context: '' };
@@ -422,7 +443,8 @@ export class RAGService {
    */
   async searchDatevTradeTax(
     query: string,
-    maxResults: number = 5
+    maxResults: number = 5,
+    clientIdFilter?: string
   ): Promise<{
     tradeTax: import('@rag/domain/vector-store.interface').DatevTradeTaxMatch[];
     context: string;
@@ -430,7 +452,14 @@ export class RAGService {
     try {
       const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
-      const tradeTax = await this.vectorStore.searchDatevTradeTax(queryEmbedding, 0.3, maxResults);
+      const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
+
+      const tradeTax = await this.vectorStore.searchDatevTradeTax(
+        queryEmbedding,
+        0.3,
+        maxResults,
+        filters
+      );
 
       if (!tradeTax || tradeTax.length === 0) {
         return { tradeTax: [], context: '' };
@@ -461,7 +490,8 @@ export class RAGService {
    */
   async searchDatevAnalytics(
     query: string,
-    maxResults: number = 5
+    maxResults: number = 5,
+    clientIdFilter?: string
   ): Promise<{
     analytics: import('@rag/domain/vector-store.interface').DatevAnalyticsOrderValuesMatch[];
     context: string;
@@ -469,10 +499,13 @@ export class RAGService {
     try {
       const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
+      const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
+
       const analytics = await this.vectorStore.searchDatevAnalyticsOrderValues(
         queryEmbedding,
         0.3,
-        maxResults
+        maxResults,
+        filters
       );
 
       if (!analytics || analytics.length === 0) {
@@ -505,7 +538,8 @@ export class RAGService {
    */
   async searchDatevHrEmployees(
     query: string,
-    maxResults: number = 5
+    maxResults: number = 5,
+    clientIdFilter?: string
   ): Promise<{
     employees: import('@rag/domain/vector-store.interface').DatevHrEmployeeMatch[];
     context: string;
@@ -513,10 +547,13 @@ export class RAGService {
     try {
       const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
 
+      const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
+
       const employees = await this.vectorStore.searchDatevHrEmployees(
         queryEmbedding,
         0.3,
-        maxResults
+        maxResults,
+        filters
       );
 
       if (!employees || employees.length === 0) {

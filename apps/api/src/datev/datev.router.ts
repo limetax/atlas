@@ -1,7 +1,8 @@
 import { Inject } from '@nestjs/common';
-import { Router, Mutation, Input } from 'nestjs-trpc';
+import { Router, Mutation, Query, Input } from 'nestjs-trpc';
 import { z } from 'zod';
 import { DatevSyncService } from '@datev/application/datev-sync.service';
+import { ClientService } from '@datev/application/client.service';
 
 const SyncInputSchema = z.object({
   orderYear: z.number().optional().default(2025),
@@ -12,7 +13,27 @@ const SyncInputSchema = z.object({
  */
 @Router({ alias: 'datev' })
 export class DatevRouter {
-  constructor(@Inject(DatevSyncService) private readonly datevSync: DatevSyncService) {}
+  constructor(
+    @Inject(DatevSyncService) private readonly datevSync: DatevSyncService,
+    @Inject(ClientService) private readonly clientService: ClientService
+  ) {}
+
+  /**
+   * List all active clients for dropdown
+   */
+  @Query({
+    output: z.array(
+      z.object({
+        clientId: z.string(),
+        clientNumber: z.number(),
+        clientName: z.string(),
+        companyForm: z.string().nullable(),
+      })
+    ),
+  })
+  async listClients() {
+    return await this.clientService.listClients();
+  }
 
   /**
    * Sync DATEV data (clients and orders) to Supabase

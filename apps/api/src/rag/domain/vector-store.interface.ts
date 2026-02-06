@@ -141,6 +141,7 @@ export abstract class IVectorStore {
 export interface AddresseeSearchFilters {
   addressee_type?: 1 | 2;
   is_legal_representative?: number;
+  client_id?: string;
 }
 
 export interface PostingSearchFilters {

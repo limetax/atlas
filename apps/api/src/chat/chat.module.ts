@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+import { AssistantModule } from '@/assistant/assistant.module';
+import { DatevModule } from '@/datev/datev.module';
 import { ChatService } from '@chat/application/chat.service';
 import { ChatController } from '@chat/chat.controller';
 import { LlmModule } from '@llm/llm.module';
+import { Module } from '@nestjs/common';
 import { RAGModule } from '@rag/rag.module';
-import { AssistantModule } from '@/assistant/assistant.module';
 
 /**
  * Chat Module - Provides conversational AI functionality
@@ -11,7 +12,7 @@ import { AssistantModule } from '@/assistant/assistant.module';
  * Imports AssistantModule for assistant-based chat
  */
 @Module({
-  imports: [LlmModule, RAGModule, AssistantModule],
+  imports: [LlmModule, RAGModule, AssistantModule, DatevModule],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],
