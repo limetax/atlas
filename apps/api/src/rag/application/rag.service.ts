@@ -1,11 +1,16 @@
 import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
 import { Injectable, Logger } from '@nestjs/common';
-import { type Citation, type TaxDocument } from '@rag/domain/citation.entity';
+import {
+  type Citation,
+  type TaxDocument,
+  type LawPublisherDocument,
+} from '@rag/domain/citation.entity';
 import {
   type DatevClientMatch,
   type DatevOrderMatch,
   IVectorStore,
 } from '@rag/domain/vector-store.interface';
+import { type ResearchSource } from '@atlas/shared';
 
 /**
  * RAG Service - Application layer for Retrieval-Augmented Generation
@@ -27,18 +32,28 @@ export class RAGService {
    */
   async searchContext(
     query: string,
-    clientIdFilter?: string
+    clientIdFilter?: string,
+    researchSources?: ResearchSource[]
   ): Promise<{
     context: string;
     citations: Citation[];
   }> {
-    const { taxContext, datevContext, citations } = await this.buildContext(query, clientIdFilter);
+    const { taxContext, datevContext, lawPublisherContext, citations } = await this.buildContext(
+      query,
+      clientIdFilter,
+      researchSources
+    );
 
     // Combine contexts
     let combinedContext = '';
 
     if (taxContext) {
       combinedContext += `=== STEUERRECHTLICHE GRUNDLAGEN ===\n\n${taxContext}\n\n`;
+    }
+
+    // Law publisher section - only add if results found
+    if (lawPublisherContext) {
+      combinedContext += `=== RECHTSPRECHUNG & KOMMENTARE ===\n\n${lawPublisherContext}\n\n`;
     }
 
     if (datevContext) {
@@ -61,15 +76,29 @@ export class RAGService {
    */
   async buildContext(
     query: string,
-    clientIdFilter?: string
+    clientIdFilter?: string,
+    researchSources?: ResearchSource[]
   ): Promise<{
     taxContext: string;
     datevContext: string;
+    lawPublisherContext: string;
     citations: Citation[];
   }> {
     // Search tax law documents (vector search)
     const { documents: taxDocs, citations } = await this.searchTaxLaw(query);
     const taxContext = this.formatTaxContext(taxDocs);
+
+    // Search law publisher documents (vector search) - Phase TEC-55
+    // Only search if law_publishers is included in researchSources
+    let lawPublisherContext = '';
+    let lawPublisherCitations: Citation[] = [];
+
+    if (researchSources?.includes('law_publishers')) {
+      const { documents: lawPublisherDocs, citations: lawPubCitations } =
+        await this.searchLawPublisherDocuments(query);
+      lawPublisherContext = this.formatLawPublisherContext(lawPublisherDocs);
+      lawPublisherCitations = lawPubCitations;
+    }
 
     // Search DATEV data (vector search) - Phase 1.2: Extended with tax, analytics, HR
     const [
@@ -116,10 +145,14 @@ export class RAGService {
     }
     const datevContext = datevParts.join('\n\n');
 
+    // Combine all citations
+    const allCitations = [...citations, ...lawPublisherCitations];
+
     return {
       taxContext,
       datevContext,
-      citations,
+      lawPublisherContext,
+      citations: allCitations,
     };
   }
 
@@ -168,6 +201,76 @@ export class RAGService {
       return { documents, citations };
     } catch (err) {
       this.logger.error('Tax law search failed:', err);
+      return { documents: [], citations: [] };
+    }
+  }
+
+  /**
+   * Search law publisher documents using semantic vector search
+   * Phase TEC-55: Case law, commentaries, and articles
+   */
+  async searchLawPublisherDocuments(
+    query: string,
+    maxResults: number = 3
+  ): Promise<{
+    documents: LawPublisherDocument[];
+    citations: Citation[];
+  }> {
+    try {
+      // Generate embedding for the query
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+
+      // Query vector store
+      const matches = await this.vectorStore.searchLawPublisherDocuments(
+        queryEmbedding,
+        0.3, // Lower threshold for German legal text
+        maxResults
+      );
+
+      if (!matches || matches.length === 0) {
+        return { documents: [], citations: [] };
+      }
+
+      // Convert to domain entities (camelCase)
+      const documents: LawPublisherDocument[] = matches.map((match) => ({
+        id: match.id,
+        title: match.title,
+        citation: match.citation,
+        documentType: match.document_type,
+        content: match.content,
+        summary: match.summary,
+        publisher: match.publisher,
+        source: match.source,
+        lawReference: match.law_reference,
+        court: match.court,
+        caseNumber: match.case_number,
+        decisionDate: match.decision_date,
+        publicationDate: match.publication_date,
+        author: match.author,
+        tags: match.tags,
+      }));
+
+      // Create citations
+      const citations: Citation[] = matches.map((match) => {
+        let citationTitle = match.title;
+
+        if (match.document_type === 'case_law' && match.court && match.case_number) {
+          citationTitle = `${match.court} ${match.case_number}: ${match.title}`;
+        } else if (match.document_type === 'commentary' && match.author) {
+          citationTitle = `${match.author}: ${match.title}`;
+        }
+
+        return {
+          id: match.id,
+          source: match.citation ?? match.publisher ?? 'Rechtsverlage',
+          title: `${citationTitle} (${Math.round(match.similarity * 100)}% relevant)`,
+          content: match.summary ?? match.content,
+        };
+      });
+
+      return { documents, citations };
+    } catch (err) {
+      this.logger.error('Law publisher document search failed:', err);
       return { documents: [], citations: [] };
     }
   }
@@ -292,6 +395,54 @@ export class RAGService {
     if (documents.length === 0) return '';
 
     return documents.map((doc) => `${doc.citation} - ${doc.title}:\n${doc.content}\n`).join('\n');
+  }
+
+  /**
+   * Format law publisher documents as context string
+   * Phase TEC-55: Case law, commentaries, and articles
+   */
+  private formatLawPublisherContext(documents: LawPublisherDocument[]): string {
+    if (documents.length === 0) return '';
+
+    const documentTypeLabels: Record<string, string> = {
+      case_law: 'Rechtsprechung',
+      commentary: 'Kommentar',
+      article: 'Fachartikel',
+    };
+
+    return documents
+      .map((doc) => {
+        const parts: string[] = [];
+
+        const typeLabel = documentTypeLabels[doc.documentType] ?? doc.documentType;
+        parts.push(`[${typeLabel}] ${doc.title}`);
+
+        // Case law metadata
+        if (doc.documentType === 'case_law') {
+          const caseParts: string[] = [];
+          if (doc.court) caseParts.push(doc.court);
+          if (doc.caseNumber) caseParts.push(doc.caseNumber);
+          if (doc.decisionDate) caseParts.push(`vom ${doc.decisionDate}`);
+          if (caseParts.length > 0) parts.push(caseParts.join(' '));
+        }
+
+        // Commentary/article metadata
+        if (doc.documentType === 'commentary' || doc.documentType === 'article') {
+          const metaParts: string[] = [];
+          if (doc.author) metaParts.push(`Autor: ${doc.author}`);
+          if (doc.publisher) metaParts.push(`Quelle: ${doc.publisher}`);
+          if (metaParts.length > 0) parts.push(metaParts.join(' | '));
+        }
+
+        if (doc.lawReference) parts.push(`Bezug: ${doc.lawReference}`);
+        if (doc.citation) parts.push(`Fundstelle: ${doc.citation}`);
+
+        const contentToShow = doc.summary ?? doc.content;
+        parts.push(`\n${contentToShow}\n`);
+
+        return parts.join('\n');
+      })
+      .join('\n---\n\n');
   }
 
   /**

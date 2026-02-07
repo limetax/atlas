@@ -21,3 +21,25 @@ export interface TaxDocument {
   content: string;
   category: 'AO' | 'UStG' | 'EStG' | 'KStG' | 'GewStG' | 'other';
 }
+
+/**
+ * Law Publisher Document Entity - Domain representation of legal publisher content
+ * Phase TEC-55: Case law, commentaries, and articles
+ */
+export type LawPublisherDocument = {
+  id: string;
+  title: string;
+  citation: string | null;
+  documentType: 'case_law' | 'commentary' | 'article';
+  content: string;
+  summary: string | null;
+  publisher: string | null;
+  source: string | null;
+  lawReference: string | null;
+  court: string | null;
+  caseNumber: string | null;
+  decisionDate: string | null;
+  publicationDate: string | null;
+  author: string | null;
+  tags: string[] | null;
+};

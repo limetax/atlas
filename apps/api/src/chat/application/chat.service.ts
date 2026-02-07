@@ -4,6 +4,7 @@ import { LlmService } from '@llm/application/llm.service';
 import { ClientService } from '@datev/application/client.service';
 import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
 import { ChatContext, MessageRole } from '@atlas/shared';
+import { CONTEXT_PROMPTS } from './chat.prompts';
 
 interface LlmMessage {
   role: MessageRole;
@@ -72,7 +73,8 @@ export class ChatService {
     // 2. Search for relevant context using RAG with client filter
     const { context: ragContext, citations } = await this.rag.searchContext(
       userMessage,
-      clientIdFilter
+      clientIdFilter,
+      chatContext?.research
     );
 
     // 3. Build system prompt with context
@@ -194,6 +196,10 @@ HANDELSREGISTER-ZUGRIFF:
 - Präsentiere die Daten strukturiert und lesefreundlich`;
     }
 
+    if (chatContext?.research?.includes('law_publishers')) {
+      prompt += CONTEXT_PROMPTS.LAW_PUBLISHERS;
+    }
+
     if (chatContext?.mandant && selectedClientName) {
       prompt += `
 
@@ -264,6 +270,10 @@ WICHTIG - Antwortformat:
 - Gib NICHT die rohen JSON-Daten aus
 - Formatiere Informationen lesefreundlich mit Überschriften und Listen
 - Erkläre die Bedeutung der Daten im steuerrechtlichen Kontext wenn relevant`;
+    }
+
+    if (chatContext?.research?.includes('law_publishers')) {
+      basePrompt += CONTEXT_PROMPTS.LAW_PUBLISHERS;
     }
 
     if (chatContext?.mandant && selectedClientName) {
