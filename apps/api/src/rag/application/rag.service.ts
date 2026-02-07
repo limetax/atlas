@@ -10,6 +10,7 @@ import {
   type DatevOrderMatch,
   IVectorStore,
 } from '@rag/domain/vector-store.interface';
+import { type ResearchSource } from '@atlas/shared';
 
 /**
  * RAG Service - Application layer for Retrieval-Augmented Generation
@@ -31,14 +32,16 @@ export class RAGService {
    */
   async searchContext(
     query: string,
-    clientIdFilter?: string
+    clientIdFilter?: string,
+    researchSources?: ResearchSource[]
   ): Promise<{
     context: string;
     citations: Citation[];
   }> {
     const { taxContext, datevContext, lawPublisherContext, citations } = await this.buildContext(
       query,
-      clientIdFilter
+      clientIdFilter,
+      researchSources
     );
 
     // Combine contexts
@@ -48,12 +51,9 @@ export class RAGService {
       combinedContext += `=== STEUERRECHTLICHE GRUNDLAGEN ===\n\n${taxContext}\n\n`;
     }
 
-    // Law publisher section - show results or explicit empty state
+    // Law publisher section - only add if results found
     if (lawPublisherContext) {
       combinedContext += `=== RECHTSPRECHUNG & KOMMENTARE ===\n\n${lawPublisherContext}\n\n`;
-    } else {
-      // Inform LLM that law publisher database was searched but is currently empty
-      combinedContext += `=== RECHTSPRECHUNG & KOMMENTARE ===\n\nDatenbanksuche durchgeführt: Die Rechtsprechungs-Datenbank enthält aktuell noch keine Dokumente. Die Datenbank wird in Kürze mit BFH-Urteilen, Finanzgerichtsentscheidungen und Fachkommentaren befüllt.\n\n`;
     }
 
     if (datevContext) {
@@ -76,7 +76,8 @@ export class RAGService {
    */
   async buildContext(
     query: string,
-    clientIdFilter?: string
+    clientIdFilter?: string,
+    researchSources?: ResearchSource[]
   ): Promise<{
     taxContext: string;
     datevContext: string;
@@ -88,9 +89,16 @@ export class RAGService {
     const taxContext = this.formatTaxContext(taxDocs);
 
     // Search law publisher documents (vector search) - Phase TEC-55
-    const { documents: lawPublisherDocs, citations: lawPublisherCitations } =
-      await this.searchLawPublisherDocuments(query);
-    const lawPublisherContext = this.formatLawPublisherContext(lawPublisherDocs);
+    // Only search if law_publishers is included in researchSources
+    let lawPublisherContext = '';
+    let lawPublisherCitations: Citation[] = [];
+
+    if (researchSources?.includes('law_publishers')) {
+      const { documents: lawPublisherDocs, citations: lawPubCitations } =
+        await this.searchLawPublisherDocuments(query);
+      lawPublisherContext = this.formatLawPublisherContext(lawPublisherDocs);
+      lawPublisherCitations = lawPubCitations;
+    }
 
     // Search DATEV data (vector search) - Phase 1.2: Extended with tax, analytics, HR
     const [

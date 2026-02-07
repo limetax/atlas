@@ -4,6 +4,7 @@ import { LlmService } from '@llm/application/llm.service';
 import { ClientService } from '@datev/application/client.service';
 import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
 import { ChatContext, MessageRole } from '@atlas/shared';
+import { CONTEXT_PROMPTS } from './chat.prompts';
 
 interface LlmMessage {
   role: MessageRole;
@@ -72,7 +73,8 @@ export class ChatService {
     // 2. Search for relevant context using RAG with client filter
     const { context: ragContext, citations } = await this.rag.searchContext(
       userMessage,
-      clientIdFilter
+      clientIdFilter,
+      chatContext?.research
     );
 
     // 3. Build system prompt with context
@@ -195,32 +197,7 @@ HANDELSREGISTER-ZUGRIFF:
     }
 
     if (chatContext?.research?.includes('law_publishers')) {
-      prompt += `
-
-RECHTSVERLAGE-ZUGRIFF:
-- Es wurde eine Suche in der Rechtsprechungs-Datenbank durchgeführt
-- Prüfe den Kontext-Abschnitt "RECHTSPRECHUNG & KOMMENTARE" für Verfügbarkeit und Ergebnisse
-- Wenn Dokumente verfügbar sind, enthalten sie:
-  1. Rechtsprechung: Gerichtsurteile (BFH, BVerfG, Finanzgerichte)
-  2. Kommentare: Fachkommentare zu Steuergesetzen
-  3. Fachartikel: Aktuelle Fachartikel aus Steuerfachzeitschriften
-
-WICHTIG - Verwendung wenn Dokumente gefunden wurden:
-- Zitiere Rechtsprechung mit Gericht und Aktenzeichen (z.B., "BFH IV R 10/20")
-- Bei Kommentaren nenne den Autor und die Fundstelle
-- Bevorzuge aktuelle Rechtsprechung bei rechtlichen Fragestellungen
-- Nutze Kommentare für vertiefende Erklärungen
-- Kennzeichne deutlich, aus welcher Quelle die Information stammt
-
-WICHTIG - Wenn Datenbank leer ist:
-- Informiere den Nutzer transparent, dass die Datenbank aktuell noch keine Dokumente enthält
-- Biete an, mit allgemeinem Wissen (nicht verifiziert) zu helfen
-- Weise auf externe Quellen hin (BFH-Urteile, Fachkommentare, Zeitschriften)
-
-ZITIERWEISE:
-- Rechtsprechung: "Nach BFH-Urteil vom 15.03.2023 (IV R 10/20) gilt..."
-- Kommentare: "Laut Kommentar von [Autor] zu § 15 EStG..."
-- Fachartikel: "Ein aktueller Beitrag in [Quelle] erläutert..."`;
+      prompt += CONTEXT_PROMPTS.LAW_PUBLISHERS;
     }
 
     if (chatContext?.mandant && selectedClientName) {
@@ -296,32 +273,7 @@ WICHTIG - Antwortformat:
     }
 
     if (chatContext?.research?.includes('law_publishers')) {
-      basePrompt += `
-
-RECHTSVERLAGE-ZUGRIFF:
-- Es wurde eine Suche in der Rechtsprechungs-Datenbank durchgeführt
-- Prüfe den Kontext-Abschnitt "RECHTSPRECHUNG & KOMMENTARE" für Verfügbarkeit und Ergebnisse
-- Wenn Dokumente verfügbar sind, enthalten sie:
-  1. Rechtsprechung: Gerichtsurteile (BFH, BVerfG, Finanzgerichte)
-  2. Kommentare: Fachkommentare zu Steuergesetzen
-  3. Fachartikel: Aktuelle Fachartikel aus Steuerfachzeitschriften
-
-WICHTIG - Verwendung wenn Dokumente gefunden wurden:
-- Zitiere Rechtsprechung mit Gericht und Aktenzeichen (z.B., "BFH IV R 10/20")
-- Bei Kommentaren nenne den Autor und die Fundstelle
-- Bevorzuge aktuelle Rechtsprechung bei rechtlichen Fragestellungen
-- Nutze Kommentare für vertiefende Erklärungen
-- Kennzeichne deutlich, aus welcher Quelle die Information stammt
-
-WICHTIG - Wenn Datenbank leer ist:
-- Informiere den Nutzer transparent, dass die Datenbank aktuell noch keine Dokumente enthält
-- Biete an, mit allgemeinem Wissen (nicht verifiziert) zu helfen
-- Weise auf externe Quellen hin (BFH-Urteile, Fachkommentare, Zeitschriften)
-
-ZITIERWEISE:
-- Rechtsprechung: "Nach BFH-Urteil vom 15.03.2023 (IV R 10/20) gilt..."
-- Kommentare: "Laut Kommentar von [Autor] zu § 15 EStG..."
-- Fachartikel: "Ein aktueller Beitrag in [Quelle] erläutert..."`;
+      basePrompt += CONTEXT_PROMPTS.LAW_PUBLISHERS;
     }
 
     if (chatContext?.mandant && selectedClientName) {

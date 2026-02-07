@@ -26,7 +26,7 @@ export interface TaxDocument {
  * Law Publisher Document Entity - Domain representation of legal publisher content
  * Phase TEC-55: Case law, commentaries, and articles
  */
-export interface LawPublisherDocument {
+export type LawPublisherDocument = {
   id: string;
   title: string;
   citation: string | null;
@@ -42,4 +42,4 @@ export interface LawPublisherDocument {
   publicationDate: string | null;
   author: string | null;
   tags: string[] | null;
-}
+};

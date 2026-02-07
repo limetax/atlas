@@ -397,7 +397,7 @@ export interface DatevHrEmployeeMatch {
  * Law Publisher Document Match - Result from vector search
  * Phase TEC-55: Legal content from publishers
  */
-export interface LawPublisherDocumentMatch {
+export type LawPublisherDocumentMatch = {
   id: string;
   title: string;
   citation: string | null;
@@ -414,4 +414,4 @@ export interface LawPublisherDocumentMatch {
   author: string | null;
   tags: string[] | null;
   similarity: number;
-}
+};
