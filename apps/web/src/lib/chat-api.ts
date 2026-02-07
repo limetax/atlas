@@ -12,17 +12,19 @@ import { CHAT_STREAM_CHUNK_TYPES, ChatContext, ChatStreamChunk, Message } from '
 
 const STREAM_TIMEOUT = 120000; // 2 minutes
 
+type CombinedAbortSignal = {
+  combinedSignal: AbortSignal;
+  timeoutController: AbortController;
+  timeoutId: NodeJS.Timeout;
+};
+
 /**
  * Creates a combined abort signal that aborts on either user action or timeout
  */
 function createCombinedAbortSignal(
   userSignal?: AbortSignal,
   timeoutMs: number = STREAM_TIMEOUT
-): {
-  combinedSignal: AbortSignal;
-  timeoutController: AbortController;
-  timeoutId: NodeJS.Timeout;
-} {
+): CombinedAbortSignal {
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
@@ -90,6 +92,27 @@ function* processSSELine(line: string): Generator<ChatStreamChunk, void, unknown
 
 /**
  * Streams chat messages using Server-Sent Events
+ *
+ * @param message - The user's message to send
+ * @param history - Previous messages in the conversation
+ * @param context - Optional MCP tool context for research sources and integrations
+ * @param signal - Optional AbortSignal to cancel the request
+ *
+ * @yields ChatStreamChunk events (text, citation, tool_call, done, error)
+ *
+ * @throws {Error} If HTTP request fails or stream times out after 2 minutes
+ *
+ * @example
+ * ```typescript
+ * for await (const chunk of streamChatMessage(message, history, context)) {
+ *   if (chunk.type === 'text') console.log(chunk.content);
+ * }
+ * ```
+ *
+ * @remarks
+ * Breaking change in TEC-58: Removed `assistantId` parameter (was 3rd parameter).
+ * Pre-configured assistants are no longer exposed in the UI, though the backend
+ * still supports them via ChatSession.assistantId if needed in the future.
  */
 export async function* streamChatMessage(
   message: string,
