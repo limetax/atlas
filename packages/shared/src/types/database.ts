@@ -1525,6 +1525,31 @@ export interface Database {
           similarity: number;
         }[];
       };
+      match_law_publisher_documents: {
+        Args: {
+          query_embedding: number[];
+          match_threshold?: number;
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          title: string;
+          citation: string | null;
+          document_type: string;
+          content: string;
+          summary: string | null;
+          publisher: string | null;
+          source: string | null;
+          law_reference: string | null;
+          court: string | null;
+          case_number: string | null;
+          decision_date: string | null;
+          publication_date: string | null;
+          author: string | null;
+          tags: string[] | null;
+          similarity: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

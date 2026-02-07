@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { ResearchSource } from '@atlas/shared';
-import { Database, Building2, Scale, BookOpen, ChevronDown } from 'lucide-react';
+
+import { BookOpen, Building2, ChevronDown, Database, Scale } from 'lucide-react';
+
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { ResearchSource } from '@atlas/shared';
 
 interface ResearchOption {
   id: ResearchSource;
@@ -24,7 +26,7 @@ interface ResearchDropdownProps {
 const RESEARCH_OPTIONS: ResearchOption[] = [
   { id: 'handelsregister', label: 'Handelsregister', icon: Building2, disabled: false },
   { id: 'german_law', label: 'Deutsches Recht', icon: Scale, disabled: true },
-  { id: 'law_publishers', label: 'Rechtsverlage', icon: BookOpen, disabled: true },
+  { id: 'law_publishers', label: 'Rechtsverlage', icon: BookOpen, disabled: false },
 ];
 
 export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, onChange }) => {
@@ -51,7 +53,7 @@ export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, on
           )}
         >
           <Database className="w-4 h-4" />
-          <span>Research</span>
+          <span>Recherche</span>
           {selected.length > 0 && (
             <span className="bg-orange-600 text-white text-xs px-1.5 rounded-full">
               {selected.length}

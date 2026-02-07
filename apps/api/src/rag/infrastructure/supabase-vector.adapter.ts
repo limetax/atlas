@@ -13,6 +13,7 @@ import {
   DatevTradeTaxMatch,
   DatevAnalyticsOrderValuesMatch,
   DatevHrEmployeeMatch,
+  LawPublisherDocumentMatch,
   AddresseeSearchFilters,
   PostingSearchFilters,
   SusaSearchFilters,
@@ -437,6 +438,34 @@ export class SupabaseVectorAdapter implements IVectorStore {
       return (data as DatevHrEmployeeMatch[]) || [];
     } catch (err) {
       this.logger.error('DATEV HR employees search failed:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Search for similar law publisher documents using vector similarity
+   * Phase TEC-55: Legal content search (case law, commentaries, articles)
+   */
+  async searchLawPublisherDocuments(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number
+  ): Promise<LawPublisherDocumentMatch[]> {
+    try {
+      const { data, error } = await this.supabase.db.rpc('match_law_publisher_documents', {
+        query_embedding: queryEmbedding,
+        match_threshold: matchThreshold,
+        match_count: matchCount,
+      });
+
+      if (error) {
+        this.logger.error('Law publisher document search error:', error);
+        return [];
+      }
+
+      return (data as LawPublisherDocumentMatch[]) || [];
+    } catch (err) {
+      this.logger.error('Law publisher document search failed:', err);
       return [];
     }
   }

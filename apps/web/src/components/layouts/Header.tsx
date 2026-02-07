@@ -1,10 +1,11 @@
-import { useAuth } from '@/hooks/useAuth';
-import { ComplianceBadge } from '@/components/features/compliance/ComplianceBadge';
-import { UserMenu } from '@/components/features/auth/UserMenu';
 import { Settings } from 'lucide-react';
+
+import { UserMenu } from '@/components/features/auth/UserMenu';
+import { ComplianceBadge } from '@/components/features/compliance/ComplianceBadge';
 import { Button } from '@/components/ui/button';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useAuth } from '@/hooks/useAuth';
 import type { Advisor } from '@atlas/shared';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 export const Header = () => {
   const { user, advisor, isLoading } = useAuth();
@@ -23,10 +24,7 @@ const HeaderLogo = () => {
       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
         <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
       </div>
-      <div>
-        <h1 className="text-lg font-bold text-gray-900">limetaxIQ</h1>
-        <p className="text-xs text-gray-500">KI-Assistent für Steuerkanzleien</p>
-      </div>
+      <h1 className="text-lg font-bold text-gray-900">limetaxIQ</h1>
     </div>
   );
 };

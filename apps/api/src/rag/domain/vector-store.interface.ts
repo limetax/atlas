@@ -139,6 +139,16 @@ export abstract class IVectorStore {
     matchCount: number,
     filters?: HrEmployeeSearchFilters
   ): Promise<DatevHrEmployeeMatch[]>;
+
+  /**
+   * Search for similar law publisher documents using vector similarity
+   * Phase TEC-55: Legal content search (case law, commentaries, articles)
+   */
+  abstract searchLawPublisherDocuments(
+    queryEmbedding: number[],
+    matchThreshold: number,
+    matchCount: number
+  ): Promise<LawPublisherDocumentMatch[]>;
 }
 
 // ============================================
@@ -380,5 +390,28 @@ export interface DatevHrEmployeeMatch {
   department: string;
   email: string;
   is_active: boolean;
+  similarity: number;
+}
+
+/**
+ * Law Publisher Document Match - Result from vector search
+ * Phase TEC-55: Legal content from publishers
+ */
+export interface LawPublisherDocumentMatch {
+  id: string;
+  title: string;
+  citation: string | null;
+  document_type: 'case_law' | 'commentary' | 'article';
+  content: string;
+  summary: string | null;
+  publisher: string | null;
+  source: string | null;
+  law_reference: string | null;
+  court: string | null;
+  case_number: string | null;
+  decision_date: string | null;
+  publication_date: string | null;
+  author: string | null;
+  tags: string[] | null;
   similarity: number;
 }
