@@ -1,9 +1,10 @@
+import { ChatContext, MessageRole } from '@atlas/shared';
+import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
+import { ClientService } from '@datev/application/client.service';
+import { LlmService } from '@llm/application/llm.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
-import { LlmService } from '@llm/application/llm.service';
-import { ClientService } from '@datev/application/client.service';
-import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
-import { ChatContext, MessageRole } from '@atlas/shared';
+
 import { CONTEXT_PROMPTS } from './chat.prompts';
 
 interface LlmMessage {
@@ -193,13 +194,8 @@ HANDELSREGISTER-ZUGRIFF:
 - Du hast direkten Zugriff auf das deutsche Handelsregister via OpenRegister
 - Nutze die verfügbaren Tools um Firmendaten abzurufen
 - Verwende "find_companies_v1_search" für Unternehmenssuche
-- Präsentiere die Daten strukturiert und lesefreundlich
-
-WICHTIG - EFFIZIENZ:
-- Verwende maximal 2-3 Tool-Aufrufe pro Anfrage
-- Suche zuerst das Unternehmen, dann rufe die benötigten Details ab
-- Fasse die Ergebnisse sofort zusammen, anstatt weitere Tools aufzurufen
-- Wenn ein Suchergebnis nicht das gewünschte Unternehmen enthält, teile dies dem Benutzer mit, anstatt weitere Suchen durchzuführen`;
+- Präsentiere die Daten strukturiert und lesefreundlich`;
+      prompt += CONTEXT_PROMPTS.EFFICIENCY;
     }
 
     if (chatContext?.research?.includes('law_publishers')) {
@@ -275,13 +271,8 @@ WICHTIG - Antwortformat:
 - Interpretiere die Handelsregisterdaten und präsentiere sie in klarer, strukturierter Form
 - Gib NICHT die rohen JSON-Daten aus
 - Formatiere Informationen lesefreundlich mit Überschriften und Listen
-- Erkläre die Bedeutung der Daten im steuerrechtlichen Kontext wenn relevant
-
-WICHTIG - EFFIZIENZ:
-- Verwende maximal 2-3 Tool-Aufrufe pro Anfrage
-- Suche zuerst das Unternehmen, dann rufe die benötigten Details ab
-- Fasse die Ergebnisse sofort zusammen, anstatt weitere Tools aufzurufen
-- Wenn ein Suchergebnis nicht das gewünschte Unternehmen enthält, teile dies dem Benutzer mit, anstatt weitere Suchen durchzuführen`;
+- Erkläre die Bedeutung der Daten im steuerrechtlichen Kontext wenn relevant`;
+      basePrompt += CONTEXT_PROMPTS.EFFICIENCY;
     }
 
     if (chatContext?.research?.includes('law_publishers')) {

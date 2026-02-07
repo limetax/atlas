@@ -15,6 +15,12 @@ export type ToolCallEvent = {
   status: 'started' | 'completed';
 };
 
+/**
+ * Maximum tool-calling iterations before forcing a final response.
+ * Limit to 3 iterations: typically search (1) → fetch details (2) → synthesize (3).
+ * Prevents runaway loops while allowing reasonable multi-step operations.
+ * Based on debug session showing 5 iterations caused 87s hangs with redundant tool calls.
+ */
 const MAX_TOOL_ITERATIONS = 3;
 
 /**
@@ -113,7 +119,12 @@ export class ToolOrchestrationService {
             input: call.args,
           });
 
-          const resultText = result.content.map((c) => c.text).join('\n');
+          const resultText = result.content
+            .filter(
+              (c): c is { type: 'text'; text: string } => 'text' in c && typeof c.text === 'string'
+            )
+            .map((c) => c.text)
+            .join('\n');
           conversation.push(
             new ToolMessage({
               content: resultText,
