@@ -6,7 +6,6 @@ import { CHAT_STREAM_CHUNK_TYPES, ChatContext, ChatStreamChunk, Message } from '
 /**
  * Chat API client using Server-Sent Events (SSE)
  * More reliable than tRPC subscriptions for streaming
- * Supports optional assistantId for pre-configured assistant prompts
  * Supports optional context for MCP tool selection
  * Includes 2-minute timeout to prevent hanging requests
  */
@@ -16,7 +15,14 @@ const STREAM_TIMEOUT = 120000; // 2 minutes
 /**
  * Creates a combined abort signal that aborts on either user action or timeout
  */
-function createCombinedAbortSignal(userSignal?: AbortSignal, timeoutMs: number = STREAM_TIMEOUT) {
+function createCombinedAbortSignal(
+  userSignal?: AbortSignal,
+  timeoutMs: number = STREAM_TIMEOUT
+): {
+  combinedSignal: AbortSignal;
+  timeoutController: AbortController;
+  timeoutId: NodeJS.Timeout;
+} {
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
@@ -56,7 +62,10 @@ function isChatStreamChunk(data: unknown): data is ChatStreamChunk {
 
   const chunk = data as Record<string, unknown>;
 
-  return typeof chunk.type === 'string' && CHAT_STREAM_CHUNK_TYPES.includes(chunk.type);
+  return (
+    typeof chunk.type === 'string' &&
+    CHAT_STREAM_CHUNK_TYPES.includes(chunk.type as ChatStreamChunk['type'])
+  );
 }
 
 /**
@@ -85,7 +94,6 @@ function* processSSELine(line: string): Generator<ChatStreamChunk, void, unknown
 export async function* streamChatMessage(
   message: string,
   history: Message[],
-  assistantId?: string,
   context?: ChatContext,
   signal?: AbortSignal
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
@@ -100,7 +108,7 @@ export async function* streamChatMessage(
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ message, history, assistantId, context }),
+      body: JSON.stringify({ message, history, context }),
       signal: combinedSignal,
     });
 

@@ -2,6 +2,10 @@
  * Assistant Configuration
  * Static definitions for pre-configured tax assistants
  * No database storage - loaded from this config file
+ *
+ * NOTE: Assistants are not currently exposed in the web app UI.
+ * The backend API still supports them via the chat streaming endpoint
+ * when an assistantId is present on a session/request.
  */
 
 export interface Assistant {
