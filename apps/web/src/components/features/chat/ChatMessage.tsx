@@ -8,6 +8,7 @@ import { ExternalLink, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LAW_BOOKS } from '@/constants/law-books';
 import { getToolLabel } from './tool-labels';
+import { EmailDraftCard } from './EmailDraftCard';
 
 interface ChatMessageProps {
   message: Message;
@@ -109,6 +110,37 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
                     <ExternalLink className="w-3 h-3 inline" />
                   </a>
                 ),
+                code: ({ node, inline, className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const language = match ? match[1] : '';
+
+                  // Render email blocks as EmailDraftCard
+                  if (!inline && language === 'email') {
+                    return <EmailDraftCard content={String(children)} />;
+                  }
+
+                  // Default code rendering for other languages
+                  return (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                pre: ({ node, children, ...props }) => {
+                  // Check if this pre contains an email code block
+                  const hasEmailBlock = React.Children.toArray(children).some(
+                    (child) =>
+                      React.isValidElement(child) &&
+                      typeof child.props.className === 'string' &&
+                      child.props.className.includes('language-email')
+                  );
+
+                  if (hasEmailBlock) {
+                    return <>{children}</>;
+                  }
+
+                  return <pre {...props}>{children}</pre>;
+                },
               }}
             >
               {enrichedContent}
