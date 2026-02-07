@@ -81,10 +81,8 @@ export class RAGService {
       datevAnalyticsResult,
       datevHrResult,
     ] = await Promise.all([
-      // Skip client search when a specific client is selected
-      clientIdFilter
-        ? Promise.resolve({ clients: [], context: '' })
-        : this.searchDatevClients(query, 3),
+      // Fetch selected client directly by ID, or search semantically if no client is selected
+      clientIdFilter ? this.getDatevClientById(clientIdFilter) : this.searchDatevClients(query, 3),
       this.searchDatevAddressees(query, 3, clientIdFilter),
       this.searchDatevOrders(query, 5), // add clientId filter after we enabled datev orders
       this.searchDatevCorpTax(query, 5, clientIdFilter),
@@ -197,6 +195,29 @@ export class RAGService {
       return { clients, context };
     } catch (err) {
       this.logger.error('DATEV client search failed:', err);
+      return { clients: [], context: '' };
+    }
+  }
+
+  /**
+   * Get a specific DATEV client by ID
+   * Used when a client is selected via filter to provide full context
+   */
+  async getDatevClientById(clientId: string): Promise<{
+    clients: DatevClientMatch[];
+    context: string;
+  }> {
+    try {
+      const client = await this.vectorStore.getDatevClientById(clientId);
+
+      if (!client) {
+        return { clients: [], context: '' };
+      }
+
+      const context = this.formatDatevClientsContext([client]);
+      return { clients: [client], context };
+    } catch (err) {
+      this.logger.error('DATEV client by ID fetch failed:', err);
       return { clients: [], context: '' };
     }
   }

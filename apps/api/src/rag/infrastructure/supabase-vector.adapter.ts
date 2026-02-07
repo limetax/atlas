@@ -96,6 +96,57 @@ export class SupabaseVectorAdapter implements IVectorStore {
   }
 
   /**
+   * Get a specific DATEV client by ID without vector search
+   * @param clientId - DATEV client UUID
+   * @returns Client data if found, null otherwise
+   */
+  async getDatevClientById(clientId: string): Promise<DatevClientMatch | null> {
+    try {
+      const { data, error } = await this.supabase.db
+        .from('datev_clients')
+        .select(
+          `
+          id,
+          client_id,
+          client_number,
+          client_name,
+          client_type,
+          client_status,
+          company_form,
+          industry_description,
+          main_email,
+          main_phone,
+          correspondence_city,
+          organization_name,
+          managing_director_name,
+          managing_director_email,
+          managing_director_phone
+        `
+        )
+        .eq('client_id', clientId)
+        .single();
+
+      if (error) {
+        this.logger.error('DATEV client by ID fetch error:', error);
+        return null;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      // Transform to DatevClientMatch format with similarity = 1.0 (perfect match for selected client)
+      return {
+        ...data,
+        similarity: 1.0,
+      };
+    } catch (err) {
+      this.logger.error('DATEV client by ID fetch failed:', err);
+      return null;
+    }
+  }
+
+  /**
    * Search for similar DATEV orders using vector similarity
    * @param queryEmbedding - Query embedding vector
    * @param matchThreshold - Minimum similarity threshold (0-1)
