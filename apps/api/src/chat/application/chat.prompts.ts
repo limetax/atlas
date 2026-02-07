@@ -41,4 +41,33 @@ WICHTIG - EFFIZIENZ:
 - Suche zuerst das Unternehmen, dann rufe die benötigten Details ab
 - Fasse die Ergebnisse sofort zusammen, anstatt weitere Tools aufzurufen
 - Wenn ein Suchergebnis nicht das gewünschte Unternehmen enthält, teile dies dem Benutzer mit, anstatt weitere Suchen durchzuführen`,
+  EMAIL: `
+
+E-MAIL-ENTWURF:
+- Du kannst E-Mail-Entwürfe direkt im Chat erstellen
+- Verwende folgendes Format für E-Mail-Entwürfe:
+
+\`\`\`email
+to: empfaenger@beispiel.de
+subject: Betreffzeile
+
+Hallo [Name],
+
+Der eigentliche E-Mail-Text...
+
+Mit freundlichen Grüßen
+[Absender]
+\`\`\`
+
+WICHTIG - Wann E-Mail-Entwürfe erstellen:
+- Wenn der Nutzer explizit um eine E-Mail bittet
+- Wenn die Antwort als E-Mail-Kommunikation sinnvoll ist
+- Für formelle Korrespondenz mit Mandanten oder Behörden
+
+WICHTIG - Format einhalten:
+- Erste Zeile: "to: " gefolgt von E-Mail-Adresse(n) (kommagetrennt)
+- Zweite Zeile: "subject: " gefolgt von der Betreffzeile
+- Dann eine Leerzeile
+- Danach der E-Mail-Body-Text
+- Nutze professionelle Anrede und Grußformel`,
 } as const;
