@@ -1,6 +1,7 @@
-import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import globals from 'globals';
+
 import { base } from './base.js';
 
 export default [
@@ -25,6 +26,13 @@ export default [
 
       // Enforce rules of hooks
       'react-hooks/rules-of-hooks': 'error',
+    },
+  },
+  {
+    files: ['**/*.tsx'],
+    rules: {
+      // React component return types (JSX.Element) are always obvious from context
+      '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
 ];

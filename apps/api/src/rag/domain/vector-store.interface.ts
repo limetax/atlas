@@ -33,6 +33,13 @@ export abstract class IVectorStore {
   ): Promise<DatevClientMatch[]>;
 
   /**
+   * Get a specific DATEV client by ID without vector search
+   * @param clientId - DATEV client UUID
+   * @returns Client data if found, null otherwise
+   */
+  abstract getDatevClientById(clientId: string): Promise<DatevClientMatch | null>;
+
+  /**
    * Search for similar DATEV orders using vector similarity
    * @param queryEmbedding - Query embedding vector
    * @param matchThreshold - Minimum similarity threshold (0-1)
@@ -141,6 +148,7 @@ export abstract class IVectorStore {
 export interface AddresseeSearchFilters {
   addressee_type?: 1 | 2;
   is_legal_representative?: number;
+  client_id?: string;
 }
 
 export interface PostingSearchFilters {

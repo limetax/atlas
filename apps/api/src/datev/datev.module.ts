@@ -3,10 +3,13 @@ import { ConfigModule } from '@nestjs/config';
 import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
 import { KlardatenDatevAdapter } from '@datev/infrastructure/klardaten-datev.adapter';
 import { DatevSyncService } from '@datev/application/datev-sync.service';
+import { ClientService } from '@datev/application/client.service';
 import { DatevRouter } from '@datev/datev.router';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
 import { LlmModule } from '@llm/llm.module';
 import { IDatevAdapter } from '@datev/domain/datev-adapter.interface';
+import { IClientRepository } from '@datev/domain/client.repository';
+import { SupabaseClientRepository } from '@datev/infrastructure/repositories/supabase-client.repository';
 
 /**
  * DATEV Module - Provides DATEV data synchronization services
@@ -25,11 +28,16 @@ import { IDatevAdapter } from '@datev/domain/datev-adapter.interface';
       provide: IDatevAdapter,
       useClass: KlardatenDatevAdapter,
     },
-    // Application service
+    {
+      provide: IClientRepository,
+      useClass: SupabaseClientRepository,
+    },
+    // Application services
     DatevSyncService,
+    ClientService,
     // tRPC Router
     DatevRouter,
   ],
-  exports: [IDatevAdapter, DatevSyncService],
+  exports: [IDatevAdapter, DatevSyncService, ClientService],
 })
 export class DatevModule {}
