@@ -29,4 +29,34 @@ ZITIERWEISE:
 - Rechtsprechung: "Nach BFH-Urteil vom 15.03.2023 (IV R 10/20) gilt..."
 - Kommentare: "Laut Kommentar von [Autor] zu § 15 EStG..."
 - Fachartikel: "Ein aktueller Beitrag in [Quelle] erläutert..."`,
+
+  EMAIL: `
+
+E-MAIL-ENTWURF:
+- Du kannst E-Mail-Entwürfe direkt im Chat erstellen
+- Verwende folgendes Format für E-Mail-Entwürfe:
+
+\`\`\`email
+to: empfaenger@beispiel.de
+subject: Betreffzeile
+
+Hallo [Name],
+
+Der eigentliche E-Mail-Text...
+
+Mit freundlichen Grüßen
+[Absender]
+\`\`\`
+
+WICHTIG - Wann E-Mail-Entwürfe erstellen:
+- Wenn der Nutzer explizit um eine E-Mail bittet
+- Wenn die Antwort als E-Mail-Kommunikation sinnvoll ist
+- Für formelle Korrespondenz mit Mandanten oder Behörden
+
+WICHTIG - Format einhalten:
+- Erste Zeile: "to: " gefolgt von E-Mail-Adresse(n) (kommagetrennt)
+- Zweite Zeile: "subject: " gefolgt von der Betreffzeile
+- Dann eine Leerzeile
+- Danach der E-Mail-Body-Text
+- Nutze professionelle Anrede und Grußformel`,
 } as const;

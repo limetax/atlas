@@ -200,6 +200,9 @@ HANDELSREGISTER-ZUGRIFF:
       prompt += CONTEXT_PROMPTS.LAW_PUBLISHERS;
     }
 
+    // Add email prompt unconditionally (LLM decides when to use it)
+    prompt += CONTEXT_PROMPTS.EMAIL;
+
     if (chatContext?.mandant && selectedClientName) {
       prompt += `
 
@@ -275,6 +278,9 @@ WICHTIG - Antwortformat:
     if (chatContext?.research?.includes('law_publishers')) {
       basePrompt += CONTEXT_PROMPTS.LAW_PUBLISHERS;
     }
+
+    // Add email prompt unconditionally (LLM decides when to use it)
+    basePrompt += CONTEXT_PROMPTS.EMAIL;
 
     if (chatContext?.mandant && selectedClientName) {
       basePrompt += `

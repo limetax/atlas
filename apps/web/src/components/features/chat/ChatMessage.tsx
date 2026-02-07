@@ -1,12 +1,17 @@
 import React from 'react';
+
+import { Check, ExternalLink } from 'lucide-react';
+import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Message } from '@atlas/shared';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { ExternalLink, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { LAW_BOOKS } from '@/constants/law-books';
+import { cn } from '@/lib/utils';
+import { Message } from '@atlas/shared';
+
+import { EmailDraftCard } from './EmailDraftCard';
 import { getToolLabel } from './tool-labels';
 
 interface ChatMessageProps {
@@ -96,20 +101,59 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              components={{
-                a: ({ href, children, ...props }) => (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-700 underline font-medium"
-                    {...props}
-                  >
-                    {children}
-                    <ExternalLink className="w-3 h-3 inline" />
-                  </a>
-                ),
-              }}
+              components={
+                {
+                  a: ({ href, children, ...props }) => (
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-700 underline font-medium"
+                      {...props}
+                    >
+                      {children}
+                      <ExternalLink className="w-3 h-3 inline" />
+                    </a>
+                  ),
+                  code: ({ className, children, ...props }) => {
+                    const match = /language-(\w+)/.exec(className ?? '');
+                    const language = match?.[1] ?? '';
+
+                    // Render email blocks as EmailDraftCard (only for code blocks, not inline code)
+                    // Inline code won't have a language class
+                    if (language === 'email') {
+                      return <EmailDraftCard content={String(children)} />;
+                    }
+
+                    // Default code rendering for other languages
+                    return (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    );
+                  },
+                  pre: ({ children, ...props }) => {
+                    // Check if this pre contains an email code block
+                    const hasEmailBlock = React.Children.toArray(children).some((child) => {
+                      if (!React.isValidElement(child)) {
+                        return false;
+                      }
+                      // Type guard: check if props exists and has className property
+                      const childProps = child.props as { className?: string };
+                      return (
+                        typeof childProps.className === 'string' &&
+                        childProps.className.includes('language-email')
+                      );
+                    });
+
+                    if (hasEmailBlock) {
+                      return <>{children}</>;
+                    }
+
+                    return <pre {...props}>{children}</pre>;
+                  },
+                } satisfies Components
+              }
             >
               {enrichedContent}
             </ReactMarkdown>
