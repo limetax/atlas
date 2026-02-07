@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
-import { MessageSquare, Plus, Trash2, Bot, Workflow } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, FileText, Workflow } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatSession } from '@atlas/shared';
 
@@ -64,8 +64,8 @@ const Navigation = () => {
     },
     {
       to: '/assistants',
-      label: 'Assistenten',
-      icon: Bot,
+      label: 'Vorlagen',
+      icon: FileText,
       badge: null,
       isActiveCheck: (path: string) => path.startsWith('/assistants'),
     },
@@ -189,8 +189,6 @@ interface SessionItemProps {
 }
 
 const SessionItem = ({ session, isActive, onSelect, onDelete }: SessionItemProps) => {
-  const hasAssistant = !!session.assistantId;
-
   return (
     <div
       className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${
@@ -198,11 +196,7 @@ const SessionItem = ({ session, isActive, onSelect, onDelete }: SessionItemProps
       }`}
       onClick={onSelect}
     >
-      {hasAssistant ? (
-        <Bot className="w-4 h-4 text-orange-500 flex-shrink-0" />
-      ) : (
-        <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-      )}
+      <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900 truncate">{session.title}</p>
         <p className="text-xs text-gray-500">

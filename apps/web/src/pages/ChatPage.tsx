@@ -9,9 +9,6 @@ import { useChatSessions } from './useChatSessions';
 import { truncateText } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
 import { generateMessageId } from '@/utils/id-generator';
-import { Assistant, useAssistant } from '@/hooks/useAssistants';
-import { ICON_MAP } from '@/constants/icons';
-import { Bot } from 'lucide-react';
 import { TEMPLATES } from '@/data/templates';
 
 export const ChatPage: React.FC = () => {
@@ -68,12 +65,6 @@ export const ChatPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, currentSessionId, setCurrentSessionById]);
 
-  // Get assistantId from current session
-  const assistantId = currentSession?.assistantId;
-
-  // Fetch assistant details if this chat has an assistant
-  const { assistant } = useAssistant(assistantId);
-
   // Handle new chat - navigate to new chat URL
   const handleNewChatWithNavigation = () => {
     const newSessionId = handleNewChat();
@@ -113,10 +104,7 @@ export const ChatPage: React.FC = () => {
 
     // Update session title if it's the first message
     if (currentSessionId && messages.length === 0) {
-      const title = assistant
-        ? `${assistant.name}: ${truncateText(content, 30)}`
-        : truncateText(content, 50);
-      updateSessionTitle(currentSessionId, title);
+      updateSessionTitle(currentSessionId, truncateText(content, 50));
     }
 
     setIsLoading(true);
@@ -126,11 +114,10 @@ export const ChatPage: React.FC = () => {
       let citations: Message['citations'] = [];
       let collectedToolCalls: Message['toolCalls'] = [];
 
-      // Pass assistantId, context, and abort signal to streaming API
+      // Pass context and abort signal to streaming API
       for await (const chunk of streamChatMessage(
         content,
         messages,
-        assistantId,
         chatContext,
         abortController.signal
       )) {
@@ -255,9 +242,6 @@ export const ChatPage: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
 
-        {/* Assistant indicator - only show if chat has an assistant */}
-        {assistant && <AssistantIndicator assistant={assistant} />}
-
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}
@@ -268,19 +252,6 @@ export const ChatPage: React.FC = () => {
           context={chatContext}
           onContextChange={handleContextChange}
         />
-      </div>
-    </div>
-  );
-};
-
-const AssistantIndicator = ({ assistant }: { assistant: Assistant }) => {
-  const Icon = ICON_MAP[assistant.icon] ?? Bot;
-
-  return (
-    <div className="bg-orange-50 border-b border-orange-200 px-4 py-2">
-      <div className="max-w-4xl mx-auto flex items-center gap-2">
-        <Icon className="w-4 h-4 text-orange-600" />
-        <span className="text-sm font-medium text-orange-800">{assistant.name}</span>
       </div>
     </div>
   );

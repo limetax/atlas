@@ -1,7 +1,6 @@
 /**
  * useChatSessions Hook
  * Component-specific hook for managing chat sessions
- * Supports optional assistantId for assistant-based chats
  */
 
 import { useState, useCallback } from 'react';
@@ -16,7 +15,6 @@ export interface UseChatSessionsReturn {
   currentSession: ChatSession | undefined;
   messages: Message[];
   handleNewChat: () => string;
-  handleNewChatWithAssistant: (assistantId: string) => string;
   handleSessionSelect: (sessionId: string) => void;
   handleDeleteSession: (sessionId: string) => void;
   updateCurrentSessionMessages: (messages: Message[]) => void;
@@ -74,27 +72,6 @@ export function useChatSessions(): UseChatSessionsReturn {
     setMessages([]);
     return newSession.id;
   }, [setSessions]);
-
-  // Create new chat WITH assistant - returns session ID
-  const handleNewChatWithAssistant = useCallback(
-    (assistantId: string): string => {
-      const newSession: ChatSession = {
-        id: generateSessionId(),
-        title: 'Neuer Chat',
-        messages: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        assistantId,
-        context: {},
-      };
-      // Use functional update to avoid stale closure
-      setSessions((prevSessions) => [newSession, ...prevSessions]);
-      setCurrentSessionId(newSession.id);
-      setMessages([]);
-      return newSession.id;
-    },
-    [setSessions]
-  );
 
   const handleSessionSelect = useCallback(
     (sessionId: string) => {
@@ -189,7 +166,6 @@ export function useChatSessions(): UseChatSessionsReturn {
     currentSession,
     messages,
     handleNewChat,
-    handleNewChatWithAssistant,
     handleSessionSelect,
     handleDeleteSession,
     updateCurrentSessionMessages,

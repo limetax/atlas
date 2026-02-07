@@ -99,6 +99,14 @@ Conventional commits with **required scope**: `type(scope): message`
 
 Pre-commit hooks run lint-staged (Prettier + ESLint) and full typecheck.
 
+## Worktrees
+
+When working in a git worktree, `.env` files are not shared from the main repository. At the start of a worktree session, copy env files:
+
+```bash
+cp /Users/cdansard/university/atlas/apps/api/.env apps/api/.env
+```
+
 ## Guidelines
 
 - Do not create documentation files unless explicitly asked
