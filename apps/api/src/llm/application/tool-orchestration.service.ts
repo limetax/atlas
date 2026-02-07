@@ -9,10 +9,25 @@ import { BaseMessage, HumanMessage, AIMessage, ToolMessage } from '@langchain/co
 /**
  * Event emitted when a tool call starts or completes
  */
-export interface ToolCallEvent {
+export type ToolCallEvent = {
   type: 'tool_call';
   name: string;
   status: 'started' | 'completed';
+};
+
+const MAX_TOOL_ITERATIONS = 3;
+
+/**
+ * Extract text from LangChain message content.
+ * Content can be a string or an array of content blocks (text, tool_use, etc.)
+ */
+function extractTextContent(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+    .map((block) => block.text)
+    .join('');
 }
 
 /**
@@ -49,7 +64,8 @@ export class ToolOrchestrationService {
     if (!tools.length) {
       const stream = await this.model.stream(allMessages);
       for await (const chunk of stream) {
-        if (typeof chunk.content === 'string') yield chunk.content;
+        const text = extractTextContent(chunk.content);
+        if (text) yield text;
       }
       return;
     }
@@ -60,25 +76,35 @@ export class ToolOrchestrationService {
     // Tool calling loop with LangChain BaseMessage
     const conversation: BaseMessage[] = [...allMessages];
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+      if (i === MAX_TOOL_ITERATIONS - 1) {
+        this.logger.warn(`Entering final tool iteration (${i}/${MAX_TOOL_ITERATIONS})`);
+      }
+
       const response = await modelWithTools.invoke(conversation);
+      const content = extractTextContent(response.content);
 
-      // Yield text content
-      const content = typeof response.content === 'string' ? response.content : '';
-      if (content && content.trim()) yield content;
+      // No tool calls? This is the final answer — yield text and break
+      if (!response.tool_calls?.length) {
+        if (content && content.trim()) yield content;
+        break;
+      }
 
-      // No tool calls? Done
-      if (!response.tool_calls?.length) break;
+      // Intermediate iteration: suppress "thinking" text (e.g. "Ich suche für Sie...")
+      // Frontend uses hardcoded tool labels instead
 
       // Add AI response to conversation
       if (content.trim() || response.tool_calls.length > 0) {
         conversation.push(response);
       }
 
-      // Execute tools via domain providers
+      // Yield all tool 'started' events immediately so frontend shows loading spinners
       for (const call of response.tool_calls) {
         yield { type: 'tool_call' as const, name: call.name, status: 'started' as const };
+      }
 
+      // Execute tools via domain providers
+      for (const call of response.tool_calls) {
         try {
           const provider = this.toolResolution.getProviderForTool(call.name);
           const result = await provider.executeTool({
@@ -87,14 +113,18 @@ export class ToolOrchestrationService {
             input: call.args,
           });
 
+          const resultText = result.content.map((c) => c.text).join('\n');
           conversation.push(
             new ToolMessage({
-              content: result.content.map((c) => c.text).join('\n'),
+              content: resultText,
               tool_call_id: call.id || `tool_${Date.now()}`,
             })
           );
         } catch (error) {
-          this.logger.error(`Tool ${call.name} failed:`, error);
+          this.logger.error(
+            `Tool ${call.name} failed`,
+            error instanceof Error ? error.stack : String(error)
+          );
           conversation.push(
             new ToolMessage({
               content: `Fehler: ${error instanceof Error ? error.message : String(error)}`,
@@ -105,8 +135,6 @@ export class ToolOrchestrationService {
 
         yield { type: 'tool_call' as const, name: call.name, status: 'completed' as const };
       }
-
-      yield '\n\n';
     }
   }
 
