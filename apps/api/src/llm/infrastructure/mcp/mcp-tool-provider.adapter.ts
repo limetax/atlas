@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IToolProvider } from '@llm/domain/tool-provider.interface';
-import { ToolDefinition, ToolCall, ToolResult, ToolError } from '@llm/domain/tool.types';
+import { ToolDefinition, ToolCall, ToolResult } from '@llm/domain/tool.types';
 import { OpenRegisterMcpService } from './openregister-mcp.service';
 
 /**
@@ -27,15 +27,11 @@ export class McpToolProviderAdapter implements IToolProvider {
     const mcpTools = await this.mcpService.getTools();
 
     // Map MCP tools to LangChain format
-    const tools: ToolDefinition[] = mcpTools.map((mcpTool) => ({
+    return mcpTools.map((mcpTool) => ({
       name: mcpTool.name,
       description: mcpTool.description,
       input_schema: mcpTool.inputSchema,
     }));
-
-    this.logger.debug(`Mapped ${tools.length} MCP tools to LangChain format`);
-
-    return tools;
   }
 
   /**
@@ -43,8 +39,6 @@ export class McpToolProviderAdapter implements IToolProvider {
    * Handles MCP-specific errors and provides localized error messages
    */
   async executeTool(call: ToolCall): Promise<ToolResult> {
-    this.logger.debug(`Executing MCP tool: ${call.name}`, { input: call.input });
-
     try {
       const mcpResult = await this.mcpService.callTool(call.name, call.input);
 
@@ -56,9 +50,7 @@ export class McpToolProviderAdapter implements IToolProvider {
       };
 
       if (toolResult.isError) {
-        this.logger.warn(`Tool ${call.name} returned error result`, {
-          content: toolResult.content,
-        });
+        this.logger.warn(`Tool ${call.name} returned error result`);
       }
 
       return toolResult;

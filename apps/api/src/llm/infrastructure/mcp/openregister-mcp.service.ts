@@ -94,26 +94,23 @@ export class OpenRegisterMcpService implements OnModuleInit, OnModuleDestroy {
       throw new Error('MCP client not initialized');
     }
 
-    this.logger.debug('Fetching tools from OpenRegister MCP server');
-
     // NO try-catch - let errors bubble up
     const result = await this.client.listTools();
 
     // Type-safe transformation without assertions
     // Use nullish coalescing for optional description
-    const tools = result.tools.map((tool) => ({
+    return result.tools.map((tool) => ({
       name: tool.name,
       description: tool.description ?? '',
       inputSchema: {
         type: 'object' as const,
-        properties: (tool.inputSchema as any)?.properties ?? {},
-        required: (tool.inputSchema as any)?.required,
+        properties: ((tool.inputSchema as Record<string, unknown>)?.properties ?? {}) as Record<
+          string,
+          unknown
+        >,
+        required: (tool.inputSchema as Record<string, unknown>)?.required as string[] | undefined,
       },
     }));
-
-    this.logger.debug(`Retrieved ${tools.length} tools from OpenRegister`);
-
-    return tools;
   }
 
   /**
@@ -129,16 +126,10 @@ export class OpenRegisterMcpService implements OnModuleInit, OnModuleDestroy {
       throw new Error('MCP client not initialized');
     }
 
-    this.logger.debug(`Executing tool: ${name}`, { args });
-
     // NO try-catch - errors propagate naturally
     const result = await this.client.callTool({
       name,
       arguments: args as Record<string, unknown>,
-    });
-
-    this.logger.debug(`Tool ${name} executed successfully`, {
-      isError: result.isError ?? false,
     });
 
     // Type-safe content extraction from MCP result

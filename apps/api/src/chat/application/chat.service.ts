@@ -1,9 +1,10 @@
+import { ChatContext, MessageRole } from '@atlas/shared';
+import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
+import { ClientService } from '@datev/application/client.service';
+import { LlmService } from '@llm/application/llm.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
-import { LlmService } from '@llm/application/llm.service';
-import { ClientService } from '@datev/application/client.service';
-import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
-import { ChatContext, MessageRole } from '@atlas/shared';
+
 import { CONTEXT_PROMPTS } from './chat.prompts';
 
 interface LlmMessage {
@@ -194,6 +195,7 @@ HANDELSREGISTER-ZUGRIFF:
 - Nutze die verfügbaren Tools um Firmendaten abzurufen
 - Verwende "find_companies_v1_search" für Unternehmenssuche
 - Präsentiere die Daten strukturiert und lesefreundlich`;
+      prompt += CONTEXT_PROMPTS.EFFICIENCY;
     }
 
     if (chatContext?.research?.includes('law_publishers')) {
@@ -273,6 +275,7 @@ WICHTIG - Antwortformat:
 - Gib NICHT die rohen JSON-Daten aus
 - Formatiere Informationen lesefreundlich mit Überschriften und Listen
 - Erkläre die Bedeutung der Daten im steuerrechtlichen Kontext wenn relevant`;
+      basePrompt += CONTEXT_PROMPTS.EFFICIENCY;
     }
 
     if (chatContext?.research?.includes('law_publishers')) {

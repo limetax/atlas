@@ -30,6 +30,17 @@ ZITIERWEISE:
 - Kommentare: "Laut Kommentar von [Autor] zu § 15 EStG..."
 - Fachartikel: "Ein aktueller Beitrag in [Quelle] erläutert..."`,
 
+  /**
+   * Efficiency guardrails for tool-calling agents (MCP, handelsregister, etc.)
+   * Limits excessive tool iterations and prevents runaway loops
+   */
+  EFFICIENCY: `
+
+WICHTIG - EFFIZIENZ:
+- Verwende maximal 2-3 Tool-Aufrufe pro Anfrage
+- Suche zuerst das Unternehmen, dann rufe die benötigten Details ab
+- Fasse die Ergebnisse sofort zusammen, anstatt weitere Tools aufzurufen
+- Wenn ein Suchergebnis nicht das gewünschte Unternehmen enthält, teile dies dem Benutzer mit, anstatt weitere Suchen durchzuführen`,
   EMAIL: `
 
 E-MAIL-ENTWURF:
