@@ -13,8 +13,16 @@ import { ChatService } from '@chat/application/chat.service';
 import { AssistantService } from '@/assistant/assistant.service';
 import { IChatRepository } from '@chat/domain/chat.entity';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
-import { Message } from '@chat/domain/message.entity';
-import { ChatContext, ChatMessageMetadata } from '@atlas/shared';
+import { z } from 'zod';
+import { ChatMessageMetadata, ChatContextSchema, MessageSchema } from '@atlas/shared';
+
+const StreamChatBodySchema = z.object({
+  message: z.string().min(1),
+  history: z.array(MessageSchema).default([]),
+  chatId: z.string().uuid().optional(),
+  assistantId: z.string().optional(),
+  context: ChatContextSchema.optional(),
+});
 
 /**
  * Chat Controller - HTTP endpoint for streaming chat
@@ -35,18 +43,11 @@ export class ChatController {
 
   @Post('stream')
   async streamChat(
-    @Body()
-    body: {
-      message: string;
-      history: Message[];
-      chatId?: string;
-      assistantId?: string;
-      context?: ChatContext;
-    },
+    @Body() body: unknown,
     @Req() req: Request,
     @Res() res: Response
   ): Promise<void> {
-    const { message, history, chatId, assistantId, context } = body;
+    const { message, history, chatId, assistantId, context } = StreamChatBodySchema.parse(body);
 
     // Authenticate the user
     const advisorId = await this.authenticateRequest(req);

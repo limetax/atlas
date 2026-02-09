@@ -155,12 +155,11 @@ export function useChatSessions(): UseChatSessionsReturn {
       deleteChatMutation.mutate({ chatId: sessionId });
 
       if (currentSessionId === sessionId) {
-        const remaining = sessions.filter((s) => s.id !== sessionId);
-        setCurrentSessionId(remaining.length > 0 ? remaining[0].id : undefined);
+        setCurrentSessionId(undefined);
         setStreamingMessages(null);
       }
     },
-    [currentSessionId, sessions, deleteChatMutation]
+    [currentSessionId, deleteChatMutation]
   );
 
   // Set streaming messages overlay (called during SSE streaming for optimistic UI)

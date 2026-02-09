@@ -121,9 +121,14 @@ export class SupabaseChatRepository implements IChatRepository {
   }
 
   async findMessagesByChatId(chatId: string, advisorId: string): Promise<ChatMessage[]> {
-    // Verify chat ownership first
-    const chat = await this.findById(chatId, advisorId);
-    if (!chat) return [];
+    // Lightweight ownership check — only fetches the ID, skips full domain mapping
+    const { data: chatExists } = await this.supabase.db
+      .from('chats')
+      .select('id')
+      .eq('id', chatId)
+      .eq('advisor_id', advisorId)
+      .single();
+    if (!chatExists) return [];
 
     const { data, error } = await this.supabase.db
       .from('chat_messages')

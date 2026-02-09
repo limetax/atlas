@@ -6,10 +6,10 @@ import { Message, ChatStreamChunk } from '@chat/domain/message.entity';
 import { ChatContext, MessageRole } from '@atlas/shared';
 import { CONTEXT_PROMPTS } from './chat.prompts';
 
-interface LlmMessage {
+type LlmMessage = {
   role: MessageRole;
   content: string;
-}
+};
 
 /**
  * Chat Service - Application layer for chat functionality

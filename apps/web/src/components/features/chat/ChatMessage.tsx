@@ -14,9 +14,9 @@ import { Message } from '@atlas/shared';
 import { EmailDraftCard } from './EmailDraftCard';
 import { getToolLabel } from './tool-labels';
 
-interface ChatMessageProps {
+type ChatMessageProps = {
   message: Message;
-}
+};
 
 // Helper function to generate law book URLs using configured patterns
 function getLawBookUrl(citation: string): string | null {

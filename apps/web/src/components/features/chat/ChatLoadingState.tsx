@@ -2,10 +2,10 @@ import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-interface ChatLoadingStateProps {
+type ChatLoadingStateProps = {
   className?: string;
   count?: number;
-}
+};
 
 export const ChatLoadingState: React.FC<ChatLoadingStateProps> = ({ className, count = 3 }) => {
   return (
