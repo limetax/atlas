@@ -72,6 +72,7 @@ export const CHAT_STREAM_CHUNK_TYPES = [
   'done',
   'error',
   'tool_call',
+  'chat_created',
 ] as const;
 export type ChatStreamChunkType = (typeof CHAT_STREAM_CHUNK_TYPES)[number];
 
@@ -82,7 +83,23 @@ export interface ChatStreamChunk {
   citations?: Citation[];
   error?: string;
   toolCall?: { name: string; status: 'started' | 'completed' };
+  chatId?: string;
 }
+
+// Metadata stored alongside assistant messages (tool calls used during response)
+export type ChatMessageMetadata = {
+  toolCalls?: Array<{ name: string; status: 'started' | 'completed' }>;
+};
+
+// Persisted message (DB representation)
+export type PersistedMessage = {
+  id: string;
+  chatId: string;
+  role: MessageRole;
+  content: string;
+  createdAt: string;
+  metadata?: ChatMessageMetadata;
+};
 
 // LLM Adapter types
 export const LLM_MESSAGE_ROLES = ['user', 'assistant', 'system'] as const;

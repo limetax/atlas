@@ -1277,6 +1277,74 @@ export interface Database {
         };
         Relationships: [];
       };
+      chats: {
+        Row: {
+          id: string;
+          advisor_id: string;
+          title: string;
+          context: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          advisor_id: string;
+          title?: string;
+          context?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          advisor_id?: string;
+          title?: string;
+          context?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chats_advisor_id_fkey';
+            columns: ['advisor_id'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          chat_id: string;
+          role: 'user' | 'assistant';
+          content: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          chat_id: string;
+          role: 'user' | 'assistant';
+          content: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          chat_id?: string;
+          role?: 'user' | 'assistant';
+          content?: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_messages_chat_id_fkey';
+            columns: ['chat_id'];
+            referencedRelation: 'chats';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1581,3 +1649,11 @@ export type TaxDocumentInsert = Database['public']['Tables']['tax_documents']['I
 // Match result from similarity search
 export type TaxDocumentMatch =
   Database['public']['Functions']['match_tax_documents']['Returns'][number];
+
+// Chat types
+export type ChatRow = Database['public']['Tables']['chats']['Row'];
+export type ChatInsert = Database['public']['Tables']['chats']['Insert'];
+export type ChatUpdate = Database['public']['Tables']['chats']['Update'];
+
+export type ChatMessageRow = Database['public']['Tables']['chat_messages']['Row'];
+export type ChatMessageInsert = Database['public']['Tables']['chat_messages']['Insert'];
