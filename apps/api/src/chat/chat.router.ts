@@ -1,7 +1,7 @@
 import { Inject } from '@nestjs/common';
 import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc';
 import { z } from 'zod';
-import { IChatRepository } from '@chat/domain/chat.entity';
+import { IChatRepository, Chat, ChatMessage } from '@chat/domain/chat.entity';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
 import type { User } from '@supabase/supabase-js';
 // Values inlined for nestjs-trpc code generation (it cannot resolve imported constants).
@@ -41,13 +41,13 @@ export class ChatRouter {
 
   @Query()
   @UseMiddlewares(AuthMiddleware)
-  async listChats(@Ctx() ctx: { user: User }) {
+  async listChats(@Ctx() ctx: { user: User }): Promise<Chat[]> {
     return this.chatRepo.findAllByAdvisorId(ctx.user.id);
   }
 
   @Query({ input: ChatIdInputSchema })
   @UseMiddlewares(AuthMiddleware)
-  async getChat(@Input('chatId') chatId: string, @Ctx() ctx: { user: User }) {
+  async getChat(@Input('chatId') chatId: string, @Ctx() ctx: { user: User }): Promise<Chat | null> {
     return this.chatRepo.findById(chatId, ctx.user.id);
   }
 
@@ -57,7 +57,7 @@ export class ChatRouter {
     @Input('title') title: string | undefined,
     @Input('context') context: z.infer<typeof ChatContextSchema> | undefined,
     @Ctx() ctx: { user: User }
-  ) {
+  ): Promise<Chat> {
     return this.chatRepo.create(ctx.user.id, title ?? 'Neuer Chat', context);
   }
 
@@ -67,7 +67,7 @@ export class ChatRouter {
     @Input('chatId') chatId: string,
     @Input('title') title: string,
     @Ctx() ctx: { user: User }
-  ) {
+  ): Promise<Chat | null> {
     return this.chatRepo.updateTitle(chatId, ctx.user.id, title);
   }
 
@@ -77,19 +77,22 @@ export class ChatRouter {
     @Input('chatId') chatId: string,
     @Input('context') context: z.infer<typeof ChatContextSchema>,
     @Ctx() ctx: { user: User }
-  ) {
+  ): Promise<Chat | null> {
     return this.chatRepo.updateContext(chatId, ctx.user.id, context);
   }
 
   @Mutation({ input: ChatIdInputSchema })
   @UseMiddlewares(AuthMiddleware)
-  async deleteChat(@Input('chatId') chatId: string, @Ctx() ctx: { user: User }) {
+  async deleteChat(@Input('chatId') chatId: string, @Ctx() ctx: { user: User }): Promise<boolean> {
     return this.chatRepo.delete(chatId, ctx.user.id);
   }
 
   @Query({ input: ChatIdInputSchema })
   @UseMiddlewares(AuthMiddleware)
-  async getChatMessages(@Input('chatId') chatId: string, @Ctx() ctx: { user: User }) {
+  async getChatMessages(
+    @Input('chatId') chatId: string,
+    @Ctx() ctx: { user: User }
+  ): Promise<ChatMessage[]> {
     return this.chatRepo.findMessagesByChatId(chatId, ctx.user.id);
   }
 }

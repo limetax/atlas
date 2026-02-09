@@ -18,3 +18,17 @@ export const ChatRequestSchema = z.object({
   message: z.string().min(1, 'Nachricht darf nicht leer sein'),
   history: z.array(MessageSchema).default([]),
 });
+
+// Chat context stored alongside a chat session
+export const ChatContextSchema = z.object({
+  research: z.array(z.enum(['handelsregister', 'german_law', 'law_publishers'])).optional(),
+  integration: z.enum(['datev']).optional(),
+  mandant: z.string().optional(),
+});
+
+// Metadata stored alongside assistant messages (tool calls used during response)
+export const ChatMessageMetadataSchema = z.object({
+  toolCalls: z
+    .array(z.object({ name: z.string(), status: z.enum(['started', 'completed']) }))
+    .optional(),
+});

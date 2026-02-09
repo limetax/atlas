@@ -1,6 +1,15 @@
 import { QueryClient } from '@tanstack/react-query';
 import { TRPCClientError } from '@trpc/client';
 
+function hasTrpcHttpStatus(error: TRPCClientError<unknown>, statuses: number[]): boolean {
+  const data: unknown = error.data;
+  if (typeof data === 'object' && data !== null && 'httpStatus' in data) {
+    const { httpStatus } = data;
+    return typeof httpStatus === 'number' && statuses.includes(httpStatus);
+  }
+  return false;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -8,9 +17,8 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
         // Don't retry auth errors — tRPC link already redirects on 401
-        if (error instanceof TRPCClientError) {
-          const httpStatus = (error.data as { httpStatus?: number } | undefined)?.httpStatus;
-          if (httpStatus === 401 || httpStatus === 403) return false;
+        if (error instanceof TRPCClientError && hasTrpcHttpStatus(error, [401, 403])) {
+          return false;
         }
         return failureCount < 3;
       },

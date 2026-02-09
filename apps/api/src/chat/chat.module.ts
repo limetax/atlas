@@ -4,6 +4,7 @@ import { ChatService } from '@chat/application/chat.service';
 import { ChatController } from '@chat/chat.controller';
 import { ChatRouter } from '@chat/chat.router';
 import { IChatRepository } from '@chat/domain/chat.entity';
+import { ChatPersistenceMapper } from '@chat/infrastructure/chat-persistence.mapper';
 import { SupabaseChatRepository } from '@chat/infrastructure/supabase-chat.repository';
 import { LlmModule } from '@llm/llm.module';
 import { Module } from '@nestjs/common';
@@ -20,6 +21,7 @@ import { RAGModule } from '@rag/rag.module';
   providers: [
     ChatService,
     ChatRouter,
+    ChatPersistenceMapper,
     SupabaseChatRepository,
     {
       provide: IChatRepository,

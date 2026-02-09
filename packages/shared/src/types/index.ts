@@ -2,21 +2,21 @@
 export const MESSAGE_ROLES = ['user', 'assistant'] as const;
 export type MessageRole = (typeof MESSAGE_ROLES)[number];
 
-export interface Message {
+export type Message = {
   id?: string;
   role: MessageRole;
   content: string;
   citations?: Citation[];
   toolCalls?: Array<{ name: string; status: 'started' | 'completed' }>;
   timestamp?: Date | string;
-}
+};
 
-export interface Citation {
+export type Citation = {
   id: string;
   source: string;
   title: string;
   content?: string;
-}
+};
 
 // Context types for chat
 export const RESEARCH_SOURCES = ['handelsregister', 'german_law', 'law_publishers'] as const;
@@ -27,43 +27,43 @@ export type IntegrationType = (typeof INTEGRATION_TYPES)[number];
 
 export type MandantId = string;
 
-export interface ChatContext {
+export type ChatContext = {
   research?: ResearchSource[];
   integration?: IntegrationType;
   mandant?: MandantId;
-}
+};
 
 // Chat types
-export interface ChatSession {
+export type ChatSession = {
   id: string;
   title: string;
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
-  assistantId?: string; // Optional: links chat to a specific assistant
-  context?: ChatContext; // Context selections for this session (for future Langdock integration)
-}
+  assistantId?: string;
+  context?: ChatContext;
+};
 
 // RAG types
 export const TAX_DOCUMENT_CATEGORIES = ['AO', 'EStG', 'UStG', 'Other'] as const;
 export type TaxDocumentCategory = (typeof TAX_DOCUMENT_CATEGORIES)[number];
 
-export interface TaxDocument {
+export type TaxDocument = {
   id: string;
   citation: string;
   title: string;
   content: string;
   category: TaxDocumentCategory;
-}
+};
 
 // API types
-export interface ChatRequest {
+export type ChatRequest = {
   message: string;
   history: Message[];
   sessionId?: string;
   context?: ChatContext;
   assistantId?: string;
-}
+};
 
 export const CHAT_STREAM_CHUNK_TYPES = [
   'text',
@@ -76,7 +76,7 @@ export const CHAT_STREAM_CHUNK_TYPES = [
 ] as const;
 export type ChatStreamChunkType = (typeof CHAT_STREAM_CHUNK_TYPES)[number];
 
-export interface ChatStreamChunk {
+export type ChatStreamChunk = {
   type: ChatStreamChunkType;
   content?: string;
   citation?: Citation;
@@ -84,7 +84,7 @@ export interface ChatStreamChunk {
   error?: string;
   toolCall?: { name: string; status: 'started' | 'completed' };
   chatId?: string;
-}
+};
 
 // Metadata stored alongside assistant messages (tool calls used during response)
 export type ChatMessageMetadata = {
@@ -105,12 +105,12 @@ export type PersistedMessage = {
 export const LLM_MESSAGE_ROLES = ['user', 'assistant', 'system'] as const;
 export type LlmMessageRole = (typeof LLM_MESSAGE_ROLES)[number];
 
-export interface LLMMessage {
+export type LLMMessage = {
   role: LlmMessageRole;
   content: string;
-}
+};
 
-export interface LLMStreamResponse {
+export type LLMStreamResponse = {
   content: string;
-  done: boolean;
-}
+  isDone: boolean;
+};

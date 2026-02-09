@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import { IChatRepository, Chat, ChatMessage } from '@chat/domain/chat.entity';
-import { ChatContext, ChatMessageMetadata, MessageRole, Json } from '@atlas/shared';
-import { ChatRow, ChatMessageRow } from '@atlas/shared';
+import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
+import { ChatPersistenceMapper } from './chat-persistence.mapper';
 
 /**
  * Supabase Chat Repository - Infrastructure implementation for chat data access
@@ -12,7 +12,10 @@ import { ChatRow, ChatMessageRow } from '@atlas/shared';
 export class SupabaseChatRepository implements IChatRepository {
   private readonly logger = new Logger(SupabaseChatRepository.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly mapper: ChatPersistenceMapper
+  ) {}
 
   async findAllByAdvisorId(advisorId: string): Promise<Chat[]> {
     const { data, error } = await this.supabase.db
@@ -26,7 +29,7 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error(`Failed to fetch chats: ${error.message}`);
     }
 
-    return (data ?? []).map(this.mapRowToChat);
+    return (data ?? []).map((row) => this.mapper.chatToDomain(row));
   }
 
   async findById(chatId: string, advisorId: string): Promise<Chat | null> {
@@ -43,17 +46,13 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error(`Failed to fetch chat: ${error.message}`);
     }
 
-    return this.mapRowToChat(data);
+    return this.mapper.chatToDomain(data);
   }
 
   async create(advisorId: string, title: string, context?: ChatContext): Promise<Chat> {
     const { data, error } = await this.supabase.db
       .from('chats')
-      .insert({
-        advisor_id: advisorId,
-        title,
-        context: (context ?? {}) as unknown as Json,
-      })
+      .insert(this.mapper.chatToPersistence(advisorId, title, context))
       .select()
       .single();
 
@@ -62,7 +61,7 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error(`Failed to create chat: ${error.message}`);
     }
 
-    return this.mapRowToChat(data);
+    return this.mapper.chatToDomain(data);
   }
 
   async updateTitle(chatId: string, advisorId: string, title: string): Promise<Chat | null> {
@@ -80,7 +79,7 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error(`Failed to update chat title: ${error.message}`);
     }
 
-    return this.mapRowToChat(data);
+    return this.mapper.chatToDomain(data);
   }
 
   async updateContext(
@@ -88,9 +87,10 @@ export class SupabaseChatRepository implements IChatRepository {
     advisorId: string,
     context: ChatContext
   ): Promise<Chat | null> {
+    const insertData = this.mapper.chatToPersistence(advisorId, '', context);
     const { data, error } = await this.supabase.db
       .from('chats')
-      .update({ context: context as unknown as Json, updated_at: new Date().toISOString() })
+      .update({ context: insertData.context, updated_at: new Date().toISOString() })
       .eq('id', chatId)
       .eq('advisor_id', advisorId)
       .select()
@@ -102,7 +102,7 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error(`Failed to update chat context: ${error.message}`);
     }
 
-    return this.mapRowToChat(data);
+    return this.mapper.chatToDomain(data);
   }
 
   async delete(chatId: string, advisorId: string): Promise<boolean> {
@@ -136,7 +136,7 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error(`Failed to fetch messages: ${error.message}`);
     }
 
-    return (data ?? []).map(this.mapRowToMessage);
+    return (data ?? []).map((row) => this.mapper.messageToDomain(row));
   }
 
   async addMessage(
@@ -147,12 +147,7 @@ export class SupabaseChatRepository implements IChatRepository {
   ): Promise<ChatMessage> {
     const { data, error } = await this.supabase.db
       .from('chat_messages')
-      .insert({
-        chat_id: chatId,
-        role,
-        content,
-        metadata: (metadata ?? {}) as unknown as Json,
-      })
+      .insert(this.mapper.messageToPersistence(chatId, role, content, metadata))
       .select()
       .single();
 
@@ -161,28 +156,6 @@ export class SupabaseChatRepository implements IChatRepository {
       throw new Error(`Failed to add message: ${error.message}`);
     }
 
-    return this.mapRowToMessage(data);
-  }
-
-  private mapRowToChat(row: ChatRow): Chat {
-    return {
-      id: row.id,
-      advisorId: row.advisor_id,
-      title: row.title,
-      context: (row.context ?? {}) as ChatContext,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
-  }
-
-  private mapRowToMessage(row: ChatMessageRow): ChatMessage {
-    return {
-      id: row.id,
-      chatId: row.chat_id,
-      role: row.role,
-      content: row.content,
-      metadata: (row.metadata ?? {}) as ChatMessageMetadata,
-      createdAt: row.created_at,
-    };
+    return this.mapper.messageToDomain(data);
   }
 }

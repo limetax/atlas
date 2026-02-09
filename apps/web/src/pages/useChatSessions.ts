@@ -218,7 +218,7 @@ export function useChatSessions(): UseChatSessionsReturn {
           content: msg.content,
           metadata: (msg.toolCalls?.length
             ? { toolCalls: msg.toolCalls }
-            : {}) as ChatMessageMetadata,
+            : {}) satisfies ChatMessageMetadata,
           createdAt:
             typeof msg.timestamp === 'string'
               ? msg.timestamp

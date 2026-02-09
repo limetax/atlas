@@ -6,10 +6,10 @@ import { LlmMessageRole } from '@atlas/shared';
  * This represents our business concept of a message,
  * independent of how it's transmitted or stored
  */
-export interface Message {
+export type Message = {
   role: LlmMessageRole;
   content: string;
-}
+};
 
 /**
  * Chat Stream Chunk - Domain representation of streaming response chunks
@@ -25,9 +25,9 @@ export type ChatStreamChunk =
 /**
  * Citation - Reference to a source document
  */
-export interface Citation {
+export type Citation = {
   id: string;
   source: string;
   title: string;
   content: string;
-}
+};
