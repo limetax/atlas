@@ -8,7 +8,8 @@ import { ChatEmptyState } from './ChatEmptyState';
 import { ContextToggles } from './context/ContextToggles';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ChatScrollAnchor } from './ChatScrollAnchor';
-import { DropZoneOverlay, PendingFileList, validatePdfFile } from './FileUpload';
+import { DropZoneOverlay, PendingFileList } from './FileUpload';
+import { isValidPdfFile } from '@/utils/validators';
 
 export type ToolCallState = {
   name: string;
@@ -222,7 +223,7 @@ const InputArea = ({
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    const validFiles = files.filter((f) => !validatePdfFile(f));
+    const validFiles = files.filter((f) => isValidPdfFile(f));
     if (validFiles.length > 0) {
       onAddFiles(validFiles);
     }

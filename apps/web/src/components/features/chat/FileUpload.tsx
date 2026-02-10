@@ -1,24 +1,10 @@
 import React from 'react';
+
 import { FileText, Upload, X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function validatePdfFile(file: File): string | null {
-  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-    return 'Nur PDF-Dateien sind erlaubt';
-  }
-  if (file.size > MAX_FILE_SIZE) {
-    return 'Datei darf maximal 10 MB groß sein';
-  }
-  return null;
-}
+import { formatFileSize } from '@/utils/formatters';
+import { isValidPdfFile } from '@/utils/validators';
 
 // ─── DropZoneOverlay ──────────────────────────────────────────────────────────
 
@@ -34,7 +20,7 @@ export const DropZoneOverlay: React.FC<DropZoneOverlayProps> = ({ isVisible, onD
     e.preventDefault();
     e.stopPropagation();
 
-    const droppedFiles = Array.from(e.dataTransfer.files).filter((f) => !validatePdfFile(f));
+    const droppedFiles = Array.from(e.dataTransfer.files).filter((f) => isValidPdfFile(f));
     if (droppedFiles.length > 0) {
       onDrop(droppedFiles);
     }
@@ -77,7 +63,7 @@ export const PendingFileList: React.FC<PendingFileListProps> = ({
     <div className="flex flex-wrap gap-2 mt-2">
       {pendingFiles.map((file, index) => (
         <PendingFileChip
-          key={`pending-${index}`}
+          key={`${file.name}-${file.size}-${file.lastModified}`}
           file={file}
           onRemove={() => onRemovePending(index)}
         />
@@ -104,7 +90,3 @@ const PendingFileChip: React.FC<{ file: File; onRemove: () => void }> = ({ file,
     </Button>
   </div>
 );
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
-export { validatePdfFile, formatFileSize };

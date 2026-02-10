@@ -386,22 +386,22 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       );
     }
 
-    // 3. Process uploaded files (before LLM call so content is available for RAG)
-    const processedDocuments: ChatDocument[] = [];
+    // 3. Process uploaded files in parallel (before LLM call so content is available for RAG)
+    let processedDocuments: ChatDocument[] = [];
     if (files && files.length > 0) {
-      for (const file of files) {
-        const doc = await this.documentService.processAndStore(file, resolvedChatId, advisorId);
-        processedDocuments.push({
-          id: doc.id,
-          chatId: doc.chatId,
-          fileName: doc.fileName,
-          fileSize: doc.fileSize,
-          status: doc.status,
-          errorMessage: doc.errorMessage,
-          chunkCount: doc.chunkCount,
-          createdAt: doc.createdAt,
-        });
-      }
+      const results = await Promise.all(
+        files.map((file) => this.documentService.processAndStore(file, resolvedChatId, advisorId))
+      );
+      processedDocuments = results.map((doc) => ({
+        id: doc.id,
+        chatId: doc.chatId,
+        fileName: doc.fileName,
+        fileSize: doc.fileSize,
+        status: doc.status,
+        errorMessage: doc.errorMessage,
+        chunkCount: doc.chunkCount,
+        createdAt: doc.createdAt,
+      }));
 
       yield { type: 'files_processed', documents: processedDocuments };
     }

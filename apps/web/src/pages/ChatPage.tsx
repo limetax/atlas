@@ -192,23 +192,22 @@ export const ChatPage: React.FC = () => {
         } else if (chunk.type === 'citations' && chunk.citations) {
           citations = chunk.citations;
         } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-          const existingIdx = collectedToolCalls.findIndex(
-            (tc) => tc.name === chunk.toolCall!.name
-          );
+          const toolCall = chunk.toolCall;
+          const existingIdx = collectedToolCalls.findIndex((tc) => tc.name === toolCall.name);
           if (existingIdx >= 0) {
-            collectedToolCalls[existingIdx] = chunk.toolCall;
+            collectedToolCalls[existingIdx] = toolCall;
           } else {
-            collectedToolCalls = [...collectedToolCalls, chunk.toolCall];
+            collectedToolCalls = [...collectedToolCalls, toolCall];
           }
 
           setActiveToolCalls((prev) => {
-            const existing = prev.findIndex((tc) => tc.name === chunk.toolCall!.name);
+            const existing = prev.findIndex((tc) => tc.name === toolCall.name);
             if (existing >= 0) {
               const updated = [...prev];
-              updated[existing] = chunk.toolCall!;
+              updated[existing] = toolCall;
               return updated;
             }
-            return [...prev, chunk.toolCall!];
+            return [...prev, toolCall];
           });
         } else if (chunk.type === 'done') {
           setActiveToolCalls([]);

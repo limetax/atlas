@@ -5,6 +5,7 @@ import { AssistantService } from '@/assistant/assistant.service';
 import { ChatContextSchema, MessageSchema } from '@atlas/shared';
 import { ChatService } from '@chat/application/chat.service';
 import {
+  BadRequestException,
   Body,
   Controller,
   Logger,
@@ -53,16 +54,26 @@ export class ChatController {
     // When using multipart/form-data, fields come as strings
     // Parse them to get proper types
     const rawBody = body as Record<string, unknown>;
-    const parsed = StreamChatBodySchema.parse({
-      message: rawBody.message,
-      history:
-        typeof rawBody.history === 'string' ? JSON.parse(rawBody.history) : (rawBody.history ?? []),
-      chatId: rawBody.chatId || undefined,
-      assistantId: rawBody.assistantId || undefined,
-      context:
+
+    let parsedHistory: unknown;
+    let parsedContext: unknown;
+    try {
+      parsedHistory =
+        typeof rawBody.history === 'string' ? JSON.parse(rawBody.history) : (rawBody.history ?? []);
+      parsedContext =
         typeof rawBody.context === 'string'
           ? JSON.parse(rawBody.context)
-          : (rawBody.context ?? undefined),
+          : (rawBody.context ?? undefined);
+    } catch {
+      throw new BadRequestException('Ungültiges JSON in history oder context');
+    }
+
+    const parsed = StreamChatBodySchema.parse({
+      message: rawBody.message,
+      history: parsedHistory,
+      chatId: rawBody.chatId ? rawBody.chatId : undefined,
+      assistantId: rawBody.assistantId ? rawBody.assistantId : undefined,
+      context: parsedContext,
     });
 
     const { message, history, chatId, assistantId, context } = parsed;

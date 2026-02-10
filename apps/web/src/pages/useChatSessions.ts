@@ -217,17 +217,6 @@ export function useChatSessions(): UseChatSessionsReturn {
         const persistedShape = finalMessages.map((msg) => {
           const metadata: ChatMessageMetadata = {};
           if (msg.toolCalls?.length) metadata.toolCalls = msg.toolCalls;
-          if (msg.attachedFiles?.length) {
-            metadata.documents = msg.attachedFiles.map((f) => ({
-              id: '',
-              chatId: targetChatId,
-              fileName: f.name,
-              fileSize: f.size,
-              status: 'ready' as const,
-              chunkCount: 0,
-              createdAt: new Date().toISOString(),
-            }));
-          }
           return {
             id: msg.id ?? crypto.randomUUID(),
             chatId: targetChatId,

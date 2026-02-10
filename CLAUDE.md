@@ -65,6 +65,7 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 - `SCREAMING_SNAKE_CASE` for global constants, `camelCase` for local
 - Prefix booleans with `is`, `has`, `should`, `can`
 - Functions use action verbs (`getUser`, `handleClick`, `validateInput`)
+- Prefer arrow functions (`const fn = () => {}`) — use `function` declarations only when hoisting is needed
 - Explicit return types on all exported functions
 
 ### Backend (`apps/api`)

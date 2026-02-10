@@ -107,7 +107,7 @@ export class DocumentService {
   }
 
   private validateFile(file: Express.Multer.File): void {
-    if (!file.mimetype.includes('pdf')) {
+    if (file.mimetype !== 'application/pdf') {
       throw new BadRequestException('Nur PDF-Dateien sind erlaubt');
     }
     if (file.size > MAX_FILE_SIZE) {
