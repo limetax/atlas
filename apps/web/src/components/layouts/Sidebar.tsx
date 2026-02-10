@@ -1,16 +1,32 @@
 import React from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
-import { MessageSquare, Plus, Trash2, FileText, Workflow } from 'lucide-react';
+import {
+  MessageSquare,
+  Plus,
+  Trash2,
+  FileText,
+  Workflow,
+  EllipsisVertical,
+  Pencil,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { ChatSession } from '@atlas/shared';
 
-interface SidebarProps {
+type SidebarProps = {
   sessions: ChatSession[];
   currentSessionId?: string;
   onSessionSelect: (sessionId: string) => void;
   onNewChat: () => void;
   onDeleteSession?: (sessionId: string) => void;
-}
+  onRenameSession?: (sessionId: string) => void;
+};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   sessions,
@@ -18,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSessionSelect,
   onNewChat,
   onDeleteSession,
+  onRenameSession,
 }) => {
   return (
     <aside className="w-72 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
@@ -30,14 +47,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         currentSessionId={currentSessionId}
         onSessionSelect={onSessionSelect}
         onDeleteSession={onDeleteSession}
+        onRenameSession={onRenameSession}
       />
     </aside>
   );
 };
 
-interface NewChatButtonProps {
+type NewChatButtonProps = {
   onNewChat: () => void;
-}
+};
 
 const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
   return (
@@ -111,18 +129,20 @@ const Navigation = () => {
   );
 };
 
-interface ChatHistoryProps {
+type ChatHistoryProps = {
   sessions: ChatSession[];
   currentSessionId?: string;
   onSessionSelect: (sessionId: string) => void;
   onDeleteSession?: (sessionId: string) => void;
-}
+  onRenameSession?: (sessionId: string) => void;
+};
 
 const ChatHistory = ({
   sessions,
   currentSessionId,
   onSessionSelect,
   onDeleteSession,
+  onRenameSession,
 }: ChatHistoryProps) => {
   return (
     <div className="flex-1 overflow-y-auto p-3 min-h-0">
@@ -138,6 +158,7 @@ const ChatHistory = ({
           currentSessionId={currentSessionId}
           onSessionSelect={onSessionSelect}
           onDeleteSession={onDeleteSession}
+          onRenameSession={onRenameSession}
         />
       )}
     </div>
@@ -153,18 +174,20 @@ const EmptyState = () => {
   );
 };
 
-interface SessionListProps {
+type SessionListProps = {
   sessions: ChatSession[];
   currentSessionId?: string;
   onSessionSelect: (sessionId: string) => void;
   onDeleteSession?: (sessionId: string) => void;
-}
+  onRenameSession?: (sessionId: string) => void;
+};
 
 const SessionList = ({
   sessions,
   currentSessionId,
   onSessionSelect,
   onDeleteSession,
+  onRenameSession,
 }: SessionListProps) => {
   return (
     <div className="space-y-1">
@@ -175,20 +198,22 @@ const SessionList = ({
           isActive={currentSessionId === session.id}
           onSelect={() => onSessionSelect(session.id)}
           onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
+          onRename={onRenameSession ? () => onRenameSession(session.id) : undefined}
         />
       ))}
     </div>
   );
 };
 
-interface SessionItemProps {
+type SessionItemProps = {
   session: ChatSession;
   isActive: boolean;
   onSelect: () => void;
   onDelete?: () => void;
-}
+  onRename?: () => void;
+};
 
-const SessionItem = ({ session, isActive, onSelect, onDelete }: SessionItemProps) => {
+const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: SessionItemProps) => {
   return (
     <div
       className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${
@@ -203,16 +228,34 @@ const SessionItem = ({ session, isActive, onSelect, onDelete }: SessionItemProps
           {new Date(session.updatedAt).toLocaleDateString('de-DE')}
         </p>
       </div>
-      {onDelete && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all"
-        >
-          <Trash2 className="w-4 h-4 text-red-500" />
-        </button>
+      {(onDelete ?? onRename) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 p-1 hover:bg-gray-100 rounded transition-all"
+            >
+              <EllipsisVertical className="w-4 h-4 text-gray-500" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start">
+            {onRename && (
+              <DropdownMenuItem onClick={onRename}>
+                <Pencil className="w-4 h-4" />
+                Umbenennen
+              </DropdownMenuItem>
+            )}
+            {onRename && onDelete && <DropdownMenuSeparator />}
+            {onDelete && (
+              <DropdownMenuItem onClick={onDelete} className="text-red-500">
+                <Trash2 className="w-4 h-4" />
+                Löschen
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   );

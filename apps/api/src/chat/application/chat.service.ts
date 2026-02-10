@@ -1,11 +1,12 @@
-import { ChatContext, MessageRole } from '@atlas/shared';
+import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
+import { IChatRepository } from '@chat/domain/chat.entity';
 import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
 import { ClientService } from '@datev/application/client.service';
 import { LlmService } from '@llm/application/llm.service';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 
-import { CONTEXT_PROMPTS } from './chat.prompts';
+import { CONTEXT_PROMPTS, TITLE_GENERATION_PROMPT } from './chat.prompts';
 
 type LlmMessage = {
   role: MessageRole;
@@ -25,7 +26,8 @@ export class ChatService {
   constructor(
     private readonly llm: LlmService,
     private readonly rag: RAGService,
-    private readonly clientService: ClientService
+    private readonly clientService: ClientService,
+    @Inject(IChatRepository) private readonly chatRepo: IChatRepository
   ) {}
 
   /**
@@ -342,5 +344,91 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     llmMessages.push({ role: 'user', content: userMessage });
 
     return await this.llm.getCompletion(llmMessages, systemPrompt, chatContext);
+  }
+
+  /**
+   * Full chat streaming flow: resolve/create chat, persist messages, stream response.
+   * The controller only needs to write yielded chunks to SSE and manage HTTP lifecycle.
+   */
+  async *streamChat(
+    advisorId: string,
+    message: string,
+    history: Message[],
+    chatId?: string,
+    customSystemPrompt?: string,
+    context?: ChatContext
+  ): AsyncGenerator<ChatStreamChunk, void, unknown> {
+    // 1. Resolve or create the chat
+    let resolvedChatId = chatId;
+    let isFirstMessage = false;
+
+    if (!resolvedChatId) {
+      const autoTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+      const chat = await this.chatRepo.create(advisorId, autoTitle, context);
+      resolvedChatId = chat.id;
+      isFirstMessage = true;
+
+      yield { type: 'chat_created', chatId: resolvedChatId };
+    } else {
+      const existingMessages = await this.chatRepo.findMessagesByChatId(resolvedChatId, advisorId);
+      isFirstMessage = existingMessages.length === 0;
+    }
+
+    // 2. Fire-and-forget: generate AI title from first message
+    if (isFirstMessage) {
+      this.generateSmartTitle(resolvedChatId, advisorId, message).catch((err) =>
+        this.logger.warn(`Failed to generate smart title: ${err.message}`)
+      );
+    }
+
+    // 3. Persist user message before streaming
+    await this.chatRepo.addMessage(resolvedChatId, 'user', message);
+
+    // 4. Stream response, accumulate for persistence
+    let assistantContent = '';
+    const toolCalls: Array<{ name: string; status: 'started' | 'completed' }> = [];
+
+    for await (const chunk of this.processMessage(message, history, customSystemPrompt, context)) {
+      yield chunk;
+
+      if (chunk.type === 'text') {
+        assistantContent += chunk.content;
+      }
+
+      if (chunk.type === 'tool_call') {
+        const existingIdx = toolCalls.findIndex((tc) => tc.name === chunk.toolCall.name);
+        if (existingIdx >= 0) {
+          toolCalls[existingIdx] = chunk.toolCall;
+        } else {
+          toolCalls.push(chunk.toolCall);
+        }
+      }
+    }
+
+    // 5. Persist assistant response with metadata
+    if (assistantContent) {
+      const metadata: ChatMessageMetadata = toolCalls.length > 0 ? { toolCalls } : {};
+      await this.chatRepo.addMessage(resolvedChatId, 'assistant', assistantContent, metadata);
+    }
+  }
+
+  /**
+   * Generate an AI-powered title from the first user message and persist it.
+   */
+  private async generateSmartTitle(
+    chatId: string,
+    advisorId: string,
+    firstMessage: string
+  ): Promise<void> {
+    const title = await this.llm.getCompletion(
+      [{ role: 'user', content: firstMessage }],
+      TITLE_GENERATION_PROMPT
+    );
+
+    const trimmedTitle = title.trim().substring(0, 100);
+    if (trimmedTitle) {
+      await this.chatRepo.updateTitle(chatId, advisorId, trimmedTitle);
+      this.logger.debug(`Generated smart title for chat ${chatId}: "${trimmedTitle}"`);
+    }
   }
 }
