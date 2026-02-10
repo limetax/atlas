@@ -1,22 +1,10 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Res,
-  Req,
-  Logger,
-  Inject,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, Logger, UnauthorizedException } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ChatService } from '@chat/application/chat.service';
 import { AssistantService } from '@/assistant/assistant.service';
-import { IChatRepository } from '@chat/domain/chat.entity';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
-import { LlmService } from '@llm/application/llm.service';
-import { TITLE_GENERATION_PROMPT } from '@chat/application/chat.prompts';
 import { z } from 'zod';
-import { ChatMessageMetadata, ChatContextSchema, MessageSchema } from '@atlas/shared';
+import { ChatContextSchema, MessageSchema } from '@atlas/shared';
 
 const StreamChatBodySchema = z.object({
   message: z.string().min(1),
@@ -39,9 +27,7 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly assistantService: AssistantService,
-    @Inject(IChatRepository) private readonly chatRepo: IChatRepository,
-    private readonly supabase: SupabaseService,
-    private readonly llmService: LlmService
+    private readonly supabase: SupabaseService
   ) {}
 
   @Post('stream')
@@ -71,95 +57,19 @@ export class ChatController {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Resolve or create the chat
-    let resolvedChatId = chatId;
-
-    if (!resolvedChatId) {
-      // Lazy chat creation: create a new chat on first message
-      const autoTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
-      const chat = await this.chatRepo.create(advisorId, autoTitle, context);
-      resolvedChatId = chat.id;
-
-      // Notify the frontend of the newly created chat ID
-      res.write(`data: ${JSON.stringify({ type: 'chat_created', chatId: resolvedChatId })}\n\n`);
-
-      // Fire-and-forget: generate AI title in background
-      this.generateSmartTitle(resolvedChatId, advisorId, message).catch((err) =>
-        this.logger.warn(`Failed to generate smart title: ${err.message}`)
-      );
-    } else {
-      // Auto-title: if this is the first message in an existing chat, update title
-      const existingMessages = await this.chatRepo.findMessagesByChatId(resolvedChatId, advisorId);
-      if (existingMessages.length === 0) {
-        // Fire-and-forget: generate AI title in background
-        this.generateSmartTitle(resolvedChatId, advisorId, message).catch((err) =>
-          this.logger.warn(`Failed to generate smart title: ${err.message}`)
-        );
-      }
-    }
-
-    // Persist user message before streaming
-    await this.chatRepo.addMessage(resolvedChatId, 'user', message);
-
-    // Stream response and accumulate assistant content + tool calls
-    let assistantContent = '';
-    const toolCalls: Array<{ name: string; status: 'started' | 'completed' }> = [];
-
-    for await (const chunk of this.chatService.processMessage(
+    // Delegate full chat flow to service — controller only writes SSE events
+    for await (const chunk of this.chatService.streamChat(
+      advisorId,
       message,
-      history ?? [],
+      history,
+      chatId,
       customSystemPrompt,
       context
     )) {
-      const data = JSON.stringify(chunk);
-      res.write(`data: ${data}\n\n`);
-
-      // Accumulate text content for persistence
-      if (chunk.type === 'text' && chunk.content) {
-        assistantContent += chunk.content;
-      }
-
-      // Accumulate tool calls for metadata persistence
-      if (chunk.type === 'tool_call' && chunk.toolCall) {
-        const existingIdx = toolCalls.findIndex((tc) => tc.name === chunk.toolCall.name);
-        if (existingIdx >= 0) {
-          toolCalls[existingIdx] = chunk.toolCall;
-        } else {
-          toolCalls.push(chunk.toolCall);
-        }
-      }
+      res.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }
 
-    // Persist the complete assistant response with metadata
-    if (assistantContent) {
-      const metadata: ChatMessageMetadata = toolCalls.length > 0 ? { toolCalls } : {};
-      await this.chatRepo.addMessage(resolvedChatId, 'assistant', assistantContent, metadata);
-    }
-
-    // Send done signal
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
-  }
-
-  /**
-   * Fire-and-forget: generates an AI title from the first user message
-   * and updates the chat record. Non-blocking — errors are logged, not thrown.
-   */
-  private async generateSmartTitle(
-    chatId: string,
-    advisorId: string,
-    firstMessage: string
-  ): Promise<void> {
-    const title = await this.llmService.getCompletion(
-      [{ role: 'user', content: firstMessage }],
-      TITLE_GENERATION_PROMPT
-    );
-
-    const trimmedTitle = title.trim().substring(0, 100);
-    if (trimmedTitle) {
-      await this.chatRepo.updateTitle(chatId, advisorId, trimmedTitle);
-      this.logger.debug(`Generated smart title for chat ${chatId}: "${trimmedTitle}"`);
-    }
   }
 
   /**

@@ -29,11 +29,6 @@ export const RenameDialog = ({
   useEffect(() => {
     if (isOpen) {
       setTitle(currentTitle);
-      // Auto-focus and select on next tick (after dialog animation starts)
-      setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }, 0);
     }
   }, [isOpen, currentTitle]);
 
@@ -50,7 +45,13 @@ export const RenameDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus();
+          inputRef.current?.select();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Chat umbenennen</DialogTitle>
           <DialogDescription className="sr-only">
