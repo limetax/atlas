@@ -1,5 +1,6 @@
 import { AssistantModule } from '@/assistant/assistant.module';
 import { DatevModule } from '@/datev/datev.module';
+import { DocumentModule } from '@/document/document.module';
 import { ChatService } from '@chat/application/chat.service';
 import { ChatController } from '@chat/chat.controller';
 import { ChatRouter } from '@chat/chat.router';
@@ -16,7 +17,7 @@ import { RAGModule } from '@rag/rag.module';
  * Provides tRPC router for chat CRUD and SSE controller for streaming
  */
 @Module({
-  imports: [LlmModule, RAGModule, AssistantModule, DatevModule],
+  imports: [LlmModule, RAGModule, AssistantModule, DatevModule, DocumentModule],
   controllers: [ChatController],
   providers: [
     ChatService,

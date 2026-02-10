@@ -51,6 +51,9 @@ export const ChatPage: React.FC = () => {
   >([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // ─── Pending files (selected/dropped but not yet sent) ──────────────────
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
   // Local context for new-chat mode (before a DB session exists).
   // Once the chat is created, context is persisted server-side and read from currentSession.
   const [pendingContext, setPendingContext] = useState<ChatContext>({});
@@ -80,12 +83,14 @@ export const ChatPage: React.FC = () => {
   const handleNewChatWithNavigation = () => {
     handleNewChat();
     setPendingContext({});
+    setPendingFiles([]);
     navigate({ to: '/' });
   };
 
   // Select session eagerly + navigate (same reasoning as above)
   const handleSessionSelectWithNavigation = (sessionId: string) => {
     handleSessionSelect(sessionId);
+    setPendingFiles([]);
     navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
   };
 
@@ -100,6 +105,15 @@ export const ChatPage: React.FC = () => {
     },
     [currentSessionId, updateSessionContext]
   );
+
+  // ─── File handlers ──────────────────────────────────────────────────────
+  const handleAddFiles = useCallback((files: File[]) => {
+    setPendingFiles((prev) => [...prev, ...files]);
+  }, []);
+
+  const handleRemovePendingFile = useCallback((index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
 
   const handleRenameSession = (sessionId: string) => {
     const session = sessions.find((s) => s.id === sessionId);
@@ -118,10 +132,18 @@ export const ChatPage: React.FC = () => {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
+    // Capture pending files and clear immediately — files are now attached to the message
+    const filesToSend = [...pendingFiles];
+    setPendingFiles([]);
+
     const userMessage: Message = {
       id: generateMessageId(),
       role: 'user',
       content,
+      attachedFiles:
+        filesToSend.length > 0
+          ? filesToSend.map((f) => ({ name: f.name, size: f.size }))
+          : undefined,
       timestamp: new Date(),
     };
 
@@ -143,7 +165,8 @@ export const ChatPage: React.FC = () => {
         messages,
         chatContext,
         abortController.signal,
-        currentSessionId
+        currentSessionId,
+        filesToSend.length > 0 ? filesToSend : undefined
       )) {
         if (chunk.type === 'chat_created' && chunk.chatId) {
           // Backend created a new chat — update local tracker and state
@@ -169,23 +192,22 @@ export const ChatPage: React.FC = () => {
         } else if (chunk.type === 'citations' && chunk.citations) {
           citations = chunk.citations;
         } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-          const existingIdx = collectedToolCalls.findIndex(
-            (tc) => tc.name === chunk.toolCall!.name
-          );
+          const toolCall = chunk.toolCall;
+          const existingIdx = collectedToolCalls.findIndex((tc) => tc.name === toolCall.name);
           if (existingIdx >= 0) {
-            collectedToolCalls[existingIdx] = chunk.toolCall;
+            collectedToolCalls[existingIdx] = toolCall;
           } else {
-            collectedToolCalls = [...collectedToolCalls, chunk.toolCall];
+            collectedToolCalls = [...collectedToolCalls, toolCall];
           }
 
           setActiveToolCalls((prev) => {
-            const existing = prev.findIndex((tc) => tc.name === chunk.toolCall!.name);
+            const existing = prev.findIndex((tc) => tc.name === toolCall.name);
             if (existing >= 0) {
               const updated = [...prev];
-              updated[existing] = chunk.toolCall!;
+              updated[existing] = toolCall;
               return updated;
             }
-            return [...prev, chunk.toolCall!];
+            return [...prev, toolCall];
           });
         } else if (chunk.type === 'done') {
           setActiveToolCalls([]);
@@ -300,6 +322,9 @@ export const ChatPage: React.FC = () => {
           initialContent={templateContent}
           context={chatContext}
           onContextChange={handleContextChange}
+          pendingFiles={pendingFiles}
+          onAddFiles={handleAddFiles}
+          onRemovePendingFile={handleRemovePendingFile}
         />
       </div>
 

@@ -1,13 +1,15 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Message, ChatContext } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '@/components/ui/button';
-import { Send, StopCircle } from 'lucide-react';
+import { Send, StopCircle, Paperclip } from 'lucide-react';
 import { ChatEmptyState } from './ChatEmptyState';
 import { ContextToggles } from './context/ContextToggles';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ChatScrollAnchor } from './ChatScrollAnchor';
+import { DropZoneOverlay, PendingFileList } from './FileUpload';
+import { isValidPdfFile } from '@/utils/validators';
 
 export type ToolCallState = {
   name: string;
@@ -23,6 +25,9 @@ type ChatInterfaceProps = {
   initialContent?: string;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
+  pendingFiles: File[];
+  onAddFiles: (files: File[]) => void;
+  onRemovePendingFile: (index: number) => void;
 };
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -34,10 +39,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   initialContent,
   context,
   onContextChange,
+  pendingFiles,
+  onAddFiles,
+  onRemovePendingFile,
 }) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
 
   // Update input when initialContent changes (template insertion from navigation)
   useLayoutEffect(() => {
@@ -57,7 +67,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim() && !isLoading) {
+    if ((inputValue.trim() || pendingFiles.length > 0) && !isLoading) {
       onSendMessage(inputValue.trim());
       setInputValue('');
     }
@@ -67,15 +77,56 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Submit on Enter (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (inputValue.trim() && !isLoading) {
+      if ((inputValue.trim() || pendingFiles.length > 0) && !isLoading) {
         onSendMessage(inputValue.trim());
         setInputValue('');
       }
     }
   };
 
+  // ─── Drag-and-drop handlers (on outer container) ──────────────────────────
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (files: File[]) => {
+      setIsDragOver(false);
+      dragCounterRef.current = 0;
+      onAddFiles(files);
+    },
+    [onAddFiles]
+  );
+
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <div
+      className="relative flex flex-col h-full bg-gradient-to-b from-gray-50 to-white overflow-hidden"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+    >
+      <DropZoneOverlay isVisible={isDragOver} onDrop={handleDrop} />
+
       <MessagesArea
         messages={messages}
         isLoading={isLoading}
@@ -93,6 +144,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onCancelRequest={onCancelRequest}
         context={context}
         onContextChange={onContextChange}
+        pendingFiles={pendingFiles}
+        onAddFiles={onAddFiles}
+        onRemovePendingFile={onRemovePendingFile}
       />
     </div>
   );
@@ -146,6 +200,9 @@ type InputAreaProps = {
   onCancelRequest?: () => void;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
+  pendingFiles: File[];
+  onAddFiles: (files: File[]) => void;
+  onRemovePendingFile: (index: number) => void;
 };
 
 const InputArea = ({
@@ -158,11 +215,49 @@ const InputArea = ({
   onCancelRequest,
   context,
   onContextChange,
+  pendingFiles,
+  onAddFiles,
+  onRemovePendingFile,
 }: InputAreaProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const validFiles = files.filter((f) => isValidPdfFile(f));
+    if (validFiles.length > 0) {
+      onAddFiles(validFiles);
+    }
+    // Reset input so the same file can be selected again
+    e.target.value = '';
+  };
+
+  const hasPendingContent = inputValue.trim() || pendingFiles.length > 0;
+
   return (
     <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
       <form onSubmit={onSubmit} className="max-w-4xl mx-auto">
         <div className="flex gap-3 items-end">
+          {/* Paperclip button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-gray-400 hover:text-orange-500 flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            title="PDF hochladen"
+          >
+            <Paperclip className="h-5 w-5" />
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            multiple
+            className="hidden"
+            onChange={handleFileInputChange}
+          />
+
           <div className="flex-1 relative">
             <TextareaAutosize
               ref={inputRef}
@@ -196,11 +291,14 @@ const InputArea = ({
               <StopCircle className="w-5 h-5" />
             </Button>
           ) : (
-            <Button type="submit" variant="default" size="default" disabled={!inputValue.trim()}>
+            <Button type="submit" variant="default" size="default" disabled={!hasPendingContent}>
               <Send className="w-5 h-5" />
             </Button>
           )}
         </div>
+
+        {/* Pending files (not yet sent) */}
+        <PendingFileList pendingFiles={pendingFiles} onRemovePending={onRemovePendingFile} />
 
         {/* Context toggles */}
         <div className="mt-2">

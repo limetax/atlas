@@ -25,6 +25,7 @@
       "@rag/*": ["src/rag/*"],
       "@chat/*": ["src/chat/*"],
       "@datev/*": ["src/datev/*"],
+      "@document/*": ["src/document/*"],
       "@shared/*": ["src/shared/*"]
     }
   },

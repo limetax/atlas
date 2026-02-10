@@ -1345,6 +1345,101 @@ export interface Database {
           },
         ];
       };
+      chat_documents: {
+        Row: {
+          id: string;
+          chat_id: string;
+          advisor_id: string;
+          file_name: string;
+          file_size: number;
+          storage_path: string;
+          status: 'processing' | 'ready' | 'error';
+          error_message: string | null;
+          chunk_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          chat_id: string;
+          advisor_id: string;
+          file_name: string;
+          file_size: number;
+          storage_path: string;
+          status?: 'processing' | 'ready' | 'error';
+          error_message?: string | null;
+          chunk_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          chat_id?: string;
+          advisor_id?: string;
+          file_name?: string;
+          file_size?: number;
+          storage_path?: string;
+          status?: 'processing' | 'ready' | 'error';
+          error_message?: string | null;
+          chunk_count?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_documents_chat_id_fkey';
+            columns: ['chat_id'];
+            referencedRelation: 'chats';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'chat_documents_advisor_id_fkey';
+            columns: ['advisor_id'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      chat_document_chunks: {
+        Row: {
+          id: string;
+          document_id: string;
+          chat_id: string;
+          advisor_id: string;
+          content: string;
+          page_number: number | null;
+          chunk_index: number;
+          embedding: number[] | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          chat_id: string;
+          advisor_id: string;
+          content: string;
+          page_number?: number | null;
+          chunk_index: number;
+          embedding?: number[] | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          document_id?: string;
+          chat_id?: string;
+          advisor_id?: string;
+          content?: string;
+          page_number?: number | null;
+          chunk_index?: number;
+          embedding?: number[] | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_document_chunks_document_id_fkey';
+            columns: ['document_id'];
+            referencedRelation: 'chat_documents';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1618,6 +1713,23 @@ export interface Database {
           similarity: number;
         }[];
       };
+      match_chat_document_chunks: {
+        Args: {
+          query_embedding: number[];
+          p_chat_id: string;
+          match_threshold?: number;
+          match_count?: number;
+        };
+        Returns: {
+          id: string;
+          document_id: string;
+          content: string;
+          page_number: number | null;
+          chunk_index: number;
+          file_name: string;
+          similarity: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
@@ -1657,3 +1769,12 @@ export type ChatUpdate = Database['public']['Tables']['chats']['Update'];
 
 export type ChatMessageRow = Database['public']['Tables']['chat_messages']['Row'];
 export type ChatMessageInsert = Database['public']['Tables']['chat_messages']['Insert'];
+
+// Chat document types
+export type ChatDocumentRow = Database['public']['Tables']['chat_documents']['Row'];
+export type ChatDocumentInsert = Database['public']['Tables']['chat_documents']['Insert'];
+export type ChatDocumentUpdate = Database['public']['Tables']['chat_documents']['Update'];
+
+export type ChatDocumentChunkRow = Database['public']['Tables']['chat_document_chunks']['Row'];
+export type ChatDocumentChunkInsert =
+  Database['public']['Tables']['chat_document_chunks']['Insert'];

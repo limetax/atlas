@@ -1,10 +1,23 @@
-import { Controller, Post, Body, Res, Req, Logger, UnauthorizedException } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ChatService } from '@chat/application/chat.service';
-import { AssistantService } from '@/assistant/assistant.service';
-import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import { z } from 'zod';
+
+import { AssistantService } from '@/assistant/assistant.service';
 import { ChatContextSchema, MessageSchema } from '@atlas/shared';
+import { ChatService } from '@chat/application/chat.service';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 const StreamChatBodySchema = z.object({
   message: z.string().min(1),
@@ -31,12 +44,39 @@ export class ChatController {
   ) {}
 
   @Post('stream')
+  @UseInterceptors(FilesInterceptor('files', 5))
   async streamChat(
     @Body() body: unknown,
+    @UploadedFiles() files: Express.Multer.File[] | undefined,
     @Req() req: Request,
     @Res() res: Response
   ): Promise<void> {
-    const { message, history, chatId, assistantId, context } = StreamChatBodySchema.parse(body);
+    // When using multipart/form-data, fields come as strings
+    // Parse them to get proper types
+    const rawBody = body as Record<string, unknown>;
+
+    let parsedHistory: unknown;
+    let parsedContext: unknown;
+    try {
+      parsedHistory =
+        typeof rawBody.history === 'string' ? JSON.parse(rawBody.history) : (rawBody.history ?? []);
+      parsedContext =
+        typeof rawBody.context === 'string'
+          ? JSON.parse(rawBody.context)
+          : (rawBody.context ?? undefined);
+    } catch {
+      throw new BadRequestException('Ungültiges JSON in history oder context');
+    }
+
+    const parsed = StreamChatBodySchema.parse({
+      message: rawBody.message,
+      history: parsedHistory,
+      chatId: rawBody.chatId ? rawBody.chatId : undefined,
+      assistantId: rawBody.assistantId ? rawBody.assistantId : undefined,
+      context: parsedContext,
+    });
+
+    const { message, history, chatId, assistantId, context } = parsed;
 
     // Authenticate the user
     const advisorId = await this.authenticateRequest(req);
@@ -64,7 +104,8 @@ export class ChatController {
       history,
       chatId,
       customSystemPrompt,
-      context
+      context,
+      files
     )) {
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }

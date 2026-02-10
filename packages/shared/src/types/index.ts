@@ -8,6 +8,7 @@ export type Message = {
   content: string;
   citations?: Citation[];
   toolCalls?: Array<{ name: string; status: 'started' | 'completed' }>;
+  attachedFiles?: Array<{ name: string; size: number }>;
   timestamp?: Date | string;
 };
 
@@ -69,6 +70,7 @@ export const CHAT_STREAM_CHUNK_TYPES = [
   'text',
   'citation',
   'citations',
+  'files_processed',
   'done',
   'error',
   'tool_call',
@@ -84,11 +86,15 @@ export type ChatStreamChunk = {
   error?: string;
   toolCall?: { name: string; status: 'started' | 'completed' };
   chatId?: string;
+  documents?: ChatDocument[];
 };
 
-// Metadata stored alongside assistant messages (tool calls used during response)
+// Metadata stored alongside chat messages
+// - assistant messages: toolCalls used during response
+// - user messages: documents attached to the message
 export type ChatMessageMetadata = {
   toolCalls?: Array<{ name: string; status: 'started' | 'completed' }>;
+  documents?: ChatDocument[];
 };
 
 // Persisted message (DB representation)
@@ -99,6 +105,21 @@ export type PersistedMessage = {
   content: string;
   createdAt: string;
   metadata?: ChatMessageMetadata;
+};
+
+// Document upload types
+export const DOCUMENT_STATUSES = ['processing', 'ready', 'error'] as const;
+export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
+
+export type ChatDocument = {
+  id: string;
+  chatId: string;
+  fileName: string;
+  fileSize: number;
+  status: DocumentStatus;
+  errorMessage?: string;
+  chunkCount: number;
+  createdAt: string;
 };
 
 // LLM Adapter types

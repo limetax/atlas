@@ -1,7 +1,8 @@
-import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
+import { ChatContext, type ChatDocument, ChatMessageMetadata, MessageRole } from '@atlas/shared';
 import { IChatRepository } from '@chat/domain/chat.entity';
 import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
 import { ClientService } from '@datev/application/client.service';
+import { DocumentService } from '@document/application/document.service';
 import { LlmService } from '@llm/application/llm.service';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
@@ -27,7 +28,8 @@ export class ChatService {
     private readonly llm: LlmService,
     private readonly rag: RAGService,
     private readonly clientService: ClientService,
-    @Inject(IChatRepository) private readonly chatRepo: IChatRepository
+    @Inject(IChatRepository) private readonly chatRepo: IChatRepository,
+    private readonly documentService: DocumentService
   ) {}
 
   /**
@@ -42,7 +44,8 @@ export class ChatService {
     userMessage: string,
     history: Message[],
     customSystemPrompt?: string,
-    chatContext?: ChatContext
+    chatContext?: ChatContext,
+    chatId?: string
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     // 1. Extract and validate client filter
     let clientIdFilter: string | undefined;
@@ -77,7 +80,8 @@ export class ChatService {
     const { context: ragContext, citations } = await this.rag.searchContext(
       userMessage,
       clientIdFilter,
-      chatContext?.research
+      chatContext?.research,
+      chatId
     );
 
     // 3. Build system prompt with context
@@ -347,7 +351,7 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
   }
 
   /**
-   * Full chat streaming flow: resolve/create chat, persist messages, stream response.
+   * Full chat streaming flow: resolve/create chat, process files, persist messages, stream response.
    * The controller only needs to write yielded chunks to SSE and manage HTTP lifecycle.
    */
   async *streamChat(
@@ -356,7 +360,8 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     history: Message[],
     chatId?: string,
     customSystemPrompt?: string,
-    context?: ChatContext
+    context?: ChatContext,
+    files?: Express.Multer.File[]
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     // 1. Resolve or create the chat
     let resolvedChatId = chatId;
@@ -381,14 +386,42 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       );
     }
 
-    // 3. Persist user message before streaming
-    await this.chatRepo.addMessage(resolvedChatId, 'user', message);
+    // 3. Process uploaded files in parallel (before LLM call so content is available for RAG)
+    let processedDocuments: ChatDocument[] = [];
+    if (files && files.length > 0) {
+      const results = await Promise.all(
+        files.map((file) => this.documentService.processAndStore(file, resolvedChatId, advisorId))
+      );
+      processedDocuments = results.map((doc) => ({
+        id: doc.id,
+        chatId: doc.chatId,
+        fileName: doc.fileName,
+        fileSize: doc.fileSize,
+        status: doc.status,
+        errorMessage: doc.errorMessage,
+        chunkCount: doc.chunkCount,
+        createdAt: doc.createdAt,
+      }));
 
-    // 4. Stream response, accumulate for persistence
+      yield { type: 'files_processed', documents: processedDocuments };
+    }
+
+    // 4. Persist user message (with document metadata if files were attached)
+    const userMetadata: ChatMessageMetadata =
+      processedDocuments.length > 0 ? { documents: processedDocuments } : {};
+    await this.chatRepo.addMessage(resolvedChatId, 'user', message, userMetadata);
+
+    // 5. Stream response, accumulate for persistence
     let assistantContent = '';
     const toolCalls: Array<{ name: string; status: 'started' | 'completed' }> = [];
 
-    for await (const chunk of this.processMessage(message, history, customSystemPrompt, context)) {
+    for await (const chunk of this.processMessage(
+      message,
+      history,
+      customSystemPrompt,
+      context,
+      resolvedChatId
+    )) {
       yield chunk;
 
       if (chunk.type === 'text') {
@@ -405,7 +438,7 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       }
     }
 
-    // 5. Persist assistant response with metadata
+    // 6. Persist assistant response with metadata
     if (assistantContent) {
       const metadata: ChatMessageMetadata = toolCalls.length > 0 ? { toolCalls } : {};
       await this.chatRepo.addMessage(resolvedChatId, 'assistant', assistantContent, metadata);

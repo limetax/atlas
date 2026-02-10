@@ -26,3 +26,15 @@ export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+export const isValidPdfFile = (file: File): boolean => {
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    return false;
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return false;
+  }
+  return true;
+};
