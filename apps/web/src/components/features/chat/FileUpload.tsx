@@ -1,7 +1,6 @@
 import React from 'react';
-import { FileText, Upload, X, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { ChatDocument } from '@atlas/shared';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -65,36 +64,22 @@ export const DropZoneOverlay: React.FC<DropZoneOverlayProps> = ({ isVisible, onD
 
 type PendingFileListProps = {
   pendingFiles: File[];
-  documents?: ChatDocument[];
   onRemovePending: (index: number) => void;
-  onRemoveDocument?: (documentId: string) => void;
 };
 
 export const PendingFileList: React.FC<PendingFileListProps> = ({
   pendingFiles,
-  documents = [],
   onRemovePending,
-  onRemoveDocument,
 }) => {
-  if (pendingFiles.length === 0 && documents.length === 0) return null;
+  if (pendingFiles.length === 0) return null;
 
   return (
     <div className="flex flex-wrap gap-2 mt-2">
-      {/* Pending files (not yet uploaded) */}
       {pendingFiles.map((file, index) => (
         <PendingFileChip
           key={`pending-${index}`}
           file={file}
           onRemove={() => onRemovePending(index)}
-        />
-      ))}
-
-      {/* Already-uploaded documents */}
-      {documents.map((doc) => (
-        <DocumentChip
-          key={doc.id}
-          document={doc}
-          onRemove={onRemoveDocument ? () => onRemoveDocument(doc.id) : undefined}
         />
       ))}
     </div>
@@ -119,51 +104,6 @@ const PendingFileChip: React.FC<{ file: File; onRemove: () => void }> = ({ file,
     </Button>
   </div>
 );
-
-const DocumentChip: React.FC<{ document: ChatDocument; onRemove?: () => void }> = ({
-  document,
-  onRemove,
-}) => {
-  const isProcessing = document.status === 'processing';
-  const isError = document.status === 'error';
-
-  return (
-    <div
-      className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${
-        isError
-          ? 'border-red-200 bg-red-50'
-          : isProcessing
-            ? 'border-orange-200 bg-orange-50'
-            : 'border-green-200 bg-green-50'
-      }`}
-    >
-      {isProcessing ? (
-        <Loader2 className="h-3.5 w-3.5 text-orange-500 animate-spin flex-shrink-0" />
-      ) : isError ? (
-        <AlertCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-      ) : (
-        <FileText className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
-      )}
-      <span className="truncate max-w-[140px] text-gray-700">{document.fileName}</span>
-      {isError && document.errorMessage && (
-        <span className="text-red-500 truncate max-w-[100px]" title={document.errorMessage}>
-          Fehler
-        </span>
-      )}
-      {onRemove && !isProcessing && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-4 w-4 p-0 hover:bg-gray-200"
-          onClick={onRemove}
-        >
-          <X className="h-3 w-3 text-gray-500" />
-        </Button>
-      )}
-    </div>
-  );
-};
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 

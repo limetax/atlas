@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
-import { Message, ChatContext, ChatDocument } from '@atlas/shared';
+import { Message, ChatContext } from '@atlas/shared';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '@/components/ui/button';
 import { Send, StopCircle, Paperclip } from 'lucide-react';
@@ -25,10 +25,8 @@ type ChatInterfaceProps = {
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
   pendingFiles: File[];
-  documents: ChatDocument[];
   onAddFiles: (files: File[]) => void;
   onRemovePendingFile: (index: number) => void;
-  onRemoveDocument?: (documentId: string) => void;
 };
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -41,10 +39,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   context,
   onContextChange,
   pendingFiles,
-  documents,
   onAddFiles,
   onRemovePendingFile,
-  onRemoveDocument,
 }) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -148,10 +144,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         context={context}
         onContextChange={onContextChange}
         pendingFiles={pendingFiles}
-        documents={documents}
         onAddFiles={onAddFiles}
         onRemovePendingFile={onRemovePendingFile}
-        onRemoveDocument={onRemoveDocument}
       />
     </div>
   );
@@ -206,10 +200,8 @@ type InputAreaProps = {
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
   pendingFiles: File[];
-  documents: ChatDocument[];
   onAddFiles: (files: File[]) => void;
   onRemovePendingFile: (index: number) => void;
-  onRemoveDocument?: (documentId: string) => void;
 };
 
 const InputArea = ({
@@ -223,10 +215,8 @@ const InputArea = ({
   context,
   onContextChange,
   pendingFiles,
-  documents,
   onAddFiles,
   onRemovePendingFile,
-  onRemoveDocument,
 }: InputAreaProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -306,13 +296,8 @@ const InputArea = ({
           )}
         </div>
 
-        {/* Pending files + uploaded documents */}
-        <PendingFileList
-          pendingFiles={pendingFiles}
-          documents={documents}
-          onRemovePending={onRemovePendingFile}
-          onRemoveDocument={onRemoveDocument}
-        />
+        {/* Pending files (not yet sent) */}
+        <PendingFileList pendingFiles={pendingFiles} onRemovePending={onRemovePendingFile} />
 
         {/* Context toggles */}
         <div className="mt-2">

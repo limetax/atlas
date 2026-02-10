@@ -26,9 +26,25 @@ export const ChatContextSchema = z.object({
   mandant: z.string().optional(),
 });
 
-// Metadata stored alongside assistant messages (tool calls used during response)
+// Metadata stored alongside chat messages
+// - assistant messages: toolCalls used during response
+// - user messages: documents attached to the message
 export const ChatMessageMetadataSchema = z.object({
   toolCalls: z
     .array(z.object({ name: z.string(), status: z.enum(['started', 'completed']) }))
+    .optional(),
+  documents: z
+    .array(
+      z.object({
+        id: z.string(),
+        chatId: z.string(),
+        fileName: z.string(),
+        fileSize: z.number(),
+        status: z.enum(['processing', 'ready', 'error']),
+        errorMessage: z.string().optional(),
+        chunkCount: z.number(),
+        createdAt: z.string(),
+      })
+    )
     .optional(),
 });

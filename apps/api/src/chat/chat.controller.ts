@@ -139,8 +139,10 @@ export class ChatController {
       );
     }
 
-    // Persist user message before streaming
-    await this.chatRepo.addMessage(resolvedChatId, 'user', message);
+    // Persist user message before streaming (with document metadata if files were attached)
+    const userMetadata: ChatMessageMetadata =
+      processedDocuments.length > 0 ? { documents: processedDocuments } : {};
+    await this.chatRepo.addMessage(resolvedChatId, 'user', message, userMetadata);
 
     // Stream response and accumulate assistant content + tool calls
     let assistantContent = '';

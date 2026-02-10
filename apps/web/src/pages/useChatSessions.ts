@@ -71,6 +71,10 @@ function mapPersistedToMessage(msg: {
     role: msg.role,
     content: msg.content,
     toolCalls: msg.metadata?.toolCalls,
+    attachedFiles: msg.metadata?.documents?.map((d) => ({
+      name: d.fileName,
+      size: d.fileSize,
+    })),
     timestamp: msg.createdAt,
   };
 }
@@ -210,21 +214,34 @@ export function useChatSessions(): UseChatSessionsReturn {
 
       // Seed cache so there's no visual gap when overlay clears
       if (targetChatId && finalMessages) {
-        const persistedShape = finalMessages.map((msg) => ({
-          id: msg.id ?? crypto.randomUUID(),
-          chatId: targetChatId,
-          role: msg.role,
-          content: msg.content,
-          metadata: (msg.toolCalls?.length
-            ? { toolCalls: msg.toolCalls }
-            : {}) satisfies ChatMessageMetadata,
-          createdAt:
-            typeof msg.timestamp === 'string'
-              ? msg.timestamp
-              : msg.timestamp instanceof Date
-                ? msg.timestamp.toISOString()
-                : new Date().toISOString(),
-        }));
+        const persistedShape = finalMessages.map((msg) => {
+          const metadata: ChatMessageMetadata = {};
+          if (msg.toolCalls?.length) metadata.toolCalls = msg.toolCalls;
+          if (msg.attachedFiles?.length) {
+            metadata.documents = msg.attachedFiles.map((f) => ({
+              id: '',
+              chatId: targetChatId,
+              fileName: f.name,
+              fileSize: f.size,
+              status: 'ready' as const,
+              chunkCount: 0,
+              createdAt: new Date().toISOString(),
+            }));
+          }
+          return {
+            id: msg.id ?? crypto.randomUUID(),
+            chatId: targetChatId,
+            role: msg.role,
+            content: msg.content,
+            metadata,
+            createdAt:
+              typeof msg.timestamp === 'string'
+                ? msg.timestamp
+                : msg.timestamp instanceof Date
+                  ? msg.timestamp.toISOString()
+                  : new Date().toISOString(),
+          };
+        });
         utils.chat.getChatMessages.setData({ chatId: targetChatId }, persistedShape);
       }
 

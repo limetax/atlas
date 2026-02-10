@@ -3,10 +3,9 @@ import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { Message, ChatContext, ChatDocument } from '@atlas/shared';
+import { Message, ChatContext } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
-import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 import { generateMessageId } from '@/utils/id-generator';
 import { TEMPLATES } from '@/data/templates';
@@ -48,21 +47,6 @@ export const ChatPage: React.FC = () => {
 
   // ─── Pending files (selected/dropped but not yet sent) ──────────────────
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-
-  // ─── Document query (uploaded documents for current chat) ───────────────
-  const documentsQuery = trpc.document.getDocumentsByChatId.useQuery(
-    { chatId: currentSessionId! },
-    { enabled: !!currentSessionId }
-  );
-  const documents: ChatDocument[] = documentsQuery.data ?? [];
-
-  const deleteDocumentMutation = trpc.document.deleteDocument.useMutation({
-    onSuccess: () => {
-      if (currentSessionId) {
-        documentsQuery.refetch();
-      }
-    },
-  });
 
   // Local context for new-chat mode (before a DB session exists).
   // Once the chat is created, context is persisted server-side and read from currentSession.
@@ -125,18 +109,11 @@ export const ChatPage: React.FC = () => {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleRemoveDocument = useCallback(
-    (documentId: string) => {
-      deleteDocumentMutation.mutate({ documentId });
-    },
-    [deleteDocumentMutation]
-  );
-
   const handleSendMessage = async (content: string) => {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    // Capture pending files and clear them from state
+    // Capture pending files and clear immediately — files are now attached to the message
     const filesToSend = [...pendingFiles];
     setPendingFiles([]);
 
@@ -178,11 +155,6 @@ export const ChatPage: React.FC = () => {
           setCurrentSessionId(chunk.chatId);
           setPendingContext({}); // Context now persisted on server
           navigate({ to: '/chat/$chatId', params: { chatId: chunk.chatId } });
-        } else if (chunk.type === 'files_processed') {
-          // Files have been processed — refetch document list
-          if (streamChatId) {
-            documentsQuery.refetch();
-          }
         } else if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
@@ -324,10 +296,8 @@ export const ChatPage: React.FC = () => {
           context={chatContext}
           onContextChange={handleContextChange}
           pendingFiles={pendingFiles}
-          documents={documents}
           onAddFiles={handleAddFiles}
           onRemovePendingFile={handleRemovePendingFile}
-          onRemoveDocument={handleRemoveDocument}
         />
       </div>
     </div>

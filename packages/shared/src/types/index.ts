@@ -89,9 +89,12 @@ export type ChatStreamChunk = {
   documents?: ChatDocument[];
 };
 
-// Metadata stored alongside assistant messages (tool calls used during response)
+// Metadata stored alongside chat messages
+// - assistant messages: toolCalls used during response
+// - user messages: documents attached to the message
 export type ChatMessageMetadata = {
   toolCalls?: Array<{ name: string; status: 'started' | 'completed' }>;
+  documents?: ChatDocument[];
 };
 
 // Persisted message (DB representation)
