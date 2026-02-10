@@ -8,6 +8,7 @@ import {
 import {
   type DatevClientMatch,
   type DatevOrderMatch,
+  type ChatDocumentChunkMatch,
   IVectorStore,
 } from '@rag/domain/vector-store.interface';
 import { type ResearchSource } from '@atlas/shared';
@@ -33,16 +34,14 @@ export class RAGService {
   async searchContext(
     query: string,
     clientIdFilter?: string,
-    researchSources?: ResearchSource[]
+    researchSources?: ResearchSource[],
+    chatId?: string
   ): Promise<{
     context: string;
     citations: Citation[];
   }> {
-    const { taxContext, datevContext, lawPublisherContext, citations } = await this.buildContext(
-      query,
-      clientIdFilter,
-      researchSources
-    );
+    const { taxContext, datevContext, lawPublisherContext, uploadedDocContext, citations } =
+      await this.buildContext(query, clientIdFilter, researchSources, chatId);
 
     // Combine contexts
     let combinedContext = '';
@@ -54,6 +53,10 @@ export class RAGService {
     // Law publisher section - only add if results found
     if (lawPublisherContext) {
       combinedContext += `=== RECHTSPRECHUNG & KOMMENTARE ===\n\n${lawPublisherContext}\n\n`;
+    }
+
+    if (uploadedDocContext) {
+      combinedContext += `=== HOCHGELADENE DOKUMENTE ===\n\n${uploadedDocContext}\n\n`;
     }
 
     if (datevContext) {
@@ -77,11 +80,13 @@ export class RAGService {
   async buildContext(
     query: string,
     clientIdFilter?: string,
-    researchSources?: ResearchSource[]
+    researchSources?: ResearchSource[],
+    chatId?: string
   ): Promise<{
     taxContext: string;
     datevContext: string;
     lawPublisherContext: string;
+    uploadedDocContext: string;
     citations: Citation[];
   }> {
     // Search tax law documents (vector search)
@@ -98,6 +103,19 @@ export class RAGService {
         await this.searchLawPublisherDocuments(query);
       lawPublisherContext = this.formatLawPublisherContext(lawPublisherDocs);
       lawPublisherCitations = lawPubCitations;
+    }
+
+    // Search uploaded documents for this chat (vector search)
+    let uploadedDocContext = '';
+    let uploadedDocCitations: Citation[] = [];
+
+    if (chatId) {
+      const { context: uploadCtx, citations: uploadCits } = await this.searchUploadedDocuments(
+        query,
+        chatId
+      );
+      uploadedDocContext = uploadCtx;
+      uploadedDocCitations = uploadCits;
     }
 
     // Search DATEV data (vector search) - Phase 1.2: Extended with tax, analytics, HR
@@ -146,12 +164,13 @@ export class RAGService {
     const datevContext = datevParts.join('\n\n');
 
     // Combine all citations
-    const allCitations = [...citations, ...lawPublisherCitations];
+    const allCitations = [...citations, ...lawPublisherCitations, ...uploadedDocCitations];
 
     return {
       taxContext,
       datevContext,
       lawPublisherContext,
+      uploadedDocContext,
       citations: allCitations,
     };
   }
@@ -751,5 +770,54 @@ export class RAGService {
       this.logger.error('DATEV HR employees search failed:', err);
       return { employees: [], context: '' };
     }
+  }
+
+  /**
+   * Search uploaded document chunks for a specific chat
+   */
+  private async searchUploadedDocuments(
+    query: string,
+    chatId: string
+  ): Promise<{
+    context: string;
+    citations: Citation[];
+  }> {
+    try {
+      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const matches = await this.vectorStore.searchChatDocumentChunks(
+        queryEmbedding,
+        chatId,
+        0.3,
+        5
+      );
+
+      if (!matches || matches.length === 0) {
+        return { context: '', citations: [] };
+      }
+
+      const context = this.formatUploadedDocContext(matches);
+      const citations: Citation[] = matches.map((match) => ({
+        id: match.id,
+        source: 'upload',
+        title: `${match.file_name} (Seite ${match.page_number ?? '?'}) (${Math.round(match.similarity * 100)}% relevant)`,
+        content: match.content,
+      }));
+
+      return { context, citations };
+    } catch (err) {
+      this.logger.error('Uploaded document search failed:', err);
+      return { context: '', citations: [] };
+    }
+  }
+
+  /**
+   * Format uploaded document chunks as context string
+   */
+  private formatUploadedDocContext(chunks: ChatDocumentChunkMatch[]): string {
+    if (chunks.length === 0) return '';
+
+    return chunks
+      .map((c) => `[${c.file_name}, Seite ${c.page_number ?? '?'}]\n${c.content}`)
+      .join('\n---\n');
   }
 }

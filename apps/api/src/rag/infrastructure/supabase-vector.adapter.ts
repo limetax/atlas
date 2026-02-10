@@ -14,6 +14,7 @@ import {
   DatevAnalyticsOrderValuesMatch,
   DatevHrEmployeeMatch,
   LawPublisherDocumentMatch,
+  ChatDocumentChunkMatch,
   AddresseeSearchFilters,
   PostingSearchFilters,
   SusaSearchFilters,
@@ -466,6 +467,36 @@ export class SupabaseVectorAdapter implements IVectorStore {
       return (data as LawPublisherDocumentMatch[]) || [];
     } catch (err) {
       this.logger.error('Law publisher document search failed:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Search for similar chunks in uploaded chat documents
+   * Scoped to a specific chat for document isolation
+   */
+  async searchChatDocumentChunks(
+    queryEmbedding: number[],
+    chatId: string,
+    matchThreshold: number,
+    matchCount: number
+  ): Promise<ChatDocumentChunkMatch[]> {
+    try {
+      const { data, error } = await this.supabase.db.rpc('match_chat_document_chunks', {
+        query_embedding: queryEmbedding,
+        p_chat_id: chatId,
+        match_threshold: matchThreshold,
+        match_count: matchCount,
+      });
+
+      if (error) {
+        this.logger.error('Chat document chunk search error:', error);
+        return [];
+      }
+
+      return (data as ChatDocumentChunkMatch[]) || [];
+    } catch (err) {
+      this.logger.error('Chat document chunk search failed:', err);
       return [];
     }
   }

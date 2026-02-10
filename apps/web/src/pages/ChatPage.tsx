@@ -3,9 +3,10 @@ import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { Message, ChatContext } from '@atlas/shared';
+import { Message, ChatContext, ChatDocument } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
+import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
 import { generateMessageId } from '@/utils/id-generator';
 import { TEMPLATES } from '@/data/templates';
@@ -45,6 +46,24 @@ export const ChatPage: React.FC = () => {
   >([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // ─── Pending files (selected/dropped but not yet sent) ──────────────────
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+  // ─── Document query (uploaded documents for current chat) ───────────────
+  const documentsQuery = trpc.document.getDocumentsByChatId.useQuery(
+    { chatId: currentSessionId! },
+    { enabled: !!currentSessionId }
+  );
+  const documents: ChatDocument[] = documentsQuery.data ?? [];
+
+  const deleteDocumentMutation = trpc.document.deleteDocument.useMutation({
+    onSuccess: () => {
+      if (currentSessionId) {
+        documentsQuery.refetch();
+      }
+    },
+  });
+
   // Local context for new-chat mode (before a DB session exists).
   // Once the chat is created, context is persisted server-side and read from currentSession.
   const [pendingContext, setPendingContext] = useState<ChatContext>({});
@@ -74,12 +93,14 @@ export const ChatPage: React.FC = () => {
   const handleNewChatWithNavigation = () => {
     handleNewChat();
     setPendingContext({});
+    setPendingFiles([]);
     navigate({ to: '/' });
   };
 
   // Select session eagerly + navigate (same reasoning as above)
   const handleSessionSelectWithNavigation = (sessionId: string) => {
     handleSessionSelect(sessionId);
+    setPendingFiles([]);
     navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
   };
 
@@ -95,14 +116,38 @@ export const ChatPage: React.FC = () => {
     [currentSessionId, updateSessionContext]
   );
 
+  // ─── File handlers ──────────────────────────────────────────────────────
+  const handleAddFiles = useCallback((files: File[]) => {
+    setPendingFiles((prev) => [...prev, ...files]);
+  }, []);
+
+  const handleRemovePendingFile = useCallback((index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleRemoveDocument = useCallback(
+    (documentId: string) => {
+      deleteDocumentMutation.mutate({ documentId });
+    },
+    [deleteDocumentMutation]
+  );
+
   const handleSendMessage = async (content: string) => {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+
+    // Capture pending files and clear them from state
+    const filesToSend = [...pendingFiles];
+    setPendingFiles([]);
 
     const userMessage: Message = {
       id: generateMessageId(),
       role: 'user',
       content,
+      attachedFiles:
+        filesToSend.length > 0
+          ? filesToSend.map((f) => ({ name: f.name, size: f.size }))
+          : undefined,
       timestamp: new Date(),
     };
 
@@ -124,7 +169,8 @@ export const ChatPage: React.FC = () => {
         messages,
         chatContext,
         abortController.signal,
-        currentSessionId
+        currentSessionId,
+        filesToSend.length > 0 ? filesToSend : undefined
       )) {
         if (chunk.type === 'chat_created' && chunk.chatId) {
           // Backend created a new chat — update local tracker and state
@@ -132,6 +178,11 @@ export const ChatPage: React.FC = () => {
           setCurrentSessionId(chunk.chatId);
           setPendingContext({}); // Context now persisted on server
           navigate({ to: '/chat/$chatId', params: { chatId: chunk.chatId } });
+        } else if (chunk.type === 'files_processed') {
+          // Files have been processed — refetch document list
+          if (streamChatId) {
+            documentsQuery.refetch();
+          }
         } else if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
@@ -272,6 +323,11 @@ export const ChatPage: React.FC = () => {
           initialContent={templateContent}
           context={chatContext}
           onContextChange={handleContextChange}
+          pendingFiles={pendingFiles}
+          documents={documents}
+          onAddFiles={handleAddFiles}
+          onRemovePendingFile={handleRemovePendingFile}
+          onRemoveDocument={handleRemoveDocument}
         />
       </div>
     </div>

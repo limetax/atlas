@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Check, ExternalLink } from 'lucide-react';
+import { Check, ExternalLink, FileText } from 'lucide-react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -159,6 +159,21 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
             </ReactMarkdown>
           </div>
         </Card>
+
+        {/* File attachments on user messages */}
+        {isUser && message.attachedFiles && message.attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {message.attachedFiles.map((file, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-1 rounded-md bg-blue-100 border border-blue-200 px-2 py-0.5 text-xs text-gray-600"
+              >
+                <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                <span className="truncate max-w-[120px]">{file.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <span className="text-xs text-gray-400">
           {message.timestamp

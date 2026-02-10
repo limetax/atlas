@@ -123,20 +123,42 @@ export async function* streamChatMessage(
   history: Message[],
   context?: ChatContext,
   signal?: AbortSignal,
-  chatId?: string
+  chatId?: string,
+  files?: File[]
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   const { combinedSignal, timeoutController, timeoutId } = createCombinedAbortSignal(signal);
 
   try {
+    const hasFiles = files && files.length > 0;
+
+    // Build request body: FormData when files present, JSON otherwise
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    let body: FormData | string;
+
+    if (hasFiles) {
+      const formData = new FormData();
+      formData.append('message', message);
+      formData.append('history', JSON.stringify(history));
+      if (context) formData.append('context', JSON.stringify(context));
+      if (chatId) formData.append('chatId', chatId);
+      for (const file of files) {
+        formData.append('files', file);
+      }
+      body = formData;
+      // Do NOT set Content-Type — browser sets multipart boundary automatically
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({ message, history, context, chatId });
+    }
+
     // Make the API request
     const response = await fetch(`${env.apiUrl}${API_ENDPOINTS.CHAT_STREAM}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ message, history, context, chatId }),
+      headers,
+      body,
       signal: combinedSignal,
     });
 

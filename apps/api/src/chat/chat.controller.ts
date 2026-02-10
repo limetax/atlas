@@ -1,20 +1,30 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Res,
-  Req,
-  Logger,
-  Inject,
-  UnauthorizedException,
-} from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ChatService } from '@chat/application/chat.service';
-import { AssistantService } from '@/assistant/assistant.service';
-import { IChatRepository } from '@chat/domain/chat.entity';
-import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import { z } from 'zod';
-import { ChatMessageMetadata, ChatContextSchema, MessageSchema } from '@atlas/shared';
+
+import { AssistantService } from '@/assistant/assistant.service';
+import {
+  ChatContextSchema,
+  type ChatDocument,
+  ChatMessageMetadata,
+  MessageSchema,
+} from '@atlas/shared';
+import { ChatService } from '@chat/application/chat.service';
+import { IChatRepository } from '@chat/domain/chat.entity';
+import { DocumentService } from '@document/application/document.service';
+import {
+  Body,
+  Controller,
+  Inject,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 const StreamChatBodySchema = z.object({
   message: z.string().min(1),
@@ -38,16 +48,34 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly assistantService: AssistantService,
     @Inject(IChatRepository) private readonly chatRepo: IChatRepository,
+    private readonly documentService: DocumentService,
     private readonly supabase: SupabaseService
   ) {}
 
   @Post('stream')
+  @UseInterceptors(FilesInterceptor('files', 5))
   async streamChat(
     @Body() body: unknown,
+    @UploadedFiles() files: Express.Multer.File[] | undefined,
     @Req() req: Request,
     @Res() res: Response
   ): Promise<void> {
-    const { message, history, chatId, assistantId, context } = StreamChatBodySchema.parse(body);
+    // When using multipart/form-data, fields come as strings
+    // Parse them to get proper types
+    const rawBody = body as Record<string, unknown>;
+    const parsed = StreamChatBodySchema.parse({
+      message: rawBody.message,
+      history:
+        typeof rawBody.history === 'string' ? JSON.parse(rawBody.history) : (rawBody.history ?? []),
+      chatId: rawBody.chatId || undefined,
+      assistantId: rawBody.assistantId || undefined,
+      context:
+        typeof rawBody.context === 'string'
+          ? JSON.parse(rawBody.context)
+          : (rawBody.context ?? undefined),
+    });
+
+    const { message, history, chatId, assistantId, context } = parsed;
 
     // Authenticate the user
     const advisorId = await this.authenticateRequest(req);
@@ -88,6 +116,29 @@ export class ChatController {
       }
     }
 
+    // Process uploaded files (before LLM call so content is available for RAG)
+    const processedDocuments: ChatDocument[] = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const doc = await this.documentService.processAndStore(file, resolvedChatId, advisorId);
+        processedDocuments.push({
+          id: doc.id,
+          chatId: doc.chatId,
+          fileName: doc.fileName,
+          fileSize: doc.fileSize,
+          status: doc.status,
+          errorMessage: doc.errorMessage,
+          chunkCount: doc.chunkCount,
+          createdAt: doc.createdAt,
+        });
+      }
+
+      // Notify frontend that files are processed
+      res.write(
+        `data: ${JSON.stringify({ type: 'files_processed', documents: processedDocuments })}\n\n`
+      );
+    }
+
     // Persist user message before streaming
     await this.chatRepo.addMessage(resolvedChatId, 'user', message);
 
@@ -99,7 +150,8 @@ export class ChatController {
       message,
       history ?? [],
       customSystemPrompt,
-      context
+      context,
+      resolvedChatId
     )) {
       const data = JSON.stringify(chunk);
       res.write(`data: ${data}\n\n`);

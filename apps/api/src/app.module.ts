@@ -10,6 +10,7 @@ import { ChatModule } from '@chat/chat.module';
 import { RAGModule } from '@rag/rag.module';
 import { DatevModule } from '@datev/datev.module';
 import { AssistantModule } from '@/assistant/assistant.module';
+import { DocumentModule } from '@/document/document.module';
 import { HealthModule } from '@/health/health.module';
 /**
  * Root Application Module
@@ -33,6 +34,7 @@ import { HealthModule } from '@/health/health.module';
     RAGModule,
     DatevModule,
     AssistantModule,
+    DocumentModule,
     HealthModule,
   ],
   providers: [AppContext, AuthMiddleware],

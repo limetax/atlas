@@ -149,6 +149,17 @@ export abstract class IVectorStore {
     matchThreshold: number,
     matchCount: number
   ): Promise<LawPublisherDocumentMatch[]>;
+
+  /**
+   * Search for similar chunks in uploaded chat documents
+   * Scoped to a specific chat for document isolation
+   */
+  abstract searchChatDocumentChunks(
+    queryEmbedding: number[],
+    chatId: string,
+    matchThreshold: number,
+    matchCount: number
+  ): Promise<ChatDocumentChunkMatch[]>;
 }
 
 // ============================================
@@ -413,5 +424,18 @@ export type LawPublisherDocumentMatch = {
   publication_date: string | null;
   author: string | null;
   tags: string[] | null;
+  similarity: number;
+};
+
+/**
+ * Chat Document Chunk Match - Result from vector search of uploaded documents
+ */
+export type ChatDocumentChunkMatch = {
+  id: string;
+  document_id: string;
+  content: string;
+  page_number: number | null;
+  chunk_index: number;
+  file_name: string;
   similarity: number;
 };

@@ -40,7 +40,8 @@ export class ChatService {
     userMessage: string,
     history: Message[],
     customSystemPrompt?: string,
-    chatContext?: ChatContext
+    chatContext?: ChatContext,
+    chatId?: string
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     // 1. Extract and validate client filter
     let clientIdFilter: string | undefined;
@@ -75,7 +76,8 @@ export class ChatService {
     const { context: ragContext, citations } = await this.rag.searchContext(
       userMessage,
       clientIdFilter,
-      chatContext?.research
+      chatContext?.research,
+      chatId
     );
 
     // 3. Build system prompt with context
