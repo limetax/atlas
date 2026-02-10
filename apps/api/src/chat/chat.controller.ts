@@ -13,6 +13,8 @@ import { ChatService } from '@chat/application/chat.service';
 import { AssistantService } from '@/assistant/assistant.service';
 import { IChatRepository } from '@chat/domain/chat.entity';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
+import { LlmService } from '@llm/application/llm.service';
+import { TITLE_GENERATION_PROMPT } from '@chat/application/chat.prompts';
 import { z } from 'zod';
 import { ChatMessageMetadata, ChatContextSchema, MessageSchema } from '@atlas/shared';
 
@@ -38,7 +40,8 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly assistantService: AssistantService,
     @Inject(IChatRepository) private readonly chatRepo: IChatRepository,
-    private readonly supabase: SupabaseService
+    private readonly supabase: SupabaseService,
+    private readonly llmService: LlmService
   ) {}
 
   @Post('stream')
@@ -79,12 +82,19 @@ export class ChatController {
 
       // Notify the frontend of the newly created chat ID
       res.write(`data: ${JSON.stringify({ type: 'chat_created', chatId: resolvedChatId })}\n\n`);
+
+      // Fire-and-forget: generate AI title in background
+      this.generateSmartTitle(resolvedChatId, advisorId, message).catch((err) =>
+        this.logger.warn(`Failed to generate smart title: ${err.message}`)
+      );
     } else {
       // Auto-title: if this is the first message in an existing chat, update title
       const existingMessages = await this.chatRepo.findMessagesByChatId(resolvedChatId, advisorId);
       if (existingMessages.length === 0) {
-        const autoTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
-        await this.chatRepo.updateTitle(resolvedChatId, advisorId, autoTitle);
+        // Fire-and-forget: generate AI title in background
+        this.generateSmartTitle(resolvedChatId, advisorId, message).catch((err) =>
+          this.logger.warn(`Failed to generate smart title: ${err.message}`)
+        );
       }
     }
 
@@ -129,6 +139,27 @@ export class ChatController {
     // Send done signal
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
+  }
+
+  /**
+   * Fire-and-forget: generates an AI title from the first user message
+   * and updates the chat record. Non-blocking — errors are logged, not thrown.
+   */
+  private async generateSmartTitle(
+    chatId: string,
+    advisorId: string,
+    firstMessage: string
+  ): Promise<void> {
+    const title = await this.llmService.getCompletion(
+      [{ role: 'user', content: firstMessage }],
+      TITLE_GENERATION_PROMPT
+    );
+
+    const trimmedTitle = title.trim().substring(0, 100);
+    if (trimmedTitle) {
+      await this.chatRepo.updateTitle(chatId, advisorId, trimmedTitle);
+      this.logger.debug(`Generated smart title for chat ${chatId}: "${trimmedTitle}"`);
+    }
   }
 
   /**

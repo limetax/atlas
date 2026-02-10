@@ -71,3 +71,10 @@ WICHTIG - Format einhalten:
 - Danach der E-Mail-Body-Text
 - Nutze professionelle Anrede und Grußformel`,
 } as const;
+
+/**
+ * System prompt for generating concise chat titles from the first user message.
+ * Used as a fire-and-forget call after chat creation.
+ */
+export const TITLE_GENERATION_PROMPT =
+  'Generate a concise, descriptive title (max 6 words) for a chat conversation that starts with the following user message. Reply with ONLY the title text — no quotes, no punctuation at the end, no explanation. Use the same language as the message.';
