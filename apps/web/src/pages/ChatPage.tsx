@@ -3,6 +3,8 @@ import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
+import { ChatHeader } from '@/components/features/chat/ChatHeader';
+import { RenameDialog } from '@/components/features/chat/RenameDialog';
 import { Message, ChatContext } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
@@ -35,10 +37,14 @@ export const ChatPage: React.FC = () => {
     updateCurrentSessionMessages,
     setCurrentSessionById,
     setCurrentSessionId,
+    updateSessionTitle,
     updateSessionContext,
     invalidateAfterStream,
   } = useChatSessions();
 
+  const [renameDialog, setRenameDialog] = useState<{ sessionId: string; title: string } | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [activeToolCalls, setActiveToolCalls] = useState<
     Array<{ name: string; status: 'started' | 'completed' }>
@@ -108,6 +114,19 @@ export const ChatPage: React.FC = () => {
   const handleRemovePendingFile = useCallback((index: number) => {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
+
+  const handleRenameSession = (sessionId: string) => {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (session) {
+      setRenameDialog({ sessionId, title: session.title });
+    }
+  };
+
+  const handleRenameConfirm = (newTitle: string) => {
+    if (renameDialog) {
+      updateSessionTitle(renameDialog.sessionId, newTitle);
+    }
+  };
 
   const handleSendMessage = async (content: string) => {
     const abortController = new AbortController();
@@ -281,10 +300,19 @@ export const ChatPage: React.FC = () => {
         onSessionSelect={handleSessionSelectWithNavigation}
         onNewChat={handleNewChatWithNavigation}
         onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
+
+        {currentSession && (
+          <ChatHeader
+            title={currentSession.title}
+            onRename={() => handleRenameSession(currentSession.id)}
+            onDelete={() => handleDeleteSession(currentSession.id)}
+          />
+        )}
 
         <ChatInterface
           messages={messages}
@@ -300,6 +328,13 @@ export const ChatPage: React.FC = () => {
           onRemovePendingFile={handleRemovePendingFile}
         />
       </div>
+
+      <RenameDialog
+        isOpen={renameDialog !== null}
+        onClose={() => setRenameDialog(null)}
+        currentTitle={renameDialog?.title ?? ''}
+        onRename={handleRenameConfirm}
+      />
     </div>
   );
 };
