@@ -9,12 +9,12 @@ import { ContextToggles } from './context/ContextToggles';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ChatScrollAnchor } from './ChatScrollAnchor';
 
-export interface ToolCallState {
+export type ToolCallState = {
   name: string;
   status: 'started' | 'completed';
-}
+};
 
-interface ChatInterfaceProps {
+type ChatInterfaceProps = {
   messages: Message[];
   onSendMessage: (message: string) => void;
   onCancelRequest?: () => void;
@@ -23,7 +23,7 @@ interface ChatInterfaceProps {
   initialContent?: string;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
-}
+};
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   messages,
@@ -98,12 +98,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   );
 };
 
-interface MessagesAreaProps {
+type MessagesAreaProps = {
   messages: Message[];
   isLoading: boolean;
   activeToolCalls: ToolCallState[];
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
-}
+};
 
 const MessagesArea = ({
   messages,
@@ -136,7 +136,7 @@ const MessagesArea = ({
   );
 };
 
-interface InputAreaProps {
+type InputAreaProps = {
   inputValue: string;
   setInputValue: (value: string) => void;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -146,7 +146,7 @@ interface InputAreaProps {
   onCancelRequest?: () => void;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
-}
+};
 
 const InputArea = ({
   inputValue,

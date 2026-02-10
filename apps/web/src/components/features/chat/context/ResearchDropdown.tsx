@@ -11,17 +11,17 @@ import {
 import { cn } from '@/lib/utils';
 import { ResearchSource } from '@atlas/shared';
 
-interface ResearchOption {
+type ResearchOption = {
   id: ResearchSource;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   disabled?: boolean;
-}
+};
 
-interface ResearchDropdownProps {
+type ResearchDropdownProps = {
   selected: ResearchSource[];
   onChange: (sources: ResearchSource[]) => void;
-}
+};
 
 const RESEARCH_OPTIONS: ResearchOption[] = [
   { id: 'handelsregister', label: 'Handelsregister', icon: Building2, disabled: false },

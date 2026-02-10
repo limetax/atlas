@@ -4,10 +4,10 @@ import { cn } from '@/lib/utils';
 import { getToolLabel } from './tool-labels';
 import type { ToolCallState } from './ChatInterface';
 
-interface ChatStreamingIndicatorProps {
+type ChatStreamingIndicatorProps = {
   className?: string;
   activeToolCalls?: ToolCallState[];
-}
+};
 
 export const ChatStreamingIndicator: React.FC<ChatStreamingIndicatorProps> = ({
   className,

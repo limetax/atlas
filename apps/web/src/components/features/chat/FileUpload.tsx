@@ -3,9 +3,9 @@ import { Upload, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-interface FileUploadProps {
+type FileUploadProps = {
   onFileSelect?: (file: File) => void;
-}
+};
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);

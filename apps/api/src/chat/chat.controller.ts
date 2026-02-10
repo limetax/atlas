@@ -1,16 +1,34 @@
-import { Controller, Post, Body, Res, Logger } from '@nestjs/common';
-import { Response } from 'express';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  Logger,
+  Inject,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 import { ChatService } from '@chat/application/chat.service';
 import { AssistantService } from '@/assistant/assistant.service';
-import { Message } from '@chat/domain/message.entity';
-import { ChatContext } from '@atlas/shared';
+import { IChatRepository } from '@chat/domain/chat.entity';
+import { SupabaseService } from '@shared/infrastructure/supabase.service';
+import { z } from 'zod';
+import { ChatMessageMetadata, ChatContextSchema, MessageSchema } from '@atlas/shared';
+
+const StreamChatBodySchema = z.object({
+  message: z.string().min(1),
+  history: z.array(MessageSchema).default([]),
+  chatId: z.string().uuid().optional(),
+  assistantId: z.string().optional(),
+  context: ChatContextSchema.optional(),
+});
 
 /**
  * Chat Controller - HTTP endpoint for streaming chat
  * Uses Server-Sent Events (SSE) for streaming
- * Supports optional assistantId to use pre-configured assistant prompts
- * Supports optional context for MCP tool selection
- * No try-catch - errors bubble up to NestJS exception filter
+ * Supports optional chatId for message persistence
+ * Authenticates via JWT from Authorization header
  */
 @Controller('chat')
 export class ChatController {
@@ -18,21 +36,21 @@ export class ChatController {
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly assistantService: AssistantService
+    private readonly assistantService: AssistantService,
+    @Inject(IChatRepository) private readonly chatRepo: IChatRepository,
+    private readonly supabase: SupabaseService
   ) {}
 
   @Post('stream')
   async streamChat(
-    @Body()
-    body: {
-      message: string;
-      history: Message[];
-      assistantId?: string;
-      context?: ChatContext;
-    },
+    @Body() body: unknown,
+    @Req() req: Request,
     @Res() res: Response
   ): Promise<void> {
-    const { message, history, assistantId, context } = body;
+    const { message, history, chatId, assistantId, context } = StreamChatBodySchema.parse(body);
+
+    // Authenticate the user
+    const advisorId = await this.authenticateRequest(req);
 
     // Lookup assistant system prompt if assistantId provided
     let customSystemPrompt: string | undefined;
@@ -50,7 +68,33 @@ export class ChatController {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Stream response - errors bubble up to NestJS exception filter
+    // Resolve or create the chat
+    let resolvedChatId = chatId;
+
+    if (!resolvedChatId) {
+      // Lazy chat creation: create a new chat on first message
+      const autoTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+      const chat = await this.chatRepo.create(advisorId, autoTitle, context);
+      resolvedChatId = chat.id;
+
+      // Notify the frontend of the newly created chat ID
+      res.write(`data: ${JSON.stringify({ type: 'chat_created', chatId: resolvedChatId })}\n\n`);
+    } else {
+      // Auto-title: if this is the first message in an existing chat, update title
+      const existingMessages = await this.chatRepo.findMessagesByChatId(resolvedChatId, advisorId);
+      if (existingMessages.length === 0) {
+        const autoTitle = message.substring(0, 50) + (message.length > 50 ? '...' : '');
+        await this.chatRepo.updateTitle(resolvedChatId, advisorId, autoTitle);
+      }
+    }
+
+    // Persist user message before streaming
+    await this.chatRepo.addMessage(resolvedChatId, 'user', message);
+
+    // Stream response and accumulate assistant content + tool calls
+    let assistantContent = '';
+    const toolCalls: Array<{ name: string; status: 'started' | 'completed' }> = [];
+
     for await (const chunk of this.chatService.processMessage(
       message,
       history ?? [],
@@ -59,10 +103,51 @@ export class ChatController {
     )) {
       const data = JSON.stringify(chunk);
       res.write(`data: ${data}\n\n`);
+
+      // Accumulate text content for persistence
+      if (chunk.type === 'text' && chunk.content) {
+        assistantContent += chunk.content;
+      }
+
+      // Accumulate tool calls for metadata persistence
+      if (chunk.type === 'tool_call' && chunk.toolCall) {
+        const existingIdx = toolCalls.findIndex((tc) => tc.name === chunk.toolCall.name);
+        if (existingIdx >= 0) {
+          toolCalls[existingIdx] = chunk.toolCall;
+        } else {
+          toolCalls.push(chunk.toolCall);
+        }
+      }
+    }
+
+    // Persist the complete assistant response with metadata
+    if (assistantContent) {
+      const metadata: ChatMessageMetadata = toolCalls.length > 0 ? { toolCalls } : {};
+      await this.chatRepo.addMessage(resolvedChatId, 'assistant', assistantContent, metadata);
     }
 
     // Send done signal
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
+  }
+
+  /**
+   * Extract and validate JWT from Authorization header
+   * Returns the advisor (user) ID
+   */
+  private async authenticateRequest(req: Request): Promise<string> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Anmeldung erforderlich');
+    }
+
+    const token = authHeader.slice(7);
+    const { data, error } = await this.supabase.getUser(token);
+
+    if (error || !data.user) {
+      throw new UnauthorizedException('Ungültiges Token');
+    }
+
+    return data.user.id;
   }
 }

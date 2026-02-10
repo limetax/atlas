@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ChatScrollAnchorProps {
+type ChatScrollAnchorProps = {
   trackVisibility?: boolean;
   scrollToBottom?: () => void;
-}
+};
 
 export const ChatScrollAnchor: React.FC<ChatScrollAnchorProps> = ({
   trackVisibility = false,

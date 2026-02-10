@@ -6,23 +6,19 @@ import { ChatInterface } from '@/components/features/chat/ChatInterface';
 import { Message, ChatContext } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
-import { truncateText } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
 import { generateMessageId } from '@/utils/id-generator';
 import { TEMPLATES } from '@/data/templates';
 
 export const ChatPage: React.FC = () => {
   // Since ChatPage is shared between '/' and '/chat/$chatId', use strict: false
-  // This gives us a union of all possible params/search across both routes
   const params = useParams({ strict: false });
   const chatId = params.chatId;
   const navigate = useNavigate();
 
-  // Get search params - strict: false for shared component
   const search = useSearch({ strict: false });
   const templateId = search.templateId;
 
-  // Find template content by ID
   const templateContent = templateId
     ? TEMPLATES.find((t) => t.id === templateId)?.content
     : undefined;
@@ -32,63 +28,74 @@ export const ChatPage: React.FC = () => {
     currentSessionId,
     currentSession,
     messages,
+    isFetchingSessions,
     handleNewChat,
     handleSessionSelect,
     handleDeleteSession,
     updateCurrentSessionMessages,
-    updateSessionTitle,
     setCurrentSessionById,
+    setCurrentSessionId,
     updateSessionContext,
+    invalidateAfterStream,
   } = useChatSessions();
 
   const [isLoading, setIsLoading] = useState(false);
   const [activeToolCalls, setActiveToolCalls] = useState<
     Array<{ name: string; status: 'started' | 'completed' }>
   >([]);
-  const hasCreatedInitialSession = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Derive context from session instead of maintaining duplicate state
-  const chatContext = currentSession?.context ?? {};
+  // Local context for new-chat mode (before a DB session exists).
+  // Once the chat is created, context is persisted server-side and read from currentSession.
+  const [pendingContext, setPendingContext] = useState<ChatContext>({});
+  const chatContext = currentSession?.context ?? pendingContext;
 
-  // Set current session based on URL param or create first session
+  // Sync URL → hook state. The URL is the source of truth for which chat is active.
+  // This only runs when the URL chatId changes (route navigation).
   useEffect(() => {
-    if (chatId && chatId !== currentSessionId) {
-      // Route has chatId - switch to that session
-      setCurrentSessionById(chatId);
-    } else if (!chatId && !currentSessionId && !hasCreatedInitialSession.current) {
-      // On home route without session - create first session
-      hasCreatedInitialSession.current = true;
-      handleNewChat();
+    if (chatId) {
+      // URL has a chatId — ensure the hook is pointing to this session
+      if (chatId !== currentSessionId) {
+        setCurrentSessionById(chatId);
+      }
+    } else {
+      // URL is "/" (new chat mode) — ensure hook state is cleared
+      if (currentSessionId) {
+        handleNewChat();
+      }
     }
-    // handleNewChat intentionally omitted to prevent re-render loop (stable via ref)
+    // Only react to URL changes. The hook's currentSessionId is intentionally
+    // excluded to avoid a feedback loop where hook state re-triggers this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatId, currentSessionId, setCurrentSessionById]);
+  }, [chatId]);
 
-  // Handle new chat - navigate to new chat URL
+  // Clear state eagerly + navigate. Both the direct call and the useEffect([chatId])
+  // clear state, but the direct call prevents a flash of stale content on the first render.
   const handleNewChatWithNavigation = () => {
-    const newSessionId = handleNewChat();
-    navigate({ to: '/chat/$chatId', params: { chatId: newSessionId } });
+    handleNewChat();
+    setPendingContext({});
+    navigate({ to: '/' });
   };
 
-  // Handle session select - navigate to chat URL
+  // Select session eagerly + navigate (same reasoning as above)
   const handleSessionSelectWithNavigation = (sessionId: string) => {
     handleSessionSelect(sessionId);
     navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
   };
 
-  // Handle context changes from ChatInterface
   const handleContextChange = useCallback(
     (newContext: ChatContext) => {
       if (currentSessionId) {
         updateSessionContext(currentSessionId, newContext);
+      } else {
+        // New chat mode — store locally until first message creates the session
+        setPendingContext(newContext);
       }
     },
     [currentSessionId, updateSessionContext]
   );
 
   const handleSendMessage = async (content: string) => {
-    // Create abort controller for this request
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
@@ -102,29 +109,32 @@ export const ChatPage: React.FC = () => {
     const updatedMessages = [...messages, userMessage];
     updateCurrentSessionMessages(updatedMessages);
 
-    // Update session title if it's the first message
-    if (currentSessionId && messages.length === 0) {
-      updateSessionTitle(currentSessionId, truncateText(content, 50));
-    }
-
     setIsLoading(true);
+
+    // Track the chatId for this stream — may be updated by chat_created chunk
+    let streamChatId = currentSessionId;
 
     try {
       let assistantContent = '';
       let citations: Message['citations'] = [];
       let collectedToolCalls: Message['toolCalls'] = [];
 
-      // Pass context and abort signal to streaming API
       for await (const chunk of streamChatMessage(
         content,
         messages,
         chatContext,
-        abortController.signal
+        abortController.signal,
+        currentSessionId
       )) {
-        if (chunk.type === 'text' && chunk.content) {
+        if (chunk.type === 'chat_created' && chunk.chatId) {
+          // Backend created a new chat — update local tracker and state
+          streamChatId = chunk.chatId;
+          setCurrentSessionId(chunk.chatId);
+          setPendingContext({}); // Context now persisted on server
+          navigate({ to: '/chat/$chatId', params: { chatId: chunk.chatId } });
+        } else if (chunk.type === 'text' && chunk.content) {
           assistantContent += chunk.content;
 
-          // Only show the assistant bubble once there's visible text
           if (assistantContent.trim()) {
             const streamingMessage: Message = {
               id: generateMessageId(),
@@ -140,7 +150,6 @@ export const ChatPage: React.FC = () => {
         } else if (chunk.type === 'citations' && chunk.citations) {
           citations = chunk.citations;
         } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-          // Update local collection for persisting on message
           const existingIdx = collectedToolCalls.findIndex(
             (tc) => tc.name === chunk.toolCall!.name
           );
@@ -150,7 +159,6 @@ export const ChatPage: React.FC = () => {
             collectedToolCalls = [...collectedToolCalls, chunk.toolCall];
           }
 
-          // Update state for streaming indicator
           setActiveToolCalls((prev) => {
             const existing = prev.findIndex((tc) => tc.name === chunk.toolCall!.name);
             if (existing >= 0) {
@@ -171,13 +179,17 @@ export const ChatPage: React.FC = () => {
             timestamp: new Date(),
           };
 
-          updateCurrentSessionMessages([...updatedMessages, finalMessage]);
+          const allMessages = [...updatedMessages, finalMessage];
+          updateCurrentSessionMessages(allMessages);
+
+          // Sync with server: seed query cache with final messages (prevents flicker),
+          // then invalidate in the background for eventual consistency.
+          invalidateAfterStream(streamChatId, allMessages);
         } else if (chunk.type === 'error') {
           throw new Error(chunk.error);
         }
       }
     } catch (error) {
-      // Don't show error message if stream was cancelled by user
       if (error instanceof Error && error.message.includes('cancelled')) {
         logger.info('Stream cancelled by user');
         return;
@@ -209,14 +221,23 @@ export const ChatPage: React.FC = () => {
     };
   }, []);
 
-  // Handle cancel request from UI
   const handleCancelRequest = () => {
     abortControllerRef.current?.abort();
   };
 
-  // If session not found, redirect to home
-  if (chatId && !currentSession && sessions.length > 0) {
-    // Session doesn't exist - could redirect or show error
+  // If a specific chatId was requested but not found in loaded sessions, show error.
+  // Skip during streaming (isLoading) — the sessions list is stale while a new chat is being created.
+  // Skip while sessions are refetching (isFetchingSessions) — invalidate() after stream may not
+  // have completed yet, so the new chat isn't in the sessions list yet.
+  // Skip during transitional states where currentSessionId is cleared eagerly.
+  if (
+    chatId &&
+    currentSessionId &&
+    !currentSession &&
+    sessions.length > 0 &&
+    !isLoading &&
+    !isFetchingSessions
+  ) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">

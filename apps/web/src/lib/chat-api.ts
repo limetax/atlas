@@ -113,12 +113,17 @@ function* processSSELine(line: string): Generator<ChatStreamChunk, void, unknown
  * Breaking change in TEC-58: Removed `assistantId` parameter (was 3rd parameter).
  * Pre-configured assistants are no longer exposed in the UI, though the backend
  * still supports them via ChatSession.assistantId if needed in the future.
+ *
+ * TEC-32: Added `chatId` parameter for server-side message persistence.
+ * When omitted, the backend creates a new chat and returns `chatId` via a
+ * `chat_created` stream chunk.
  */
 export async function* streamChatMessage(
   message: string,
   history: Message[],
   context?: ChatContext,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  chatId?: string
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   const { combinedSignal, timeoutController, timeoutId } = createCombinedAbortSignal(signal);
@@ -131,7 +136,7 @@ export async function* streamChatMessage(
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ message, history, context }),
+      body: JSON.stringify({ message, history, context, chatId }),
       signal: combinedSignal,
     });
 

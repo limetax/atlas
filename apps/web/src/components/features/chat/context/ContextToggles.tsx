@@ -4,10 +4,10 @@ import { ResearchDropdown } from './ResearchDropdown';
 import { IntegrationToggle } from './IntegrationToggle';
 import { ClientDropdown } from './ClientDropdown';
 
-interface ContextTogglesProps {
+type ContextTogglesProps = {
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
-}
+};
 
 export const ContextToggles: React.FC<ContextTogglesProps> = ({ context, onContextChange }) => {
   return (

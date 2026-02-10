@@ -7,10 +7,10 @@ import { RAGService } from '@rag/application/rag.service';
 
 import { CONTEXT_PROMPTS } from './chat.prompts';
 
-interface LlmMessage {
+type LlmMessage = {
   role: MessageRole;
   content: string;
-}
+};
 
 /**
  * Chat Service - Application layer for chat functionality
