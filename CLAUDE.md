@@ -90,6 +90,18 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 - Tailwind utility classes for styling
 - Error boundaries for error handling
 
+### Design System
+
+`design.json` in repo root is the source of truth for all design tokens — colors, typography, spacing, components, and layouts. Consult it when building or modifying UI components. Key decisions:
+
+- **Theme via CSS variables** — customize in `globals.css` `:root`, not by hardcoding Tailwind color classes in components
+- **Primary:** `#FF5E00` (orange). **Neutrals:** cold gray (Tailwind gray scale). No warm tinting, no lime/green accent
+- **Fonts:** Manrope (display), Inter (body), Geist Mono (code)
+- **Only custom tokens defined** — standard Tailwind defaults (spacing scale, font sizes, weights, breakpoints) are inherited, not redeclared
+- **Semantic token references** — components use palette keys (e.g., `primary.orange.500`, `neutral.gray.200`), not raw hex
+- **Dark mode is deprioritized** — cold dark values defined for future use
+- Related Linear issue: TEC-69
+
 ## Commits
 
 Conventional commits with **required scope**: `type(scope): message`
