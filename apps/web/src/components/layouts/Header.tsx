@@ -1,7 +1,6 @@
 import { Settings } from 'lucide-react';
 
 import { UserMenu } from '@/components/features/auth/UserMenu';
-import { ComplianceBadge } from '@/components/features/compliance/ComplianceBadge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import type { Advisor } from '@atlas/shared';
@@ -38,8 +37,6 @@ interface HeaderActionsProps {
 const HeaderActions = ({ user, advisor, isLoading }: HeaderActionsProps) => {
   return (
     <div className="flex items-center gap-4">
-      <ComplianceBadge />
-
       <Button variant="ghost" size="sm" className="p-2">
         <Settings className="w-5 h-5" />
       </Button>
