@@ -102,6 +102,16 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 - **Dark mode is deprioritized** — cold dark values defined for future use
 - Related Linear issue: TEC-69
 
+**CRITICAL: Never hardcode Tailwind color classes** (e.g., `bg-gray-100`, `text-slate-400`, `border-blue-200`). Always use:
+
+1. **Semantic CSS variables** via Tailwind arbitrary values: `bg-[var(--chat-message-user-bg)]`, `text-[var(--muted-foreground)]`
+2. **Shadcn semantic classes** when available: `bg-card`, `text-foreground`, `border-border`
+3. **Design token classes** if explicitly mapped in `globals.css`: `bg-orange-500` (only when defined in `@theme inline`)
+
+**Exception:** Standard Tailwind utilities for spacing (`p-4`, `mx-auto`), typography (`text-sm`, `font-bold`), layout (`flex`, `grid`), and other non-color properties are OK.
+
+**Why:** Hardcoded colors break theming, make maintenance difficult, and bypass the design system. CSS variables enable consistent theming, dark mode support, and centralized design token management.
+
 ## Commits
 
 Conventional commits with **required scope**: `type(scope): message`

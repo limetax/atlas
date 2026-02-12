@@ -178,6 +178,19 @@
   --color-info-bg: #DBEAFE;
   --color-info-text: #1E40AF;
 
+  /* Chat component tokens (design.json chat specification) */
+  --chat-message-user-bg: #F3F4F6; /* gray-100 */
+  --chat-message-user-text: #111827; /* gray-900 */
+  --chat-message-assistant-bg: #FFFFFF; /* white */
+  --chat-message-assistant-text: #111827; /* gray-900 */
+  --chat-message-assistant-border: #E5E7EB; /* gray-200 */
+  --chat-avatar-bg: #F3F4F6; /* gray-100 */
+  --chat-avatar-text: #374151; /* gray-700 */
+  --chat-attachment-bg: #FFFFFF; /* white */
+  --chat-attachment-border: #E5E7EB; /* gray-200 */
+  --chat-attachment-text: #4B5563; /* gray-600 */
+  --chat-timestamp-text: #9CA3AF; /* gray-400 */
+
   /* Font families */
   --font-display: 'Manrope', sans-serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;

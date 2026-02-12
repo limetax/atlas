@@ -1,23 +1,25 @@
 import React from 'react';
-import { Link, useLocation } from '@tanstack/react-router';
+
 import {
+  EllipsisVertical,
+  FileText,
   MessageSquare,
+  Pencil,
   Plus,
   Trash2,
-  FileText,
   Workflow,
-  EllipsisVertical,
-  Pencil,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ChatSession } from '@atlas/shared';
+import { Link, useLocation } from '@tanstack/react-router';
 
 type SidebarProps = {
   sessions: ChatSession[];
@@ -60,7 +62,7 @@ type NewChatButtonProps = {
 const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
   return (
     <div className="flex-shrink-0 p-4 border-b border-border">
-      <Button variant="default" className="w-full" onClick={onNewChat}>
+      <Button variant="outline" className="w-full" onClick={onNewChat}>
         <Plus className="w-4 h-4 mr-2" />
         Neuer Chat
       </Button>

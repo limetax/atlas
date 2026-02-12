@@ -120,7 +120,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div
-      className="relative flex flex-col h-full bg-gradient-to-b from-muted to-background overflow-hidden"
+      className="relative flex flex-col h-full bg-background overflow-hidden"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
