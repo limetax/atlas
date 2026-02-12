@@ -124,13 +124,13 @@ export function EmailDraftCard({ content }: EmailDraftCardProps): React.ReactEle
   };
 
   return (
-    <Card className="border-lime-200 bg-lime-50/50 shadow-sm my-3">
+    <Card className="border-orange-200 bg-accent/50 shadow-sm my-3">
       <div className="p-4 space-y-3">
         {/* Header with label */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-lime-600" />
-            <span className="text-xs font-semibold text-lime-700 uppercase tracking-wide">
+            <Mail className="w-4 h-4 text-primary" />
+            <span className="text-xs font-semibold text-accent-foreground uppercase tracking-wide">
               E-Mail
             </span>
           </div>
@@ -138,9 +138,9 @@ export function EmailDraftCard({ content }: EmailDraftCardProps): React.ReactEle
 
         {/* Validation warnings */}
         {(!hasValidRecipient || !hasSubject || !hasBody) && (
-          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded text-sm">
-            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="text-amber-800">
+          <div className="flex items-start gap-2 p-3 bg-warning-bg border border-warning/30 rounded text-sm">
+            <AlertCircle className="w-4 h-4 text-warning-text mt-0.5 flex-shrink-0" />
+            <div className="text-warning-text">
               <p className="font-medium">Unvollständiger E-Mail-Entwurf:</p>
               <ul className="list-disc list-inside mt-1 space-y-0.5">
                 {!hasValidRecipient && <li>Empfänger fehlt oder ist ungültig</li>}
@@ -154,21 +154,21 @@ export function EmailDraftCard({ content }: EmailDraftCardProps): React.ReactEle
         {/* Email metadata */}
         <div className="space-y-2">
           <div className="text-sm">
-            <span className="font-medium text-gray-700">An:</span>{' '}
-            <span className={hasValidRecipient ? 'text-gray-900' : 'text-red-600'}>
+            <span className="font-medium text-foreground">An:</span>{' '}
+            <span className={hasValidRecipient ? 'text-foreground' : 'text-destructive'}>
               {email.to ?? '(nicht angegeben)'}
             </span>
           </div>
           <div className="text-sm">
-            <span className="font-medium text-gray-700">Betreff:</span>{' '}
-            <span className={hasSubject ? 'text-gray-900' : 'text-gray-400'}>
+            <span className="font-medium text-foreground">Betreff:</span>{' '}
+            <span className={hasSubject ? 'text-foreground' : 'text-muted-foreground'}>
               {email.subject ?? '(nicht angegeben)'}
             </span>
           </div>
         </div>
 
         {/* Email body */}
-        <div className="text-sm text-gray-800 bg-white p-3 rounded border border-gray-200 max-h-64 overflow-y-auto whitespace-pre-wrap">
+        <div className="text-sm text-foreground bg-background p-3 rounded border border-border max-h-64 overflow-y-auto whitespace-pre-wrap">
           {email.body ?? '(kein Text)'}
         </div>
 
@@ -176,7 +176,7 @@ export function EmailDraftCard({ content }: EmailDraftCardProps): React.ReactEle
         <div className="space-y-2 pt-2">
           {/* Copy error message */}
           {copyError && (
-            <div className="text-sm text-red-600 flex items-center gap-1">
+            <div className="text-sm text-destructive flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
               <span>{copyError}</span>
             </div>
@@ -201,7 +201,7 @@ export function EmailDraftCard({ content }: EmailDraftCardProps): React.ReactEle
               <DropdownMenuTrigger asChild>
                 <Button
                   size="sm"
-                  className="gap-2 bg-lime-600 hover:bg-lime-700"
+                  className="gap-2"
                   disabled={!hasValidRecipient}
                   title={
                     !hasValidRecipient

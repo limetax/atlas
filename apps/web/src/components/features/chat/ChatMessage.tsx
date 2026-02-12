@@ -65,7 +65,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
       {!isUser && (
         <Avatar className="flex-shrink-0 border-2 border-white shadow-md">
           <AvatarImage src="/icon.png" alt="limetax logo" />
-          <AvatarFallback className="bg-lime-50 text-lime-600">LI</AvatarFallback>
+          <AvatarFallback className="bg-accent text-accent-foreground">LI</AvatarFallback>
         </Avatar>
       )}
 
@@ -76,9 +76,9 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
             {message.toolCalls.map((tc, index) => (
               <div
                 key={`${tc.name}-${index}`}
-                className="flex items-center gap-2 text-xs text-gray-500"
+                className="flex items-center gap-2 text-xs text-muted-foreground"
               >
-                <Check className="w-3 h-3 text-lime-600 flex-shrink-0" />
+                <Check className="w-3 h-3 text-primary flex-shrink-0" />
                 <span>{getToolLabel(tc.name)}</span>
               </div>
             ))}
@@ -89,8 +89,8 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
           className={cn(
             'px-4 py-3 rounded-2xl border',
             isUser
-              ? 'bg-blue-200 text-gray-900 rounded-tr-sm shadow-md border-blue-300'
-              : 'bg-gray-50 border-gray-200 rounded-tl-sm shadow-sm'
+              ? 'bg-card text-foreground rounded-tr-sm shadow-md border-border'
+              : 'bg-muted border-border rounded-tl-sm shadow-sm'
           )}
         >
           <div
@@ -108,7 +108,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-700 underline font-medium"
+                      className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline font-medium"
                       {...props}
                     >
                       {children}
@@ -166,16 +166,16 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
             {message.attachedFiles.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center gap-1 rounded-md bg-blue-100 border border-blue-200 px-2 py-0.5 text-xs text-gray-600"
+                className="flex items-center gap-1 rounded-md bg-accent border border-border px-2 py-0.5 text-xs text-foreground"
               >
-                <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                <FileText className="h-3 w-3 text-primary flex-shrink-0" />
                 <span className="truncate max-w-[120px]">{file.name}</span>
               </div>
             ))}
           </div>
         )}
 
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-muted-foreground">
           {message.timestamp
             ? new Date(message.timestamp).toLocaleTimeString('de-DE', {
                 hour: '2-digit',

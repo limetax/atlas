@@ -15,7 +15,7 @@ const BrandingPanel = () => {
   return (
     <div className="hidden lg:flex lg:w-1/2 bg-gray-900 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-      <div className="absolute top-0 right-0 w-96 h-96 bg-lime-500/10 rounded-full blur-3xl" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-orange-400/10 rounded-full blur-3xl" />
 
       <div className="relative z-10 flex flex-col justify-between p-12 w-full">
@@ -36,7 +36,7 @@ const BrandingHeader = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">limetax</h1>
-          <p className="text-lime-400 text-sm font-medium">IQ</p>
+          <p className="text-orange-400 text-sm font-medium">IQ</p>
         </div>
       </div>
 
@@ -57,8 +57,8 @@ const FeaturesList = () => {
   return (
     <div className="space-y-6">
       <FeatureItem
-        icon={<Zap className="w-5 h-5 text-lime-400" />}
-        bgColor="bg-lime-500/20"
+        icon={<Zap className="w-5 h-5 text-orange-400" />}
+        bgColor="bg-orange-400/20"
         title="Digitaler Fokus"
         description="Modernste KI-Technologie für effiziente Steuerberatung"
       />
@@ -69,14 +69,14 @@ const FeaturesList = () => {
         description="Höchste Datenschutzstandards für Ihre Mandantendaten"
       />
       <FeatureItem
-        icon={<Users className="w-5 h-5 text-blue-400" />}
-        bgColor="bg-blue-400/20"
+        icon={<Users className="w-5 h-5 text-gray-400" />}
+        bgColor="bg-gray-400/20"
         title="Beratung mit Weitblick"
         description="Fundierte Antworten mit Quellenangaben aus dem Steuerrecht"
       />
       <FeatureItem
-        icon={<TrendingUp className="w-5 h-5 text-purple-400" />}
-        bgColor="bg-purple-400/20"
+        icon={<TrendingUp className="w-5 h-5 text-gray-400" />}
+        bgColor="bg-gray-400/20"
         title="Transparenz"
         description="Nachvollziehbare Empfehlungen mit zitierten Paragraphen"
       />
@@ -109,7 +109,7 @@ const FeatureItem = ({ icon, bgColor, title, description }: FeatureItemProps) =>
 
 const BrandingFooter = () => {
   return (
-    <div className="text-gray-500 text-sm">
+    <div className="text-muted-foreground text-sm">
       <p>© {new Date().getFullYear()} limetax. Alle Rechte vorbehalten.</p>
     </div>
   );
@@ -117,7 +117,7 @@ const BrandingFooter = () => {
 
 const LoginPanel = () => {
   return (
-    <div className="flex-1 flex items-center justify-center p-8 bg-white">
+    <div className="flex-1 flex items-center justify-center p-8 bg-background">
       <div className="w-full max-w-md">
         <MobileLogo />
         <WelcomeText />
@@ -135,7 +135,7 @@ const MobileLogo = () => {
         <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">limetaxIQ</h1>
+        <h1 className="text-2xl font-bold text-foreground">limetaxIQ</h1>
       </div>
     </div>
   );
@@ -144,22 +144,22 @@ const MobileLogo = () => {
 const WelcomeText = () => {
   return (
     <div className="text-center mb-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Willkommen bei limetaxIQ</h2>
-      <p className="text-gray-500">Melden Sie sich an, um fortzufahren</p>
+      <h2 className="text-2xl font-bold text-foreground mb-2">Willkommen bei limetaxIQ</h2>
+      <p className="text-muted-foreground">Melden Sie sich an, um fortzufahren</p>
     </div>
   );
 };
 
 const AdditionalInfo = () => {
   return (
-    <div className="mt-8 pt-8 border-t border-gray-200">
-      <p className="text-center text-sm text-gray-500">
+    <div className="mt-8 pt-8 border-t border-border">
+      <p className="text-center text-sm text-muted-foreground">
         Noch kein Zugang?{' '}
         <a
           href="https://www.limetax.de/kontakt"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-orange-500 hover:text-orange-600 font-medium"
+          className="text-primary hover:text-primary/80 font-medium"
         >
           Kontaktieren Sie uns
         </a>

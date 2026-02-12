@@ -15,12 +15,12 @@ type ChatHeaderProps = {
 
 export const ChatHeader = ({ title, onRename, onDelete }: ChatHeaderProps): React.ReactElement => {
   return (
-    <div className="h-10 border-b border-gray-200 px-6 flex items-center">
+    <div className="h-10 border-b border-border px-6 flex items-center">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="hover:bg-gray-100 rounded-md px-2 py-1 flex items-center gap-1.5 max-w-md">
-            <span className="text-sm font-medium text-gray-700 truncate">{title}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+          <button className="hover:bg-muted rounded-md px-2 py-1 flex items-center gap-1.5 max-w-md">
+            <span className="text-sm font-medium text-foreground truncate">{title}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -29,7 +29,7 @@ export const ChatHeader = ({ title, onRename, onDelete }: ChatHeaderProps): Reac
             Umbenennen
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onDelete} className="text-red-500">
+          <DropdownMenuItem onClick={onDelete} className="text-destructive">
             <Trash2 className="w-4 h-4" />
             Löschen
           </DropdownMenuItem>

@@ -6,9 +6,9 @@ export const ComplianceBadge: React.FC = () => {
   return (
     <Badge
       variant="outline"
-      className="border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+      className="border-success/30 bg-success-bg text-success-text hover:bg-success-bg/80"
     >
-      <Shield className="w-4 h-4 text-green-600 mr-2" />
+      <Shield className="w-4 h-4 text-success mr-2" />
       🇩🇪 Hosted in Germany | DSGVO-konform
     </Badge>
   );

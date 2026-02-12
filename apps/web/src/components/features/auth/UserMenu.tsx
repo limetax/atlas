@@ -54,17 +54,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
             </AvatarFallback>
           </Avatar>
 
-          <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[120px] truncate">
+          <span className="hidden sm:block text-sm font-medium text-foreground max-w-[120px] truncate">
             {displayName}
           </span>
 
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-64">
         {/* User Info Header */}
-        <div className="px-3 py-3 border-b border-gray-100">
+        <div className="px-3 py-3 border-b border-border">
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
               {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
@@ -73,24 +73,24 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
         </div>
 
         {/* Menu Items */}
         <DropdownMenuItem disabled>
-          <User className="w-5 h-5 text-gray-400" />
+          <User className="w-5 h-5 text-muted-foreground" />
           <span className="flex-1">Profil</span>
-          <span className="text-xs text-gray-400">Bald</span>
+          <span className="text-xs text-muted-foreground">Bald</span>
         </DropdownMenuItem>
 
         {advisor?.advisory_id && (
           <DropdownMenuItem disabled>
-            <Building2 className="w-5 h-5 text-gray-400" />
+            <Building2 className="w-5 h-5 text-muted-foreground" />
             <span className="flex-1">Kanzlei</span>
-            <span className="text-xs text-gray-400">Bald</span>
+            <span className="text-xs text-muted-foreground">Bald</span>
           </DropdownMenuItem>
         )}
 
@@ -100,7 +100,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
         <DropdownMenuItem
           onClick={handleLogout}
           disabled={logoutMutation.isPending}
-          className="text-red-600 focus:text-red-600 focus:bg-red-50"
+          className="text-destructive focus:text-destructive focus:bg-error-bg"
         >
           <LogOut className="w-5 h-5" />
           <span>{logoutMutation.isPending ? 'Abmelden...' : 'Abmelden'}</span>

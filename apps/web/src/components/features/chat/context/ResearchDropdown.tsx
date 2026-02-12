@@ -48,14 +48,14 @@ export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, on
           className={cn(
             'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors',
             selected.length > 0
-              ? 'bg-orange-50 border-orange-300 text-orange-700'
-              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              ? 'bg-accent border-orange-300 text-accent-foreground'
+              : 'bg-card border-input text-foreground hover:bg-muted'
           )}
         >
           <Database className="w-4 h-4" />
           <span>Recherche</span>
           {selected.length > 0 && (
-            <span className="bg-orange-600 text-white text-xs px-1.5 rounded-full">
+            <span className="bg-primary text-primary-foreground text-xs px-1.5 rounded-full">
               {selected.length}
             </span>
           )}
@@ -76,11 +76,11 @@ export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, on
               disabled={option.disabled}
             >
               <div className="flex items-center gap-3 flex-1">
-                <Icon className="w-5 h-5 text-gray-700" />
-                <span className="text-gray-900">{option.label}</span>
+                <Icon className="w-5 h-5 text-foreground" />
+                <span className="text-foreground">{option.label}</span>
               </div>
               {option.disabled && (
-                <span className="text-xs font-medium text-gray-500 ml-4 bg-gray-100 px-2 py-0.5 rounded">
+                <span className="text-xs font-medium text-muted-foreground ml-4 bg-secondary px-2 py-0.5 rounded">
                   Bald verfügbar
                 </span>
               )}
