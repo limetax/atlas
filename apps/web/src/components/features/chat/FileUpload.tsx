@@ -33,14 +33,14 @@ export const DropZoneOverlay: React.FC<DropZoneOverlayProps> = ({ isVisible, onD
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-orange-50/80 backdrop-blur-sm"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-accent/80 backdrop-blur-sm"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
-      <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-orange-400 bg-white px-12 py-10 shadow-lg">
-        <Upload className="h-10 w-10 text-orange-500" />
-        <p className="text-sm font-medium text-gray-700">PDF hier ablegen</p>
-        <p className="text-xs text-gray-400">Max. 10 MB pro Datei</p>
+      <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary/60 bg-card px-12 py-10 shadow-lg">
+        <Upload className="h-10 w-10 text-primary" />
+        <p className="text-sm font-medium text-foreground">PDF hier ablegen</p>
+        <p className="text-xs text-muted-foreground">Max. 10 MB pro Datei</p>
       </div>
     </div>
   );
@@ -75,18 +75,18 @@ export const PendingFileList: React.FC<PendingFileListProps> = ({
 // ─── File Chips ───────────────────────────────────────────────────────────────
 
 const PendingFileChip: React.FC<{ file: File; onRemove: () => void }> = ({ file, onRemove }) => (
-  <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs">
-    <FileText className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
-    <span className="truncate max-w-[140px] text-gray-700">{file.name}</span>
-    <span className="text-gray-400">{formatFileSize(file.size)}</span>
+  <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-xs">
+    <FileText className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+    <span className="truncate max-w-[140px] text-foreground">{file.name}</span>
+    <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
     <Button
       type="button"
       variant="ghost"
       size="icon"
-      className="h-4 w-4 p-0 hover:bg-gray-200"
+      className="h-4 w-4 p-0 hover:bg-secondary"
       onClick={onRemove}
     >
-      <X className="h-3 w-3 text-gray-500" />
+      <X className="h-3 w-3 text-muted-foreground" />
     </Button>
   </div>
 );

@@ -16,13 +16,17 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
         <Input
           ref={ref}
           type={showPassword ? 'text' : 'password'}
-          className={cn('pr-10', error && 'border-red-400 focus-visible:ring-red-500', className)}
+          className={cn(
+            'pr-10',
+            error && 'border-destructive focus-visible:ring-destructive',
+            className
+          )}
           {...props}
         />
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           tabIndex={-1}
           aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
         >

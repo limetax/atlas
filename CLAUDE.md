@@ -90,6 +90,28 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 - Tailwind utility classes for styling
 - Error boundaries for error handling
 
+### Design System
+
+`design.json` in repo root is the source of truth for all design tokens — colors, typography, spacing, components, and layouts. Consult it when building or modifying UI components. Key decisions:
+
+- **Theme via CSS variables** — customize in `globals.css` `:root`, not by hardcoding Tailwind color classes in components
+- **Primary:** `#FF5E00` (orange). **Neutrals:** cold gray (Tailwind gray scale). No warm tinting, no lime/green accent
+- **Fonts:** Manrope (display), Inter (body), Geist Mono (code)
+- **Only custom tokens defined** — standard Tailwind defaults (spacing scale, font sizes, weights, breakpoints) are inherited, not redeclared
+- **Semantic token references** — components use palette keys (e.g., `primary.orange.500`, `neutral.gray.200`), not raw hex
+- **Dark mode is deprioritized** — cold dark values defined for future use
+- Related Linear issue: TEC-69
+
+**CRITICAL: Never hardcode Tailwind color classes** (e.g., `bg-gray-100`, `text-slate-400`, `border-blue-200`). Always use:
+
+1. **Semantic CSS variables** via Tailwind arbitrary values: `bg-[var(--chat-message-user-bg)]`, `text-[var(--muted-foreground)]`
+2. **Shadcn semantic classes** when available: `bg-card`, `text-foreground`, `border-border`
+3. **Design token classes** if explicitly mapped in `globals.css`: `bg-orange-500` (only when defined in `@theme inline`)
+
+**Exception:** Standard Tailwind utilities for spacing (`p-4`, `mx-auto`), typography (`text-sm`, `font-bold`), layout (`flex`, `grid`), and other non-color properties are OK.
+
+**Why:** Hardcoded colors break theming, make maintenance difficult, and bypass the design system. CSS variables enable consistent theming, dark mode support, and centralized design token management.
+
 ## Commits
 
 Conventional commits with **required scope**: `type(scope): message`
@@ -113,7 +135,7 @@ cp /Users/cdansard/university/atlas/apps/api/.env apps/api/.env
 - Do not create documentation files unless explicitly asked
 - Do not update Linear issues unless explicitly asked
 - Use established packages (like TanStack, NestJS, tRPC, Zod, Radix, Lucide) or suggest widely adapted packages if applicable
-- Check official docs before implementing features
+- Check official docs before implementing features — use Context7 MCP to fetch up-to-date library documentation when available
 - Keep package dependencies explicit, use `workspace:*` for internal deps
 - Node >=20, pnpm 9.15.0
 

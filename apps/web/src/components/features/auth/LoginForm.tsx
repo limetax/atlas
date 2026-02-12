@@ -56,7 +56,7 @@ const ErrorAlert = ({ error }: { error?: string }) => {
   if (!error) return null;
 
   return (
-    <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+    <div className="flex items-start gap-3 p-4 bg-error-bg border border-destructive/30 rounded-lg text-error-text">
       <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
       <p className="text-sm">{error}</p>
     </div>
@@ -73,7 +73,7 @@ interface EmailFieldProps {
 const EmailField = ({ value, onChange, disabled, error }: EmailFieldProps) => {
   return (
     <div className="space-y-2">
-      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+      <label htmlFor="email" className="block text-sm font-medium text-foreground">
         E-Mail-Adresse
       </label>
       <Input
@@ -101,7 +101,7 @@ interface PasswordFieldProps {
 const PasswordField = ({ value, onChange, disabled, error }: PasswordFieldProps) => {
   return (
     <div className="space-y-2">
-      <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+      <label htmlFor="password" className="block text-sm font-medium text-foreground">
         Passwort
       </label>
       <PasswordInput
@@ -136,11 +136,11 @@ const SubmitButton = ({ isLoading }: { isLoading: boolean }) => {
 const PasswordResetInfo = () => {
   return (
     <div className="text-center">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         Passwort vergessen?{' '}
         <a
           href="mailto:support@limetax.de"
-          className="text-orange-500 hover:text-orange-600 font-medium"
+          className="text-primary hover:text-primary/80 font-medium"
         >
           Kontaktieren Sie uns
         </a>

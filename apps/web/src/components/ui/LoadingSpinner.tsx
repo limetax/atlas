@@ -13,5 +13,5 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'md', cla
     lg: 'w-12 h-12',
   };
 
-  return <Loader2 className={`${sizeClasses[size]} animate-spin text-orange-500 ${className}`} />;
+  return <Loader2 className={`${sizeClasses[size]} animate-spin text-primary ${className}`} />;
 };

@@ -1,7 +1,6 @@
 import { Settings } from 'lucide-react';
 
 import { UserMenu } from '@/components/features/auth/UserMenu';
-import { ComplianceBadge } from '@/components/features/compliance/ComplianceBadge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import type { Advisor } from '@atlas/shared';
@@ -11,7 +10,7 @@ export const Header = () => {
   const { user, advisor, isLoading } = useAuth();
 
   return (
-    <header className="flex-shrink-0 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
+    <header className="flex-shrink-0 h-16 bg-card border-b border-border px-6 flex items-center justify-between">
       <HeaderLogo />
       <HeaderActions user={user} advisor={advisor} isLoading={isLoading} />
     </header>
@@ -24,7 +23,7 @@ const HeaderLogo = () => {
       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
         <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
       </div>
-      <h1 className="text-lg font-bold text-gray-900">limetaxIQ</h1>
+      <h1 className="text-lg font-bold text-foreground">limetaxIQ</h1>
     </div>
   );
 };
@@ -38,8 +37,6 @@ interface HeaderActionsProps {
 const HeaderActions = ({ user, advisor, isLoading }: HeaderActionsProps) => {
   return (
     <div className="flex items-center gap-4">
-      <ComplianceBadge />
-
       <Button variant="ghost" size="sm" className="p-2">
         <Settings className="w-5 h-5" />
       </Button>

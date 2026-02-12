@@ -1,23 +1,25 @@
 import React from 'react';
-import { Link, useLocation } from '@tanstack/react-router';
+
 import {
+  EllipsisVertical,
+  FileText,
   MessageSquare,
+  Pencil,
   Plus,
   Trash2,
-  FileText,
   Workflow,
-  EllipsisVertical,
-  Pencil,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ChatSession } from '@atlas/shared';
+import { Link, useLocation } from '@tanstack/react-router';
 
 type SidebarProps = {
   sessions: ChatSession[];
@@ -37,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRenameSession,
 }) => {
   return (
-    <aside className="w-72 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
+    <aside className="w-72 bg-card border-r border-border flex flex-col h-full overflow-hidden">
       <NewChatButton onNewChat={onNewChat} />
 
       <Navigation />
@@ -59,8 +61,8 @@ type NewChatButtonProps = {
 
 const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
   return (
-    <div className="flex-shrink-0 p-4 border-b border-gray-200">
-      <Button variant="default" className="w-full" onClick={onNewChat}>
+    <div className="flex-shrink-0 p-4 border-b border-border">
+      <Button variant="outline" className="w-full" onClick={onNewChat}>
         <Plus className="w-4 h-4 mr-2" />
         Neuer Chat
       </Button>
@@ -97,8 +99,8 @@ const Navigation = () => {
   ];
 
   return (
-    <div className="flex-shrink-0 p-3 border-b border-gray-200">
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
+    <div className="flex-shrink-0 p-3 border-b border-border">
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
         Navigation
       </h2>
       <nav className="space-y-1">
@@ -112,14 +114,14 @@ const Navigation = () => {
               to={item.to}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
                 isActive
-                  ? 'bg-orange-50 text-orange-700 border-orange-200'
-                  : 'text-gray-700 border-transparent hover:bg-gray-50'
+                  ? 'bg-accent text-accent-foreground border-orange-200'
+                  : 'text-foreground border-transparent hover:bg-muted'
               }`}
             >
               <Icon className="w-4 h-4" />
               <span className="flex-1">{item.label}</span>
               {item.badge && (
-                <span className="text-xs text-gray-400 font-normal">{item.badge}</span>
+                <span className="text-xs text-muted-foreground font-normal">{item.badge}</span>
               )}
             </Link>
           );
@@ -146,7 +148,7 @@ const ChatHistory = ({
 }: ChatHistoryProps) => {
   return (
     <div className="flex-1 overflow-y-auto p-3 min-h-0">
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">
         Verlauf
       </h2>
 
@@ -168,8 +170,8 @@ const ChatHistory = ({
 const EmptyState = () => {
   return (
     <div className="text-center py-8 px-4">
-      <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-      <p className="text-sm text-gray-500">Noch keine Chats</p>
+      <MessageSquare className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+      <p className="text-sm text-muted-foreground">Noch keine Chats</p>
     </div>
   );
 };
@@ -217,14 +219,14 @@ const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: Sessio
   return (
     <div
       className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${
-        isActive ? 'bg-orange-50 border-orange-200' : 'border-transparent hover:bg-gray-50'
+        isActive ? 'bg-accent border-orange-200' : 'border-transparent hover:bg-muted'
       }`}
       onClick={onSelect}
     >
-      <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{session.title}</p>
-        <p className="text-xs text-gray-500">
+        <p className="text-sm font-medium text-foreground truncate">{session.title}</p>
+        <p className="text-xs text-muted-foreground">
           {new Date(session.updatedAt).toLocaleDateString('de-DE')}
         </p>
       </div>
@@ -235,9 +237,9 @@ const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: Sessio
               onClick={(e) => {
                 e.stopPropagation();
               }}
-              className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 p-1 hover:bg-gray-100 rounded transition-all"
+              className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 p-1 hover:bg-muted rounded transition-all"
             >
-              <EllipsisVertical className="w-4 h-4 text-gray-500" />
+              <EllipsisVertical className="w-4 h-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="start">
@@ -249,7 +251,7 @@ const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: Sessio
             )}
             {onRename && onDelete && <DropdownMenuSeparator />}
             {onDelete && (
-              <DropdownMenuItem onClick={onDelete} className="text-red-500">
+              <DropdownMenuItem onClick={onDelete} className="text-destructive">
                 <Trash2 className="w-4 h-4" />
                 Löschen
               </DropdownMenuItem>

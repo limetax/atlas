@@ -19,8 +19,8 @@ export const IntegrationToggle: React.FC<IntegrationToggleProps> = ({ enabled, o
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors',
               enabled
-                ? 'bg-orange-50 border-orange-300 text-orange-700'
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                ? 'bg-accent border-orange-300 text-accent-foreground'
+                : 'bg-card border-input text-foreground hover:bg-muted'
             )}
           >
             <Link className="w-4 h-4" />

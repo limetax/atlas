@@ -18,16 +18,16 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({ template, onInsert }
   return (
     <Card
       className={cn(
-        'p-6 hover:shadow-lg hover:border-orange-200 transition-all group cursor-pointer',
-        'rounded-xl border-gray-200'
+        'p-6 hover:shadow-lg hover:border-primary/30 transition-all group cursor-pointer',
+        'border-border'
       )}
       onClick={() => onInsert(template.id)}
     >
       <CardHeader className="p-0">
-        <CardTitle className="text-base font-semibold text-gray-900 mb-1.5">
+        <CardTitle className="text-base font-semibold text-foreground mb-1.5">
           {template.title}
         </CardTitle>
-        <CardDescription className="text-sm text-gray-600 line-clamp-2">
+        <CardDescription className="text-sm text-muted-foreground line-clamp-2">
           {template.description}
         </CardDescription>
       </CardHeader>

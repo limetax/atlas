@@ -150,6 +150,9 @@ importers:
       '@atlas/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@fontsource-variable/geist-mono':
+        specifier: ^5.2.7
+        version: 5.2.7
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.9))(@types/react@19.2.9)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -741,6 +744,9 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@fontsource-variable/geist-mono@5.2.7':
+    resolution: {integrity: sha512-ZKlZ5sjtalb2TwXKs400mAGDlt/+2ENLNySPx0wTz3bP3mWARCsUW+rpxzZc7e05d2qGch70pItt3K4qttbIYA==}
 
   '@hono/node-server@1.19.9':
     resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
@@ -6156,6 +6162,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
+  '@fontsource-variable/geist-mono@5.2.7': {}
+
   '@hono/node-server@1.19.9(hono@4.11.6)':
     dependencies:
       hono: 4.11.6
@@ -8879,7 +8887,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 22.19.7
+      '@types/node': 24.10.9
       merge-stream: 2.0.0
       supports-color: 8.1.1
 

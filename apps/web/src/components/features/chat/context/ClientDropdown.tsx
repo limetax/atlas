@@ -84,7 +84,7 @@ export const ClientDropdown = ({ selected, onChange }: ClientDropdownProps) => {
               onMouseDown={(e) => e.preventDefault()}
               className="transition-colors duration-150 cursor-pointer"
             >
-              <span className="text-sm text-gray-600">Kein Mandant</span>
+              <span className="text-sm text-muted-foreground">Kein Mandant</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
@@ -125,8 +125,8 @@ const ClientDropdownTrigger = React.forwardRef<
         isLoading && 'opacity-50 cursor-wait',
         hasError && 'opacity-50 cursor-not-allowed',
         isSelected
-          ? 'bg-orange-50 border-orange-300 text-orange-700'
-          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+          ? 'bg-accent border-orange-300 text-accent-foreground'
+          : 'bg-card border-input text-foreground hover:bg-muted'
       )}
       {...props}
     >
@@ -160,7 +160,7 @@ const ClientSearchInput = React.forwardRef<HTMLInputElement, ClientSearchInputPr
           <Search
             className={cn(
               'absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4',
-              'text-gray-400 pointer-events-none'
+              'text-muted-foreground pointer-events-none'
             )}
           />
           <Input
@@ -207,15 +207,17 @@ const ClientListContent = ({
   return (
     <div className="max-h-[300px] overflow-y-auto">
       {isLoading && (
-        <div className="px-3 py-2 text-sm text-gray-500 text-center">Lade Mandanten...</div>
+        <div className="px-3 py-2 text-sm text-muted-foreground text-center">Lade Mandanten...</div>
       )}
       {hasError && (
-        <div className="px-3 py-2 text-sm text-red-600 text-center">
+        <div className="px-3 py-2 text-sm text-destructive text-center">
           Fehler beim Laden der Mandanten
         </div>
       )}
       {!isLoading && !hasError && filteredClients.length === 0 && (
-        <div className="px-3 py-2 text-sm text-gray-500 text-center">Keine Mandanten gefunden</div>
+        <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+          Keine Mandanten gefunden
+        </div>
       )}
       {!isLoading &&
         !hasError &&
@@ -242,11 +244,11 @@ const ClientListItem = ({ client, isSelected, onSelect }: ClientListItemProps) =
     <DropdownMenuItem
       onSelect={() => onSelect(client.clientId)}
       onMouseDown={(e) => e.preventDefault()}
-      className={cn('transition-colors duration-150 cursor-pointer', isSelected && 'bg-orange-50')}
+      className={cn('transition-colors duration-150 cursor-pointer', isSelected && 'bg-accent')}
     >
       <div className="flex flex-col">
         <span className="text-sm font-medium">{client.clientName}</span>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Nr. {client.clientNumber}</span>
           {client.companyForm && <span>• {client.companyForm}</span>}
         </div>

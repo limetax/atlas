@@ -61,24 +61,31 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
   const enrichedContent = enrichContentWithLinks(message.content, message.citations);
 
   return (
-    <div className={cn('flex gap-4', isUser ? 'justify-end' : 'justify-start')}>
+    <div className={cn('flex gap-5', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && (
-        <Avatar className="flex-shrink-0 border-2 border-white shadow-md">
+        <Avatar className="flex-shrink-0 w-8 h-8 rounded-sm">
           <AvatarImage src="/icon.png" alt="limetax logo" />
-          <AvatarFallback className="bg-lime-50 text-lime-600">LI</AvatarFallback>
+          <AvatarFallback className="bg-[var(--chat-avatar-bg)] text-[var(--chat-avatar-text)]">
+            LI
+          </AvatarFallback>
         </Avatar>
       )}
 
-      <div className={cn('flex flex-col gap-2 max-w-[75%]', isUser ? 'items-end' : 'items-start')}>
+      <div
+        className={cn(
+          'flex flex-col gap-1',
+          isUser ? 'items-end max-w-[65%]' : 'items-start max-w-[85%]'
+        )}
+      >
         {/* Tool calls — rendered above assistant message bubble */}
         {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
           <div className="flex flex-col gap-1 mb-1">
             {message.toolCalls.map((tc, index) => (
               <div
                 key={`${tc.name}-${index}`}
-                className="flex items-center gap-2 text-xs text-gray-500"
+                className="flex items-center gap-2 text-xs text-muted-foreground"
               >
-                <Check className="w-3 h-3 text-lime-600 flex-shrink-0" />
+                <Check className="w-3 h-3 text-primary flex-shrink-0" />
                 <span>{getToolLabel(tc.name)}</span>
               </div>
             ))}
@@ -87,18 +94,13 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
 
         <Card
           className={cn(
-            'px-4 py-3 rounded-2xl border',
+            'rounded-2xl',
             isUser
-              ? 'bg-blue-200 text-gray-900 rounded-tr-sm shadow-md border-blue-300'
-              : 'bg-gray-50 border-gray-200 rounded-tl-sm shadow-sm'
+              ? 'bg-[var(--chat-message-user-bg)] text-[var(--chat-message-user-text)] rounded-tr-sm px-6 py-4 border-0 shadow-none'
+              : 'bg-[var(--chat-message-assistant-bg)] border border-[var(--chat-message-assistant-border)] text-[var(--chat-message-assistant-text)] rounded-tl-sm shadow-sm px-8 py-6'
           )}
         >
-          <div
-            className={cn(
-              'text-sm leading-relaxed prose prose-sm max-w-none',
-              isUser && 'prose-invert'
-            )}
-          >
+          <div className="text-[15px] leading-relaxed prose prose-sm max-w-none">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={
@@ -108,7 +110,7 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-lime-600 hover:text-lime-700 underline font-medium"
+                      className="inline-flex items-center gap-1 text-primary hover:text-primary/80 underline font-medium"
                       {...props}
                     >
                       {children}
@@ -166,16 +168,16 @@ export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
             {message.attachedFiles.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center gap-1 rounded-md bg-blue-100 border border-blue-200 px-2 py-0.5 text-xs text-gray-600"
+                className="flex items-center gap-2 rounded border border-[var(--chat-attachment-border)] bg-[var(--chat-attachment-bg)] px-3 py-1.5 text-xs text-[var(--chat-attachment-text)] shadow-sm"
               >
-                <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                <span className="truncate max-w-[120px]">{file.name}</span>
+                <FileText className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                <span className="truncate max-w-[200px] font-medium">{file.name}</span>
               </div>
             ))}
           </div>
         )}
 
-        <span className="text-xs text-gray-400">
+        <span className={cn('text-xs text-[var(--chat-timestamp-text)]', isUser && 'mr-1')}>
           {message.timestamp
             ? new Date(message.timestamp).toLocaleTimeString('de-DE', {
                 hour: '2-digit',

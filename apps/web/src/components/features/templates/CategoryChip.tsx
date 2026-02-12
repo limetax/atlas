@@ -24,8 +24,8 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({ category, isActive, 
       className={cn(
         'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer',
         isActive
-          ? 'bg-orange-500 text-white shadow-sm hover:bg-orange-600'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+          ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
       )}
     >
       {label}
