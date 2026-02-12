@@ -1,15 +1,18 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+
+import { Paperclip, Send, StopCircle } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
-import { Message, ChatContext } from '@atlas/shared';
-import { ChatMessage } from './ChatMessage';
+
 import { Button } from '@/components/ui/button';
-import { Send, StopCircle, Paperclip } from 'lucide-react';
-import { ChatEmptyState } from './ChatEmptyState';
-import { ContextToggles } from './context/ContextToggles';
-import { ChatStreamingIndicator } from './ChatStreamingIndicator';
-import { ChatScrollAnchor } from './ChatScrollAnchor';
-import { DropZoneOverlay, PendingFileList } from './FileUpload';
 import { isValidPdfFile } from '@/utils/validators';
+import { ChatContext, Message } from '@atlas/shared';
+
+import { ChatEmptyState } from './ChatEmptyState';
+import { ChatMessage } from './ChatMessage';
+import { ChatScrollAnchor } from './ChatScrollAnchor';
+import { ChatStreamingIndicator } from './ChatStreamingIndicator';
+import { ContextToggles } from './context/ContextToggles';
+import { DropZoneOverlay, PendingFileList } from './FileUpload';
 
 export type ToolCallState = {
   name: string;
@@ -258,35 +261,28 @@ const InputArea = ({
             onChange={handleFileInputChange}
           />
 
-          <div className="flex-1 relative">
-            <TextareaAutosize
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Stellen Sie Ihre steuerrechtliche Frage..."
-              disabled={isLoading}
-              minRows={1}
-              maxRows={8}
-              className="w-full px-4 py-3 text-sm bg-background border border-input rounded-xl outline-none transition-all duration-150 resize-none focus:border-primary focus:ring-4 focus:ring-ring/10 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                lineHeight: '1.5',
-                transition: 'height 0.3s ease-out',
-              }}
-            />
-            <div className="absolute bottom-2 right-2 text-xs text-muted-foreground pointer-events-none">
-              {inputValue.length > 0 && (
-                <span className="bg-background px-1 rounded">Shift+Enter für neue Zeile</span>
-              )}
-            </div>
-          </div>
+          <TextareaAutosize
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Stellen Sie Ihre steuerrechtliche Frage..."
+            disabled={isLoading}
+            minRows={1}
+            maxRows={8}
+            className="flex-1 px-4 py-3 text-sm bg-background border border-input rounded-xl outline-none transition-all duration-150 resize-none focus:border-primary focus:ring-4 focus:ring-ring/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              lineHeight: '1.5',
+              transition: 'height 0.3s ease-out',
+            }}
+          />
           {isLoading ? (
             <Button
               type="button"
               variant="outline"
-              size="default"
+              size="icon"
               onClick={onCancelRequest}
-              className="border-destructive/50 text-destructive hover:bg-error-bg hover:border-destructive"
+              className="h-10 w-10 border-destructive/50 text-destructive hover:bg-error-bg hover:border-destructive flex-shrink-0"
             >
               <StopCircle className="w-5 h-5" />
             </Button>
@@ -300,9 +296,12 @@ const InputArea = ({
         {/* Pending files (not yet sent) */}
         <PendingFileList pendingFiles={pendingFiles} onRemovePending={onRemovePendingFile} />
 
-        {/* Context toggles */}
-        <div className="mt-2">
+        {/* Context toggles and hint */}
+        <div className="flex items-center justify-between mt-2">
           <ContextToggles context={context} onContextChange={onContextChange} />
+          {inputValue.length > 0 && (
+            <span className="text-xs text-muted-foreground">Shift+Enter für neue Zeile</span>
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground mt-2 text-center">
