@@ -125,7 +125,7 @@ cp /Users/cdansard/university/atlas/apps/api/.env apps/api/.env
 - Do not create documentation files unless explicitly asked
 - Do not update Linear issues unless explicitly asked
 - Use established packages (like TanStack, NestJS, tRPC, Zod, Radix, Lucide) or suggest widely adapted packages if applicable
-- Check official docs before implementing features
+- Check official docs before implementing features — use Context7 MCP to fetch up-to-date library documentation when available
 - Keep package dependencies explicit, use `workspace:*` for internal deps
 - Node >=20, pnpm 9.15.0
 
