@@ -3,6 +3,7 @@ import React from 'react';
 import {
   EllipsisVertical,
   FileText,
+  LayoutGrid,
   MessageSquare,
   Pencil,
   Plus,
@@ -76,11 +77,19 @@ const Navigation = () => {
   const navItems = [
     {
       to: '/',
+      label: 'Dashboard',
+      icon: LayoutGrid,
+      badge: null,
+      // Active for / and /tools/* routes
+      isActiveCheck: (path: string) => path === '/' || path.startsWith('/tools/'),
+    },
+    {
+      to: '/chat',
       label: 'Chat',
       icon: MessageSquare,
       badge: null,
-      // Active for / and /chat/* routes
-      isActiveCheck: (path: string) => path === '/' || path.startsWith('/chat/'),
+      // Active for /chat and /chat/* routes
+      isActiveCheck: (path: string) => path === '/chat' || path.startsWith('/chat/'),
     },
     {
       to: '/assistants',
@@ -114,7 +123,7 @@ const Navigation = () => {
               to={item.to}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
                 isActive
-                  ? 'bg-accent text-accent-foreground border-orange-200'
+                  ? 'bg-accent text-accent-foreground border-accent-foreground/20'
                   : 'text-foreground border-transparent hover:bg-muted'
               }`}
             >
@@ -219,7 +228,7 @@ const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: Sessio
   return (
     <div
       className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${
-        isActive ? 'bg-accent border-orange-200' : 'border-transparent hover:bg-muted'
+        isActive ? 'bg-accent border-accent-foreground/20' : 'border-transparent hover:bg-muted'
       }`}
       onClick={onSelect}
     >

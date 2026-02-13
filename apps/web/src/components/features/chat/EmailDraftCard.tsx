@@ -124,7 +124,7 @@ export function EmailDraftCard({ content }: EmailDraftCardProps): React.ReactEle
   };
 
   return (
-    <Card className="border-orange-200 bg-accent/50 shadow-sm my-3">
+    <Card className="border-accent-foreground/20 bg-accent/50 shadow-sm my-3">
       <div className="p-4 space-y-3">
         {/* Header with label */}
         <div className="flex items-center justify-between">

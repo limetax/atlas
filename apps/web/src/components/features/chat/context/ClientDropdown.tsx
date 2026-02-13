@@ -125,7 +125,7 @@ const ClientDropdownTrigger = React.forwardRef<
         isLoading && 'opacity-50 cursor-wait',
         hasError && 'opacity-50 cursor-not-allowed',
         isSelected
-          ? 'bg-accent border-orange-300 text-accent-foreground'
+          ? 'bg-accent border-accent-foreground/20 text-accent-foreground'
           : 'bg-card border-input text-foreground hover:bg-muted'
       )}
       {...props}

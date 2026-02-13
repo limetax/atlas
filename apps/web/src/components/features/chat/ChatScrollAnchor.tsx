@@ -47,7 +47,7 @@ export const ChatScrollAnchor: React.FC<ChatScrollAnchorProps> = ({
             variant="secondary"
             className={cn(
               'shadow-lg rounded-full px-3',
-              'bg-white border border-gray-200 hover:bg-gray-50',
+              'bg-card border border-border hover:bg-muted',
               'transition-all duration-200'
             )}
           >

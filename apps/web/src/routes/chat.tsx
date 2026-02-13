@@ -1,9 +1,9 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { ToolsDashboardPage } from '@/pages/ToolsDashboardPage';
+import { ChatPage } from '@/pages/ChatPage';
 import { STORAGE_KEYS, ROUTES } from '@/constants';
 import { isTokenExpired } from '@/utils/validators';
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/chat')({
   beforeLoad: () => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
@@ -20,5 +20,5 @@ export const Route = createFileRoute('/')({
 
     // Token exists and is not expired - allow access
   },
-  component: ToolsDashboardPage,
+  component: ChatPage,
 });

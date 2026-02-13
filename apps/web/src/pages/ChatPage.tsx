@@ -282,8 +282,8 @@ export const ChatPage: React.FC = () => {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Chat nicht gefunden</p>
-          <button onClick={() => navigate({ to: '/' })} className="text-orange-600 hover:underline">
+          <p className="text-muted-foreground mb-4">Chat nicht gefunden</p>
+          <button onClick={() => navigate({ to: '/' })} className="text-primary hover:underline">
             Zurück zur Startseite
           </button>
         </div>

@@ -63,8 +63,8 @@ export const AssistantsPage: React.FC = () => {
 
 const PageHeader = () => (
   <div className="mb-8">
-    <h1 className="text-2xl font-bold text-gray-900 mb-2">Vorlagen</h1>
-    <p className="text-gray-600">Nutzen Sie Prompt-Vorlagen für Ihre Steuerkanzlei.</p>
+    <h1 className="text-2xl font-bold text-foreground mb-2">Vorlagen</h1>
+    <p className="text-muted-foreground">Nutzen Sie Prompt-Vorlagen für Ihre Steuerkanzlei.</p>
   </div>
 );
 
@@ -106,7 +106,7 @@ const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onInsertTemplate })
       {/* Search Bar */}
       <div className="mb-6">
         <div className="relative max-w-2xl">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
           <Input
             type="text"
             placeholder="Vorlagen durchsuchen..."
@@ -140,7 +140,7 @@ const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onInsertTemplate })
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             Keine Vorlagen gefunden. Versuchen Sie eine andere Suche oder Kategorie.
           </p>
         </div>

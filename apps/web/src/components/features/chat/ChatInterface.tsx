@@ -266,7 +266,7 @@ const InputArea = ({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Stellen Sie Ihre steuerrechtliche Frage..."
+            placeholder="Geben Sie Limetax App eine Aufgabe oder stellen Sie eine Frage"
             disabled={isLoading}
             minRows={1}
             maxRows={8}
@@ -305,7 +305,7 @@ const InputArea = ({
         </div>
 
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          limetaxIQ kann Fehler machen. Überprüfen Sie wichtige Informationen.
+          Limetax App kann Fehler machen. Überprüfen Sie wichtige Informationen.
         </p>
       </form>
     </div>

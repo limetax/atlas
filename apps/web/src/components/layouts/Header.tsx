@@ -23,16 +23,16 @@ const HeaderLogo = () => {
       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
         <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
       </div>
-      <h1 className="text-lg font-bold text-foreground">limetaxIQ</h1>
+      <h1 className="text-lg font-bold text-foreground">Limetax App</h1>
     </div>
   );
 };
 
-interface HeaderActionsProps {
+type HeaderActionsProps = {
   user: SupabaseUser | null | undefined;
   advisor: Advisor | null | undefined;
   isLoading: boolean;
-}
+};
 
 const HeaderActions = ({ user, advisor, isLoading }: HeaderActionsProps) => {
   return (

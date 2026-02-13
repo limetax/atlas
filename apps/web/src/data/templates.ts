@@ -7,6 +7,22 @@
 import { Template } from '@/types/template';
 
 export const TEMPLATES: Template[] = [
+  // Recherche & Gestaltung - 1 template
+  {
+    id: 'steuerrechtliche-recherche',
+    title: 'Steuerrechtliche Recherche',
+    description: 'Recherchiere komplexe steuerrechtliche Fragen mit Quellenangaben',
+    category: 'fachliche-unterstuetzung',
+    content: `Ich habe eine steuerrechtliche Frage und benötige eine fundierte Recherche mit Quellenangaben.
+
+**Meine Frage:**
+[Ihre steuerrechtliche Frage hier einfügen]
+
+**Kontext/Sachverhalt:**
+[Relevante Details zum Fall, z.B. Mandantentyp, Rechtsform, besondere Umstände]
+
+Bitte prüfe relevante Gesetzestexte, Rechtsprechung und Verwaltungsanweisungen. Gib klare Handlungsempfehlungen mit Quellenangaben.`,
+  },
   // Mandantenkommunikation (Client Communication) - 4 templates
   {
     id: 'mandanten-email',
