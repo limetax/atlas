@@ -250,7 +250,7 @@ const InputArea = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Geben Sie LimetaxOS eine Aufgabe oder stellen Sie eine Frage"
+              placeholder="Geben Sie Limetax eine Aufgabe oder stellen Sie eine Frage"
               disabled={isLoading}
               minRows={2}
               maxRows={8}
@@ -323,7 +323,7 @@ const InputArea = ({
 
         {/* Disclaimer text */}
         <p className="text-[11px] text-muted-foreground font-medium mt-4 text-center">
-          LimetaxOS kann Fehler machen. Überprüfen Sie wichtige Informationen.
+          Limetax App kann Fehler machen. Überprüfen Sie wichtige Informationen.
         </p>
       </form>
     </div>

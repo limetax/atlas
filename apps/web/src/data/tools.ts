@@ -1,17 +1,17 @@
 /**
  * Tool Data
- * Static tool definitions for LimetaxOS dashboard
+ * Static tool definitions for Limetax App dashboard
  * Each tool represents a specialized AI-powered capability
  */
 
 import {
-  Search,
-  GitCompare,
   FileCheck,
-  Lightbulb,
-  FileText,
   FileSpreadsheet,
+  FileText,
+  GitCompare,
+  Lightbulb,
   type LucideIcon,
+  Search,
 } from 'lucide-react';
 
 export const TOOL_STATUSES = ['active', 'beta', 'coming-soon', 'offline'] as const;

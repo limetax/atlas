@@ -45,7 +45,7 @@ const LoginCard = () => {
 const Logo = () => {
   return (
     <div className="flex flex-col items-center gap-2 mb-6">
-      <img src="/icon.png" alt="LimetaxOS logo" className="w-16 h-16 object-contain" />
+      <img src="/icon.png" alt="Limetax App logo" className="w-16 h-16 object-contain" />
       <h1
         className="text-3xl font-bold text-foreground"
         style={{ fontFamily: 'var(--font-display)' }}
