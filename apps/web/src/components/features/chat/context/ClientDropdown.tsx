@@ -72,7 +72,6 @@ export const ClientDropdown = ({ selected, onChange }: ClientDropdownProps) => {
           ref={searchInputRef}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          isOpen={open}
         />
 
         <DropdownMenuSeparator />
@@ -81,7 +80,7 @@ export const ClientDropdown = ({ selected, onChange }: ClientDropdownProps) => {
           <>
             <DropdownMenuItem
               onSelect={() => onChange(undefined)}
-              onMouseDown={(e) => e.preventDefault()}
+              onPointerDown={(e) => e.preventDefault()}
               className="transition-colors duration-150 cursor-pointer"
             >
               <span className="text-sm text-muted-foreground">Kein Mandant</span>
@@ -149,11 +148,10 @@ ClientDropdownTrigger.displayName = 'ClientDropdownTrigger';
 type ClientSearchInputProps = {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  isOpen: boolean;
 };
 
 const ClientSearchInput = React.forwardRef<HTMLInputElement, ClientSearchInputProps>(
-  ({ searchTerm, onSearchChange, isOpen }, ref) => {
+  ({ searchTerm, onSearchChange }, ref) => {
     return (
       <div className="px-2 py-1.5 mb-1">
         <div className="relative">
@@ -172,13 +170,6 @@ const ClientSearchInput = React.forwardRef<HTMLInputElement, ClientSearchInputPr
             className="w-full pl-8 pr-3 py-1.5 text-sm h-8"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
-            onBlur={(e) => {
-              // Refocus if blur was caused by hovering menu items
-              if (isOpen && e.relatedTarget?.getAttribute('role') === 'menuitem') {
-                const inputRef = ref as React.RefObject<HTMLInputElement>;
-                setTimeout(() => inputRef.current?.focus(), 0);
-              }
-            }}
             autoFocus
           />
         </div>
@@ -243,7 +234,7 @@ const ClientListItem = ({ client, isSelected, onSelect }: ClientListItemProps) =
   return (
     <DropdownMenuItem
       onSelect={() => onSelect(client.clientId)}
-      onMouseDown={(e) => e.preventDefault()}
+      onPointerDown={(e) => e.preventDefault()}
       className={cn('transition-colors duration-150 cursor-pointer', isSelected && 'bg-accent')}
     >
       <div className="flex flex-col">

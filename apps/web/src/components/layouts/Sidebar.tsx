@@ -1,77 +1,34 @@
 import React from 'react';
 
-import {
-  EllipsisVertical,
-  FileText,
-  LayoutGrid,
-  MessageSquare,
-  Pencil,
-  Plus,
-  Trash2,
-  Workflow,
-} from 'lucide-react';
+import { FileText, LayoutGrid, MessageSquare, Settings, Workflow } from 'lucide-react';
 
+import { UserMenu } from '@/components/features/auth/UserMenu';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChatSession } from '@atlas/shared';
+import { useAuth } from '@/hooks/useAuth';
 import { Link, useLocation } from '@tanstack/react-router';
 
-type SidebarProps = {
-  sessions: ChatSession[];
-  currentSessionId?: string;
-  onSessionSelect: (sessionId: string) => void;
-  onNewChat: () => void;
-  onDeleteSession?: (sessionId: string) => void;
-  onRenameSession?: (sessionId: string) => void;
-};
-
-export const Sidebar: React.FC<SidebarProps> = ({
-  sessions,
-  currentSessionId,
-  onSessionSelect,
-  onNewChat,
-  onDeleteSession,
-  onRenameSession,
-}) => {
+export const Sidebar: React.FC = () => {
   return (
-    <aside className="w-72 bg-card border-r border-border flex flex-col h-full overflow-hidden">
-      <NewChatButton onNewChat={onNewChat} />
+    <aside className="w-[260px] bg-card border-r border-border flex flex-col h-full overflow-hidden">
+      {/* Top section - Logo */}
+      <div className="flex-shrink-0 p-4">
+        <SidebarLogo />
+      </div>
 
-      <Navigation />
+      {/* Middle section - Navigation (scrollable) */}
+      <div className="flex-1 overflow-y-auto">
+        <Navigation />
+      </div>
 
-      <ChatHistory
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSessionSelect={onSessionSelect}
-        onDeleteSession={onDeleteSession}
-        onRenameSession={onRenameSession}
-      />
+      {/* Bottom section - Settings + UserMenu */}
+      <div className="flex-shrink-0 p-4">
+        <SidebarActions />
+      </div>
     </aside>
   );
 };
 
-type NewChatButtonProps = {
-  onNewChat: () => void;
-};
-
-const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
-  return (
-    <div className="flex-shrink-0 p-4 border-b border-border">
-      <Button variant="outline" className="w-full" onClick={onNewChat}>
-        <Plus className="w-4 h-4 mr-2" />
-        Neuer Chat
-      </Button>
-    </div>
-  );
-};
-
-const Navigation = () => {
+const Navigation = (): React.ReactElement => {
   const location = useLocation();
 
   const navItems = [
@@ -81,7 +38,7 @@ const Navigation = () => {
       icon: LayoutGrid,
       badge: null,
       // Active for / and /tools/* routes
-      isActiveCheck: (path: string) => path === '/' || path.startsWith('/tools/'),
+      isActiveCheck: (path: string): boolean => path === '/' || path.startsWith('/tools/'),
     },
     {
       to: '/chat',
@@ -89,29 +46,26 @@ const Navigation = () => {
       icon: MessageSquare,
       badge: null,
       // Active for /chat and /chat/* routes
-      isActiveCheck: (path: string) => path === '/chat' || path.startsWith('/chat/'),
+      isActiveCheck: (path: string): boolean => path === '/chat' || path.startsWith('/chat/'),
     },
     {
       to: '/assistants',
       label: 'Vorlagen',
       icon: FileText,
       badge: null,
-      isActiveCheck: (path: string) => path.startsWith('/assistants'),
+      isActiveCheck: (path: string): boolean => path.startsWith('/assistants'),
     },
     {
       to: '/workflows',
       label: 'Workflows',
       icon: Workflow,
       badge: 'bald',
-      isActiveCheck: (path: string) => path.startsWith('/workflows'),
+      isActiveCheck: (path: string): boolean => path.startsWith('/workflows'),
     },
   ];
 
   return (
-    <div className="flex-shrink-0 p-3 border-b border-border">
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-        Navigation
-      </h2>
+    <div className="p-3">
       <nav className="space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -140,134 +94,30 @@ const Navigation = () => {
   );
 };
 
-type ChatHistoryProps = {
-  sessions: ChatSession[];
-  currentSessionId?: string;
-  onSessionSelect: (sessionId: string) => void;
-  onDeleteSession?: (sessionId: string) => void;
-  onRenameSession?: (sessionId: string) => void;
-};
-
-const ChatHistory = ({
-  sessions,
-  currentSessionId,
-  onSessionSelect,
-  onDeleteSession,
-  onRenameSession,
-}: ChatHistoryProps) => {
+const SidebarLogo = (): React.ReactElement => {
   return (
-    <div className="flex-1 overflow-y-auto p-3 min-h-0">
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">
-        Verlauf
-      </h2>
-
-      {sessions.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <SessionList
-          sessions={sessions}
-          currentSessionId={currentSessionId}
-          onSessionSelect={onSessionSelect}
-          onDeleteSession={onDeleteSession}
-          onRenameSession={onRenameSession}
-        />
-      )}
-    </div>
-  );
-};
-
-const EmptyState = () => {
-  return (
-    <div className="text-center py-8 px-4">
-      <MessageSquare className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-      <p className="text-sm text-muted-foreground">Noch keine Chats</p>
-    </div>
-  );
-};
-
-type SessionListProps = {
-  sessions: ChatSession[];
-  currentSessionId?: string;
-  onSessionSelect: (sessionId: string) => void;
-  onDeleteSession?: (sessionId: string) => void;
-  onRenameSession?: (sessionId: string) => void;
-};
-
-const SessionList = ({
-  sessions,
-  currentSessionId,
-  onSessionSelect,
-  onDeleteSession,
-  onRenameSession,
-}: SessionListProps) => {
-  return (
-    <div className="space-y-1">
-      {sessions.map((session) => (
-        <SessionItem
-          key={session.id}
-          session={session}
-          isActive={currentSessionId === session.id}
-          onSelect={() => onSessionSelect(session.id)}
-          onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
-          onRename={onRenameSession ? () => onRenameSession(session.id) : undefined}
-        />
-      ))}
-    </div>
-  );
-};
-
-type SessionItemProps = {
-  session: ChatSession;
-  isActive: boolean;
-  onSelect: () => void;
-  onDelete?: () => void;
-  onRename?: () => void;
-};
-
-const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: SessionItemProps) => {
-  return (
-    <div
-      className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${
-        isActive ? 'bg-accent border-accent-foreground/20' : 'border-transparent hover:bg-muted'
-      }`}
-      onClick={onSelect}
+    <Link
+      to="/"
+      className="flex items-center gap-3 hover:bg-muted rounded-lg p-2 transition-colors"
     >
-      <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{session.title}</p>
-        <p className="text-xs text-muted-foreground">
-          {new Date(session.updatedAt).toLocaleDateString('de-DE')}
-        </p>
+      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
+        <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
       </div>
-      {(onDelete ?? onRename) && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 p-1 hover:bg-muted rounded transition-all"
-            >
-              <EllipsisVertical className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="start">
-            {onRename && (
-              <DropdownMenuItem onClick={onRename}>
-                <Pencil className="w-4 h-4" />
-                Umbenennen
-              </DropdownMenuItem>
-            )}
-            {onRename && onDelete && <DropdownMenuSeparator />}
-            {onDelete && (
-              <DropdownMenuItem onClick={onDelete} className="text-destructive">
-                <Trash2 className="w-4 h-4" />
-                Löschen
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <h1 className="text-lg font-bold text-foreground">Limetax App</h1>
+    </Link>
+  );
+};
+
+const SidebarActions = (): React.ReactElement => {
+  const { user, advisor, isLoading } = useAuth();
+
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <Button variant="ghost" size="sm" className="p-2" aria-label="Einstellungen">
+        <Settings className="w-5 h-5" />
+      </Button>
+
+      {!isLoading && user && <UserMenu user={user} advisor={advisor} />}
     </div>
   );
 };

@@ -62,7 +62,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" side="right" className="w-64">
         {/* User Info Header */}
         <div className="px-3 py-3 border-b border-border">
           <div className="flex items-center gap-3">

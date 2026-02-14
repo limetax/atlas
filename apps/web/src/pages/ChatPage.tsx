@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
-import { Header } from '@/components/layouts/Header';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { ChatInterface } from '@/components/features/chat/ChatInterface';
 import { ChatHeader } from '@/components/features/chat/ChatHeader';
-import { RenameDialog } from '@/components/features/chat/RenameDialog';
 import { Message, ChatContext } from '@atlas/shared';
 import { streamChatMessage } from '@/lib/chat-api';
 import { useChatSessions } from './useChatSessions';
@@ -32,19 +30,14 @@ export const ChatPage: React.FC = () => {
     messages,
     isFetchingSessions,
     handleNewChat,
-    handleSessionSelect,
     handleDeleteSession,
     updateCurrentSessionMessages,
     setCurrentSessionById,
     setCurrentSessionId,
-    updateSessionTitle,
     updateSessionContext,
     invalidateAfterStream,
   } = useChatSessions();
 
-  const [renameDialog, setRenameDialog] = useState<{ sessionId: string; title: string } | null>(
-    null
-  );
   const [isLoading, setIsLoading] = useState(false);
   const [activeToolCalls, setActiveToolCalls] = useState<
     Array<{ name: string; status: 'started' | 'completed' }>
@@ -68,31 +61,18 @@ export const ChatPage: React.FC = () => {
         setCurrentSessionById(chatId);
       }
     } else {
-      // URL is "/" (new chat mode) — ensure hook state is cleared
+      // URL is "/chat" (new chat mode) — ensure hook state is cleared
       if (currentSessionId) {
         handleNewChat();
       }
+      // Clear local state when entering new chat mode
+      setPendingContext({});
+      setPendingFiles([]);
     }
     // Only react to URL changes. The hook's currentSessionId is intentionally
     // excluded to avoid a feedback loop where hook state re-triggers this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
-
-  // Clear state eagerly + navigate. Both the direct call and the useEffect([chatId])
-  // clear state, but the direct call prevents a flash of stale content on the first render.
-  const handleNewChatWithNavigation = () => {
-    handleNewChat();
-    setPendingContext({});
-    setPendingFiles([]);
-    navigate({ to: '/' });
-  };
-
-  // Select session eagerly + navigate (same reasoning as above)
-  const handleSessionSelectWithNavigation = (sessionId: string) => {
-    handleSessionSelect(sessionId);
-    setPendingFiles([]);
-    navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
-  };
 
   const handleContextChange = useCallback(
     (newContext: ChatContext) => {
@@ -115,17 +95,34 @@ export const ChatPage: React.FC = () => {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleRenameSession = (sessionId: string) => {
-    const session = sessions.find((s) => s.id === sessionId);
-    if (session) {
-      setRenameDialog({ sessionId, title: session.title });
-    }
+  const handleDeleteCurrentChat = (): void => {
+    if (!currentSessionId) return;
+
+    // Delete the session
+    handleDeleteSession(currentSessionId);
+
+    // Clear local state
+    updateCurrentSessionMessages([]);
+    setPendingFiles([]);
+    setIsLoading(false);
+
+    // Navigate to new chat
+    navigate({ to: '/chat' });
   };
 
-  const handleRenameConfirm = (newTitle: string) => {
-    if (renameDialog) {
-      updateSessionTitle(renameDialog.sessionId, newTitle);
+  const handleNewChatClick = (): void => {
+    // Clear session state
+    handleNewChat();
+
+    // Clear local state
+    setPendingContext({});
+    setPendingFiles([]);
+
+    // Navigate to /chat if not already there
+    if (chatId) {
+      navigate({ to: '/chat' });
     }
+    // If already on /chat, state is cleared but no navigation needed
   };
 
   const handleSendMessage = async (content: string) => {
@@ -293,25 +290,10 @@ export const ChatPage: React.FC = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSessionSelect={handleSessionSelectWithNavigation}
-        onNewChat={handleNewChatWithNavigation}
-        onDeleteSession={handleDeleteSession}
-        onRenameSession={handleRenameSession}
-      />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-
-        {currentSession && (
-          <ChatHeader
-            title={currentSession.title}
-            onRename={() => handleRenameSession(currentSession.id)}
-            onDelete={() => handleDeleteSession(currentSession.id)}
-          />
-        )}
+        <ChatHeader onDeleteCurrent={handleDeleteCurrentChat} onNewChat={handleNewChatClick} />
 
         <ChatInterface
           messages={messages}
@@ -327,13 +309,6 @@ export const ChatPage: React.FC = () => {
           onRemovePendingFile={handleRemovePendingFile}
         />
       </div>
-
-      <RenameDialog
-        isOpen={renameDialog !== null}
-        onClose={() => setRenameDialog(null)}
-        currentTitle={renameDialog?.title ?? ''}
-        onRename={handleRenameConfirm}
-      />
     </div>
   );
 };

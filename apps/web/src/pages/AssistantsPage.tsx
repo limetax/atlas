@@ -1,20 +1,21 @@
 import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
+
 import { Search } from 'lucide-react';
-import { Header } from '@/components/layouts/Header';
+
+import { CategoryChip } from '@/components/features/templates/CategoryChip';
+import { TemplateCard } from '@/components/features/templates/TemplateCard';
 import { Sidebar } from '@/components/layouts/Sidebar';
 import { Input } from '@/components/ui/input';
-import { useChatSessions } from './useChatSessions';
 import { TEMPLATES } from '@/data/templates';
 import { TEMPLATE_CATEGORIES, TemplateCategory } from '@/types/template';
-import { TemplateCard } from '@/components/features/templates/TemplateCard';
-import { CategoryChip } from '@/components/features/templates/CategoryChip';
+import { useNavigate } from '@tanstack/react-router';
+
+import { useChatSessions } from './useChatSessions';
 
 export const AssistantsPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const { sessions, currentSessionId, handleNewChat, handleSessionSelect, handleDeleteSession } =
-    useChatSessions();
+  const { handleNewChat } = useChatSessions();
 
   // Handle template insertion - create new chat and navigate with template ID
   const handleInsertTemplate = (templateId: string) => {
@@ -26,30 +27,11 @@ export const AssistantsPage: React.FC = () => {
     });
   };
 
-  // Handle new chat - navigates to new chat
-  const handleNewChatWithNavigation = () => {
-    const newSessionId = handleNewChat();
-    navigate({ to: '/chat/$chatId', params: { chatId: newSessionId } });
-  };
-
-  // Handle session select - navigates to chat
-  const handleSessionSelectWithNavigation = (sessionId: string) => {
-    handleSessionSelect(sessionId);
-    navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
-  };
-
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSessionSelect={handleSessionSelectWithNavigation}
-        onNewChat={handleNewChatWithNavigation}
-        onDeleteSession={handleDeleteSession}
-      />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
         <main className="flex-1 overflow-y-auto bg-background p-6">
           <div className="max-w-6xl mx-auto">
             <PageHeader />
