@@ -119,17 +119,17 @@ const ClientDropdownTrigger = React.forwardRef<
       type="button"
       disabled={isLoading}
       className={cn(
-        'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm',
+        'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium',
         'w-[160px] transition-colors duration-200',
         isLoading && 'opacity-50 cursor-wait',
         hasError && 'opacity-50 cursor-not-allowed',
         isSelected
-          ? 'bg-accent border-accent-foreground/20 text-accent-foreground'
-          : 'bg-card border-input text-foreground hover:bg-muted'
+          ? 'bg-accent text-accent-foreground'
+          : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
       )}
       {...props}
     >
-      <Users className="w-4 h-4 flex-shrink-0" />
+      <Users className={cn('w-4 h-4 flex-shrink-0', isSelected && 'text-primary')} />
       <span className="truncate flex-1 text-left">
         {isLoading ? 'Lädt...' : hasError ? 'Fehler' : (selectedClient?.clientName ?? 'Mandant')}
       </span>
