@@ -1,10 +1,10 @@
-import React from 'react';
+import { type ReactNode } from 'react';
 
 import { Server, Shield } from 'lucide-react';
 
 import { LoginForm } from './LoginForm';
 
-export const LoginView: React.FC = () => {
+export const LoginView = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-[var(--muted)]">
       <GridBackground />
@@ -73,10 +73,10 @@ const FooterBadges = () => {
   );
 };
 
-interface BadgeProps {
-  icon: React.ReactNode;
+type BadgeProps = {
+  icon: ReactNode;
   text: string;
-}
+};
 
 const Badge = ({ icon, text }: BadgeProps) => {
   return (

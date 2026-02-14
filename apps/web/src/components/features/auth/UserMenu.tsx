@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { Building2, ChevronDown, LogOut, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,12 +17,12 @@ import type { Advisor } from '@atlas/shared';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useNavigate } from '@tanstack/react-router';
 
-interface UserMenuProps {
+type UserMenuProps = {
   user: SupabaseUser;
   advisor?: Advisor | null;
-}
+};
 
-export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
+export const UserMenu = ({ user, advisor }: UserMenuProps) => {
   const navigate = useNavigate({ from: ROUTES.HOME });
   const { removeToken } = useAuthToken();
 

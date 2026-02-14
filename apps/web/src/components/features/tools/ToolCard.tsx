@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { type Tool } from '@/data/tools';
@@ -9,7 +7,7 @@ type ToolCardProps = {
   tool: Tool;
 };
 
-export const ToolCard: React.FC<ToolCardProps> = ({ tool }) => {
+export const ToolCard = ({ tool }: ToolCardProps) => {
   const navigate = useNavigate();
 
   const handleStart = () => {

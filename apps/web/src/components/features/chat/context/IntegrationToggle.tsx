@@ -1,5 +1,5 @@
-import React from 'react';
 import { Link } from 'lucide-react';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -8,7 +8,7 @@ type IntegrationToggleProps = {
   onChange: (enabled: boolean) => void;
 };
 
-export const IntegrationToggle: React.FC<IntegrationToggleProps> = ({ enabled, onChange }) => {
+export const IntegrationToggle = ({ enabled, onChange }: IntegrationToggleProps) => {
   return (
     <TooltipProvider>
       <Tooltip>

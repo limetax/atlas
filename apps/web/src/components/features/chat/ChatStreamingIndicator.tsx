@@ -1,18 +1,19 @@
-import React from 'react';
-import { Loader2, Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+
+import type { ToolCallState } from '@/hooks/useChatStream';
 import { cn } from '@/lib/utils';
+
 import { getToolLabel } from './tool-labels';
-import type { ToolCallState } from './ChatInterface';
 
 type ChatStreamingIndicatorProps = {
   className?: string;
   activeToolCalls?: ToolCallState[];
 };
 
-export const ChatStreamingIndicator: React.FC<ChatStreamingIndicatorProps> = ({
+export const ChatStreamingIndicator = ({
   className,
   activeToolCalls = [],
-}) => {
+}: ChatStreamingIndicatorProps) => {
   return (
     <div className={cn('flex gap-4 justify-start', className)}>
       {/* Bouncing dots avatar */}

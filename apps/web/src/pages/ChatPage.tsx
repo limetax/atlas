@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
-import { Sidebar } from '@/components/layouts/Sidebar';
-import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { ChatHeader } from '@/components/features/chat/ChatHeader';
-import { Message, ChatContext } from '@atlas/shared';
-import { streamChatMessage } from '@/lib/chat-api';
-import { useChatSessions } from './useChatSessions';
-import { logger } from '@/utils/logger';
-import { generateMessageId } from '@/utils/id-generator';
-import { TEMPLATES } from '@/data/templates';
+import { useCallback, useEffect, useState } from 'react';
 
-export const ChatPage: React.FC = () => {
-  // Since ChatPage is shared between '/' and '/chat/$chatId', use strict: false
+import { ChatHeader } from '@/components/features/chat/ChatHeader';
+import { ChatInterface } from '@/components/features/chat/ChatInterface';
+import { TEMPLATES } from '@/data/templates';
+import { useChatStream } from '@/hooks/useChatStream';
+import { ChatContext } from '@atlas/shared';
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
+
+import { useChatSessions } from './useChatSessions';
+
+export const ChatPage = () => {
+  // Since ChatPage is shared between '/chat' and '/chat/$chatId', use strict: false
   const params = useParams({ strict: false });
   const chatId = params.chatId;
   const navigate = useNavigate();
@@ -38,12 +37,6 @@ export const ChatPage: React.FC = () => {
     invalidateAfterStream,
   } = useChatSessions();
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeToolCalls, setActiveToolCalls] = useState<
-    Array<{ name: string; status: 'started' | 'completed' }>
-  >([]);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
   // ─── Pending files (selected/dropped but not yet sent) ──────────────────
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
@@ -52,20 +45,33 @@ export const ChatPage: React.FC = () => {
   const [pendingContext, setPendingContext] = useState<ChatContext>({});
   const chatContext = currentSession?.context ?? pendingContext;
 
+  // ─── Streaming ──────────────────────────────────────────────────────────
+  const { isLoading, activeToolCalls, handleSendMessage, handleCancelRequest } = useChatStream({
+    messages,
+    currentSessionId,
+    chatContext,
+    updateCurrentSessionMessages,
+    setCurrentSessionId,
+    invalidateAfterStream,
+    onChatCreated: (newChatId) => {
+      navigate({ to: '/chat/$chatId', params: { chatId: newChatId } });
+    },
+    onContextPersisted: () => {
+      setPendingContext({});
+    },
+  });
+
   // Sync URL → hook state. The URL is the source of truth for which chat is active.
   // This only runs when the URL chatId changes (route navigation).
   useEffect(() => {
     if (chatId) {
-      // URL has a chatId — ensure the hook is pointing to this session
       if (chatId !== currentSessionId) {
         setCurrentSessionById(chatId);
       }
     } else {
-      // URL is "/chat" (new chat mode) — ensure hook state is cleared
       if (currentSessionId) {
         handleNewChat();
       }
-      // Clear local state when entering new chat mode
       setPendingContext({});
       setPendingFiles([]);
     }
@@ -74,12 +80,12 @@ export const ChatPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
 
+  // ─── Context ────────────────────────────────────────────────────────────
   const handleContextChange = useCallback(
     (newContext: ChatContext) => {
       if (currentSessionId) {
         updateSessionContext(currentSessionId, newContext);
       } else {
-        // New chat mode — store locally until first message creates the session
         setPendingContext(newContext);
       }
     },
@@ -95,179 +101,36 @@ export const ChatPage: React.FC = () => {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  // ─── Chat actions ───────────────────────────────────────────────────────
   const handleDeleteCurrentChat = (): void => {
     if (!currentSessionId) return;
 
-    // Delete the session
     handleDeleteSession(currentSessionId);
-
-    // Clear local state
     updateCurrentSessionMessages([]);
     setPendingFiles([]);
-    setIsLoading(false);
-
-    // Navigate to new chat
     navigate({ to: '/chat' });
   };
 
   const handleNewChatClick = (): void => {
-    // Clear session state
     handleNewChat();
-
-    // Clear local state
     setPendingContext({});
     setPendingFiles([]);
 
-    // Navigate to /chat if not already there
     if (chatId) {
       navigate({ to: '/chat' });
     }
-    // If already on /chat, state is cleared but no navigation needed
   };
 
-  const handleSendMessage = async (content: string) => {
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
+  const onSendMessage = useCallback(
+    (content: string) => {
+      const filesToSend = [...pendingFiles];
+      setPendingFiles([]);
+      handleSendMessage(content, filesToSend);
+    },
+    [pendingFiles, handleSendMessage]
+  );
 
-    // Capture pending files and clear immediately — files are now attached to the message
-    const filesToSend = [...pendingFiles];
-    setPendingFiles([]);
-
-    const userMessage: Message = {
-      id: generateMessageId(),
-      role: 'user',
-      content,
-      attachedFiles:
-        filesToSend.length > 0
-          ? filesToSend.map((f) => ({ name: f.name, size: f.size }))
-          : undefined,
-      timestamp: new Date(),
-    };
-
-    const updatedMessages = [...messages, userMessage];
-    updateCurrentSessionMessages(updatedMessages);
-
-    setIsLoading(true);
-
-    // Track the chatId for this stream — may be updated by chat_created chunk
-    let streamChatId = currentSessionId;
-
-    try {
-      let assistantContent = '';
-      let citations: Message['citations'] = [];
-      let collectedToolCalls: Message['toolCalls'] = [];
-
-      for await (const chunk of streamChatMessage(
-        content,
-        messages,
-        chatContext,
-        abortController.signal,
-        currentSessionId,
-        filesToSend.length > 0 ? filesToSend : undefined
-      )) {
-        if (chunk.type === 'chat_created' && chunk.chatId) {
-          // Backend created a new chat — update local tracker and state
-          streamChatId = chunk.chatId;
-          setCurrentSessionId(chunk.chatId);
-          setPendingContext({}); // Context now persisted on server
-          navigate({ to: '/chat/$chatId', params: { chatId: chunk.chatId } });
-        } else if (chunk.type === 'text' && chunk.content) {
-          assistantContent += chunk.content;
-
-          if (assistantContent.trim()) {
-            const streamingMessage: Message = {
-              id: generateMessageId(),
-              role: 'assistant',
-              content: assistantContent,
-              citations,
-              toolCalls: collectedToolCalls,
-              timestamp: new Date(),
-            };
-
-            updateCurrentSessionMessages([...updatedMessages, streamingMessage]);
-          }
-        } else if (chunk.type === 'citations' && chunk.citations) {
-          citations = chunk.citations;
-        } else if (chunk.type === 'tool_call' && chunk.toolCall) {
-          const toolCall = chunk.toolCall;
-          const existingIdx = collectedToolCalls.findIndex((tc) => tc.name === toolCall.name);
-          if (existingIdx >= 0) {
-            collectedToolCalls[existingIdx] = toolCall;
-          } else {
-            collectedToolCalls = [...collectedToolCalls, toolCall];
-          }
-
-          setActiveToolCalls((prev) => {
-            const existing = prev.findIndex((tc) => tc.name === toolCall.name);
-            if (existing >= 0) {
-              const updated = [...prev];
-              updated[existing] = toolCall;
-              return updated;
-            }
-            return [...prev, toolCall];
-          });
-        } else if (chunk.type === 'done') {
-          setActiveToolCalls([]);
-          const finalMessage: Message = {
-            id: generateMessageId(),
-            role: 'assistant',
-            content: assistantContent,
-            citations,
-            toolCalls: collectedToolCalls,
-            timestamp: new Date(),
-          };
-
-          const allMessages = [...updatedMessages, finalMessage];
-          updateCurrentSessionMessages(allMessages);
-
-          // Sync with server: seed query cache with final messages (prevents flicker),
-          // then invalidate in the background for eventual consistency.
-          invalidateAfterStream(streamChatId, allMessages);
-        } else if (chunk.type === 'error') {
-          throw new Error(chunk.error);
-        }
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('cancelled')) {
-        logger.info('Stream cancelled by user');
-        return;
-      }
-
-      logger.error('Error sending message:', error);
-
-      const errorMessage: Message = {
-        id: generateMessageId(),
-        role: 'assistant',
-        content: `Entschuldigung, es ist ein Fehler aufgetreten: ${
-          error instanceof Error ? error.message : 'Unbekannter Fehler'
-        }`,
-        timestamp: new Date(),
-      };
-
-      updateCurrentSessionMessages([...updatedMessages, errorMessage]);
-    } finally {
-      setIsLoading(false);
-      setActiveToolCalls([]);
-      abortControllerRef.current = null;
-    }
-  };
-
-  // Cleanup: abort any running stream on unmount
-  useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-  const handleCancelRequest = () => {
-    abortControllerRef.current?.abort();
-  };
-
-  // If a specific chatId was requested but not found in loaded sessions, show error.
-  // Skip during streaming (isLoading) — the sessions list is stale while a new chat is being created.
-  // Skip while sessions are refetching (isFetchingSessions) — invalidate() after stream may not
-  // have completed yet, so the new chat isn't in the sessions list yet.
-  // Skip during transitional states where currentSessionId is cleared eagerly.
+  // ─── Error guard ────────────────────────────────────────────────────────
   if (
     chatId &&
     currentSessionId &&
@@ -277,7 +140,7 @@ export const ChatPage: React.FC = () => {
     !isFetchingSessions
   ) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Chat nicht gefunden</p>
           <button onClick={() => navigate({ to: '/' })} className="text-primary hover:underline">
@@ -289,26 +152,22 @@ export const ChatPage: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+    <>
+      <ChatHeader onDeleteCurrent={handleDeleteCurrentChat} onNewChat={handleNewChatClick} />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <ChatHeader onDeleteCurrent={handleDeleteCurrentChat} onNewChat={handleNewChatClick} />
-
-        <ChatInterface
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          onCancelRequest={handleCancelRequest}
-          isLoading={isLoading}
-          activeToolCalls={activeToolCalls}
-          initialContent={templateContent}
-          context={chatContext}
-          onContextChange={handleContextChange}
-          pendingFiles={pendingFiles}
-          onAddFiles={handleAddFiles}
-          onRemovePendingFile={handleRemovePendingFile}
-        />
-      </div>
-    </div>
+      <ChatInterface
+        messages={messages}
+        onSendMessage={onSendMessage}
+        onCancelRequest={handleCancelRequest}
+        isLoading={isLoading}
+        activeToolCalls={activeToolCalls}
+        initialContent={templateContent}
+        context={chatContext}
+        onContextChange={handleContextChange}
+        pendingFiles={pendingFiles}
+        onAddFiles={handleAddFiles}
+        onRemovePendingFile={handleRemovePendingFile}
+      />
+    </>
   );
 };

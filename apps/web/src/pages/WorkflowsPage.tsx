@@ -1,23 +1,13 @@
-import React from 'react';
-
 import { Sparkles, Workflow } from 'lucide-react';
 
-import { Sidebar } from '@/components/layouts/Sidebar';
-
-export const WorkflowsPage: React.FC = () => {
+export const WorkflowsPage = () => {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          <div className="max-w-3xl mx-auto">
-            <PageHeader />
-            <ComingSoonCard />
-          </div>
-        </main>
+    <main className="flex-1 overflow-y-auto bg-background p-6">
+      <div className="max-w-3xl mx-auto">
+        <PageHeader />
+        <ComingSoonCard />
       </div>
-    </div>
+    </main>
   );
 };
 

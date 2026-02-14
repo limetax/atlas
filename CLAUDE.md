@@ -54,7 +54,7 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 
 ### TypeScript (all files)
 
-- Use `type` over `interface` (existing code has many `interface` — migrate when touching those files)
+- Use `type` over `interface` (exception: module augmentation like TanStack Router's `Register`)
 - No `as` type assertions — use type guards with `is` keyword (never `as any`)
 - Use `??` instead of `||` for defaults
 - Discriminated string unions via `as const` arrays:
@@ -89,6 +89,25 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 - Shadcn/ui components in `components/ui/` — extend, don't fork
 - Tailwind utility classes for styling
 - Error boundaries for error handling
+
+#### Component patterns
+
+- **Never use `React.FC`** — use typed arrow functions: `const Foo = (props: FooProps) =>`
+- **Import `{ type Boz }` from 'react'**, not the `React` default — only import the `React` namespace when needed for `React.memo`, `React.forwardRef`, `React.FormEvent`, etc.
+- **Use `import type` for type-only imports** — `import type { Foo }` or `import { type Foo }`
+- **Colocate types with their implementation** — define return types in hook files, prop types in component files. No standalone `types/` files unless the type is consumed by 3+ unrelated modules
+- **Max 200 LOC per page component** — if a page exceeds this, extract hooks (`useXxx`) for business logic. Pages orchestrate hooks, not implement logic
+- **One hook, one concern** — if a hook returns more than 8 properties, split it. Separate CRUD, streaming, and UI state into focused hooks
+
+#### Routing & auth
+
+- **All protected routes live under `routes/_authenticated/`** — the `_authenticated.tsx` layout route provides the shared auth guard, `<Sidebar />`, and `<AuthProvider>`. Never add `beforeLoad` auth guards to individual route files
+- **Pages must not render `<Sidebar />` or app chrome** — all shared layout belongs in the `_authenticated.tsx` layout route
+- **No `window.location.href` for navigation** — always use TanStack Router's `navigate()` or `redirect()`. Hard redirects bypass React state and cause data loss
+
+#### State & data
+
+- **No direct `localStorage` reads in components** — use `useAuthContext()` or `useLocalStorage()`. Route guards (`beforeLoad`) are the only exception since they run outside the React tree
 
 ### Design System
 

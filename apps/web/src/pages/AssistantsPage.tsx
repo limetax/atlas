@@ -4,7 +4,6 @@ import { Search } from 'lucide-react';
 
 import { CategoryChip } from '@/components/features/templates/CategoryChip';
 import { TemplateCard } from '@/components/features/templates/TemplateCard';
-import { Sidebar } from '@/components/layouts/Sidebar';
 import { Input } from '@/components/ui/input';
 import { TEMPLATES } from '@/data/templates';
 import { TEMPLATE_CATEGORIES, TemplateCategory } from '@/types/template';
@@ -12,12 +11,11 @@ import { useNavigate } from '@tanstack/react-router';
 
 import { useChatSessions } from './useChatSessions';
 
-export const AssistantsPage: React.FC = () => {
+export const AssistantsPage = () => {
   const navigate = useNavigate();
 
   const { handleNewChat } = useChatSessions();
 
-  // Handle template insertion - create new chat and navigate with template ID
   const handleInsertTemplate = (templateId: string) => {
     const newSessionId = handleNewChat();
     navigate({
@@ -28,18 +26,12 @@ export const AssistantsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          <div className="max-w-6xl mx-auto">
-            <PageHeader />
-            <TemplatesSection onInsertTemplate={handleInsertTemplate} />
-          </div>
-        </main>
+    <main className="flex-1 overflow-y-auto bg-background p-6">
+      <div className="max-w-6xl mx-auto">
+        <PageHeader />
+        <TemplatesSection onInsertTemplate={handleInsertTemplate} />
       </div>
-    </div>
+    </main>
   );
 };
 
@@ -50,15 +42,14 @@ const PageHeader = () => (
   </div>
 );
 
-interface TemplatesSectionProps {
+type TemplatesSectionProps = {
   onInsertTemplate: (templateId: string) => void;
-}
+};
 
-const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onInsertTemplate }) => {
+const TemplatesSection = ({ onInsertTemplate }: TemplatesSectionProps) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<TemplateCategory | null>(null);
 
-  // Filter templates
   const filteredTemplates = React.useMemo(() => {
     let filtered = TEMPLATES;
 

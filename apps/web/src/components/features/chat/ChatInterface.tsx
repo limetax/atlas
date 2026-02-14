@@ -4,6 +4,7 @@ import { Paperclip, StopCircle } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 
 import { Button } from '@/components/ui/button';
+import { type ToolCallState } from '@/hooks/useChatStream';
 import { isValidPdfFile } from '@/utils/validators';
 import { ChatContext, Message } from '@atlas/shared';
 
@@ -14,11 +15,6 @@ import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ContextToggles } from './context/ContextToggles';
 import { DeepThinkingToggle } from './context/DeepThinkingToggle';
 import { DropZoneOverlay, PendingFileList } from './FileUpload';
-
-export type ToolCallState = {
-  name: string;
-  status: 'started' | 'completed';
-};
 
 type ChatInterfaceProps = {
   messages: Message[];
@@ -34,7 +30,7 @@ type ChatInterfaceProps = {
   onRemovePendingFile: (index: number) => void;
 };
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+export const ChatInterface = ({
   messages,
   onSendMessage,
   onCancelRequest,
@@ -46,7 +42,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   pendingFiles,
   onAddFiles,
   onRemovePendingFile,
-}) => {
+}: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

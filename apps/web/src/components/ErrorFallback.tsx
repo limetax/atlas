@@ -1,6 +1,6 @@
-interface ErrorFallbackProps {
+type ErrorFallbackProps = {
   error: Error | null;
-}
+};
 
 export function ErrorFallback({ error }: ErrorFallbackProps) {
   return (

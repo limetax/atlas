@@ -1,15 +1,15 @@
-import React from 'react';
 import { ChatContext } from '@atlas/shared';
-import { ResearchDropdown } from './ResearchDropdown';
-import { IntegrationToggle } from './IntegrationToggle';
+
 import { ClientDropdown } from './ClientDropdown';
+import { IntegrationToggle } from './IntegrationToggle';
+import { ResearchDropdown } from './ResearchDropdown';
 
 type ContextTogglesProps = {
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
 };
 
-export const ContextToggles: React.FC<ContextTogglesProps> = ({ context, onContextChange }) => {
+export const ContextToggles = ({ context, onContextChange }: ContextTogglesProps) => {
   return (
     <div className="flex gap-2 items-center flex-wrap">
       <ResearchDropdown

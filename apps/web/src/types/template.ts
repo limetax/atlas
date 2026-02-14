@@ -11,19 +11,19 @@ export type TemplateCategory =
   | 'fachliche-unterstuetzung'
   | 'prozessautomatisierung';
 
-export interface Template {
+export type Template = {
   id: string;
   title: string;
   description: string;
   category: TemplateCategory;
   content: string;
-}
+};
 
-export interface TemplateCategoryInfo {
+export type TemplateCategoryInfo = {
   id: TemplateCategory;
   label: string;
   description?: string;
-}
+};
 
 export const TEMPLATE_CATEGORIES: TemplateCategoryInfo[] = [
   {

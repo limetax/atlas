@@ -7,12 +7,12 @@ import { useCallback } from 'react';
 import { STORAGE_KEYS } from '@/constants';
 import { isTokenExpired } from '@/utils/validators';
 
-export interface UseAuthTokenReturn {
+export type UseAuthTokenReturn = {
   getToken: () => string | null;
   setToken: (token: string) => void;
   removeToken: () => void;
   isExpired: () => boolean;
-}
+};
 
 export function useAuthToken(): UseAuthTokenReturn {
   const getToken = useCallback(() => {
