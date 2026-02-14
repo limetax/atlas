@@ -1,6 +1,8 @@
-import React, { type ReactElement, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useRef } from 'react';
+
 import { ArrowDown } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type ChatScrollAnchorProps = {
@@ -11,7 +13,7 @@ type ChatScrollAnchorProps = {
 export const ChatScrollAnchor = ({
   trackVisibility = false,
   scrollToBottom,
-}: ChatScrollAnchorProps): ReactElement => {
+}: ChatScrollAnchorProps) => {
   const anchorRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = React.useState(false);
 

@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback, type ReactElement } from 'react';
-import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
-import { ChatInterface } from '@/components/features/chat/ChatInterface';
-import { ChatHeader } from '@/components/features/chat/ChatHeader';
-import { ChatContext } from '@atlas/shared';
-import { useChatStream } from '@/hooks/useChatStream';
-import { useChatSessions } from './useChatSessions';
-import { TEMPLATES } from '@/data/templates';
+import { useCallback, useEffect, useState } from 'react';
 
-export const ChatPage = (): ReactElement => {
+import { ChatHeader } from '@/components/features/chat/ChatHeader';
+import { ChatInterface } from '@/components/features/chat/ChatInterface';
+import { TEMPLATES } from '@/data/templates';
+import { useChatStream } from '@/hooks/useChatStream';
+import { ChatContext } from '@atlas/shared';
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
+
+import { useChatSessions } from './useChatSessions';
+
+export const ChatPage = () => {
   // Since ChatPage is shared between '/chat' and '/chat/$chatId', use strict: false
   const params = useParams({ strict: false });
   const chatId = params.chatId;

@@ -1,20 +1,12 @@
-import React, {
-  type ReactElement,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { Paperclip, StopCircle } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 
 import { Button } from '@/components/ui/button';
+import { type ToolCallState } from '@/hooks/useChatStream';
 import { isValidPdfFile } from '@/utils/validators';
 import { ChatContext, Message } from '@atlas/shared';
-
-import { type ToolCallState } from '@/hooks/useChatStream';
 
 import { ChatEmptyState } from './ChatEmptyState';
 import { ChatMessage } from './ChatMessage';
@@ -50,7 +42,7 @@ export const ChatInterface = ({
   pendingFiles,
   onAddFiles,
   onRemovePendingFile,
-}: ChatInterfaceProps): ReactElement => {
+}: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

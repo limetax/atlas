@@ -1,10 +1,10 @@
-import { type ReactElement, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 import { Server, Shield } from 'lucide-react';
 
 import { LoginForm } from './LoginForm';
 
-export const LoginView = (): ReactElement => {
+export const LoginView = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-[var(--muted)]">
       <GridBackground />

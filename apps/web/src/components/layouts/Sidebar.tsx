@@ -1,5 +1,3 @@
-import { type ReactElement } from 'react';
-
 import {
   Building2,
   FileText,
@@ -23,7 +21,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { getInitials } from '@/utils/formatters';
 import { Link, useLocation } from '@tanstack/react-router';
 
-export const Sidebar = (): ReactElement => {
+export const Sidebar = () => {
   return (
     <aside className="w-[260px] bg-sidebar border-r border-border flex flex-col h-full overflow-hidden">
       {/* Top section - Logo */}
@@ -49,7 +47,7 @@ export const Sidebar = (): ReactElement => {
   );
 };
 
-const Navigation = (): ReactElement => {
+const Navigation = () => {
   const location = useLocation();
 
   const navItems = [
@@ -111,7 +109,7 @@ const Navigation = (): ReactElement => {
   );
 };
 
-const SidebarLogo = (): ReactElement => {
+const SidebarLogo = () => {
   return (
     <Link to="/" className="flex items-center gap-3 rounded-lg p-2">
       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
@@ -122,7 +120,7 @@ const SidebarLogo = (): ReactElement => {
   );
 };
 
-const UserCard = (): ReactElement => {
+const UserCard = () => {
   const { user, advisor, isLoading, logout } = useAuthContext();
 
   if (isLoading || !user) {

@@ -1,14 +1,16 @@
-import React, { useState, type ReactElement } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/ui/PasswordInput';
-import { Button } from '@/components/ui/button';
-import { trpc } from '@/lib/trpc';
-import { useAuthToken } from '@/hooks/useAuthToken';
-import { ROUTES } from '@/constants';
+import React, { useState } from 'react';
+
 import { AlertCircle, Loader2 } from 'lucide-react';
 
-export const LoginForm = (): ReactElement => {
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
+import { ROUTES } from '@/constants';
+import { useAuthToken } from '@/hooks/useAuthToken';
+import { trpc } from '@/lib/trpc';
+import { useNavigate } from '@tanstack/react-router';
+
+export const LoginForm = () => {
   const navigate = useNavigate({ from: ROUTES.LOGIN });
   const { setToken } = useAuthToken();
   const [email, setEmail] = useState('');

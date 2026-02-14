@@ -1,4 +1,4 @@
-import React, { type ReactElement, useState } from 'react';
+import React, { useState } from 'react';
 
 import { BookOpen, Building2, ChevronDown, Database, Scale } from 'lucide-react';
 
@@ -29,7 +29,7 @@ const RESEARCH_OPTIONS: ResearchOption[] = [
   { id: 'law_publishers', label: 'Rechtsverlage', icon: BookOpen, disabled: false },
 ];
 
-export const ResearchDropdown = ({ selected, onChange }: ResearchDropdownProps): ReactElement => {
+export const ResearchDropdown = ({ selected, onChange }: ResearchDropdownProps) => {
   const [open, setOpen] = useState(false);
 
   const handleToggle = (sourceId: ResearchSource) => {

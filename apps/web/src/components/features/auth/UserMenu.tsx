@@ -1,5 +1,3 @@
-import { type ReactElement } from 'react';
-
 import { Building2, ChevronDown, LogOut, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,7 +22,7 @@ type UserMenuProps = {
   advisor?: Advisor | null;
 };
 
-export const UserMenu = ({ user, advisor }: UserMenuProps): ReactElement => {
+export const UserMenu = ({ user, advisor }: UserMenuProps) => {
   const navigate = useNavigate({ from: ROUTES.HOME });
   const { removeToken } = useAuthToken();
 

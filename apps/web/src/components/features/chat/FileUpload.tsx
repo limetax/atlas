@@ -1,4 +1,4 @@
-import { type DragEvent, type ReactElement } from 'react';
+import { type DragEvent } from 'react';
 
 import { FileText, Upload, X } from 'lucide-react';
 
@@ -13,7 +13,7 @@ type DropZoneOverlayProps = {
   onDrop: (files: File[]) => void;
 };
 
-export const DropZoneOverlay = ({ isVisible, onDrop }: DropZoneOverlayProps): ReactElement | null => {
+export const DropZoneOverlay = ({ isVisible, onDrop }: DropZoneOverlayProps) => {
   if (!isVisible) return null;
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -53,10 +53,7 @@ type PendingFileListProps = {
   onRemovePending: (index: number) => void;
 };
 
-export const PendingFileList = ({
-  pendingFiles,
-  onRemovePending,
-}: PendingFileListProps): ReactElement | null => {
+export const PendingFileList = ({ pendingFiles, onRemovePending }: PendingFileListProps) => {
   if (pendingFiles.length === 0) return null;
 
   return (
@@ -74,7 +71,12 @@ export const PendingFileList = ({
 
 // ─── File Chips ───────────────────────────────────────────────────────────────
 
-const PendingFileChip = ({ file, onRemove }: { file: File; onRemove: () => void }): ReactElement => (
+type PendingFileChipProps = {
+  file: File;
+  onRemove: () => void;
+};
+
+const PendingFileChip = ({ file, onRemove }: PendingFileChipProps) => (
   <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-xs">
     <FileText className="h-3.5 w-3.5 text-primary flex-shrink-0" />
     <span className="truncate max-w-[140px] text-foreground">{file.name}</span>

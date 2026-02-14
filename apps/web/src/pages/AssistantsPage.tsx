@@ -1,4 +1,4 @@
-import React, { type ReactElement } from 'react';
+import React from 'react';
 
 import { Search } from 'lucide-react';
 
@@ -11,7 +11,7 @@ import { useNavigate } from '@tanstack/react-router';
 
 import { useChatSessions } from './useChatSessions';
 
-export const AssistantsPage = (): ReactElement => {
+export const AssistantsPage = () => {
   const navigate = useNavigate();
 
   const { handleNewChat } = useChatSessions();
@@ -35,7 +35,7 @@ export const AssistantsPage = (): ReactElement => {
   );
 };
 
-const PageHeader = (): ReactElement => (
+const PageHeader = () => (
   <div className="mb-8">
     <h1 className="text-2xl font-bold text-foreground mb-2">Vorlagen</h1>
     <p className="text-muted-foreground">Nutzen Sie Prompt-Vorlagen für Ihre Steuerkanzlei.</p>
@@ -46,7 +46,7 @@ type TemplatesSectionProps = {
   onInsertTemplate: (templateId: string) => void;
 };
 
-const TemplatesSection = ({ onInsertTemplate }: TemplatesSectionProps): ReactElement => {
+const TemplatesSection = ({ onInsertTemplate }: TemplatesSectionProps) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<TemplateCategory | null>(null);
 

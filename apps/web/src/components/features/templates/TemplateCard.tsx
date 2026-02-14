@@ -4,17 +4,16 @@
  * Styled to match AssistantCard
  */
 
-import { type ReactElement } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Template } from '@/types/template';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Template } from '@/types/template';
 
 type TemplateCardProps = {
   template: Template;
   onInsert: (templateId: string) => void;
 };
 
-export const TemplateCard = ({ template, onInsert }: TemplateCardProps): ReactElement => {
+export const TemplateCard = ({ template, onInsert }: TemplateCardProps) => {
   return (
     <Card
       className={cn(

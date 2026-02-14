@@ -1,8 +1,6 @@
-import { type ReactElement } from 'react';
-
 import { Sparkles, Workflow } from 'lucide-react';
 
-export const WorkflowsPage = (): ReactElement => {
+export const WorkflowsPage = () => {
   return (
     <main className="flex-1 overflow-y-auto bg-background p-6">
       <div className="max-w-3xl mx-auto">
@@ -13,13 +11,13 @@ export const WorkflowsPage = (): ReactElement => {
   );
 };
 
-const PageHeader = (): ReactElement => (
+const PageHeader = () => (
   <div className="flex items-center gap-3 mb-8">
     <h1 className="text-2xl font-bold text-foreground">Workflows</h1>
   </div>
 );
 
-const ComingSoonCard = (): ReactElement => (
+const ComingSoonCard = () => (
   <div className="bg-card rounded-2xl border border-border p-12 text-center shadow-sm">
     <div className="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
       <Workflow className="w-10 h-10 text-primary" />

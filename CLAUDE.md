@@ -92,8 +92,8 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 
 #### Component patterns
 
-- **Never use `React.FC`** — use typed arrow functions: `const Foo = (props: FooProps): ReactElement =>`
-- **Import `{ type ReactElement }` from 'react'**, not the `React` default — only import the `React` namespace when needed for `React.memo`, `React.forwardRef`, `React.FormEvent`, etc.
+- **Never use `React.FC`** — use typed arrow functions: `const Foo = (props: FooProps) =>`
+- **Import `{ type Boz }` from 'react'**, not the `React` default — only import the `React` namespace when needed for `React.memo`, `React.forwardRef`, `React.FormEvent`, etc.
 - **Use `import type` for type-only imports** — `import type { Foo }` or `import { type Foo }`
 - **Colocate types with their implementation** — define return types in hook files, prop types in component files. No standalone `types/` files unless the type is consumed by 3+ unrelated modules
 - **Max 200 LOC per page component** — if a page exceeds this, extract hooks (`useXxx`) for business logic. Pages orchestrate hooks, not implement logic
