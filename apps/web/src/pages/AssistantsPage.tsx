@@ -1,22 +1,21 @@
 import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
+
 import { Search } from 'lucide-react';
-import { Header } from '@/components/layouts/Header';
-import { Sidebar } from '@/components/layouts/Sidebar';
+
+import { CategoryChip } from '@/components/features/templates/CategoryChip';
+import { TemplateCard } from '@/components/features/templates/TemplateCard';
 import { Input } from '@/components/ui/input';
-import { useChatSessions } from './useChatSessions';
 import { TEMPLATES } from '@/data/templates';
 import { TEMPLATE_CATEGORIES, TemplateCategory } from '@/types/template';
-import { TemplateCard } from '@/components/features/templates/TemplateCard';
-import { CategoryChip } from '@/components/features/templates/CategoryChip';
+import { useNavigate } from '@tanstack/react-router';
 
-export const AssistantsPage: React.FC = () => {
+import { useChatSessions } from './useChatSessions';
+
+export const AssistantsPage = () => {
   const navigate = useNavigate();
 
-  const { sessions, currentSessionId, handleNewChat, handleSessionSelect, handleDeleteSession } =
-    useChatSessions();
+  const { handleNewChat } = useChatSessions();
 
-  // Handle template insertion - create new chat and navigate with template ID
   const handleInsertTemplate = (templateId: string) => {
     const newSessionId = handleNewChat();
     navigate({
@@ -26,57 +25,31 @@ export const AssistantsPage: React.FC = () => {
     });
   };
 
-  // Handle new chat - navigates to new chat
-  const handleNewChatWithNavigation = () => {
-    const newSessionId = handleNewChat();
-    navigate({ to: '/chat/$chatId', params: { chatId: newSessionId } });
-  };
-
-  // Handle session select - navigates to chat
-  const handleSessionSelectWithNavigation = (sessionId: string) => {
-    handleSessionSelect(sessionId);
-    navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
-  };
-
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSessionSelect={handleSessionSelectWithNavigation}
-        onNewChat={handleNewChatWithNavigation}
-        onDeleteSession={handleDeleteSession}
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          <div className="max-w-6xl mx-auto">
-            <PageHeader />
-            <TemplatesSection onInsertTemplate={handleInsertTemplate} />
-          </div>
-        </main>
+    <main className="flex-1 overflow-y-auto bg-background p-6">
+      <div className="max-w-6xl mx-auto">
+        <PageHeader />
+        <TemplatesSection onInsertTemplate={handleInsertTemplate} />
       </div>
-    </div>
+    </main>
   );
 };
 
 const PageHeader = () => (
   <div className="mb-8">
-    <h1 className="text-2xl font-bold text-gray-900 mb-2">Vorlagen</h1>
-    <p className="text-gray-600">Nutzen Sie Prompt-Vorlagen für Ihre Steuerkanzlei.</p>
+    <h1 className="text-2xl font-bold text-foreground mb-2">Vorlagen</h1>
+    <p className="text-muted-foreground">Nutzen Sie Prompt-Vorlagen für Ihre Steuerkanzlei.</p>
   </div>
 );
 
-interface TemplatesSectionProps {
+type TemplatesSectionProps = {
   onInsertTemplate: (templateId: string) => void;
-}
+};
 
-const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onInsertTemplate }) => {
+const TemplatesSection = ({ onInsertTemplate }: TemplatesSectionProps) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<TemplateCategory | null>(null);
 
-  // Filter templates
   const filteredTemplates = React.useMemo(() => {
     let filtered = TEMPLATES;
 
@@ -106,7 +79,7 @@ const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onInsertTemplate })
       {/* Search Bar */}
       <div className="mb-6">
         <div className="relative max-w-2xl">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
           <Input
             type="text"
             placeholder="Vorlagen durchsuchen..."
@@ -140,7 +113,7 @@ const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onInsertTemplate })
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             Keine Vorlagen gefunden. Versuchen Sie eine andere Suche oder Kategorie.
           </p>
         </div>

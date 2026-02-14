@@ -1,14 +1,14 @@
-interface ErrorFallbackProps {
+type ErrorFallbackProps = {
   error: Error | null;
-}
+};
 
 export function ErrorFallback({ error }: ErrorFallbackProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-8 text-center border border-border">
+        <div className="w-16 h-16 bg-[var(--color-error-bg)] rounded-full flex items-center justify-center mx-auto mb-4">
           <svg
-            className="w-8 h-8 text-red-600"
+            className="w-8 h-8 text-[var(--color-error)]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -22,19 +22,19 @@ export function ErrorFallback({ error }: ErrorFallbackProps) {
           </svg>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Etwas ist schiefgelaufen</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Etwas ist schiefgelaufen</h1>
 
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu oder kontaktieren
           Sie den Support, wenn das Problem weiterhin besteht.
         </p>
 
         {error && (
           <details className="mb-6 text-left">
-            <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+            <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
               Fehlerdetails anzeigen
             </summary>
-            <pre className="mt-2 p-3 bg-gray-100 rounded text-xs text-gray-700 overflow-auto">
+            <pre className="mt-2 p-3 bg-muted rounded text-xs text-muted-foreground overflow-auto">
               {error.message}
             </pre>
           </details>
@@ -42,7 +42,7 @@ export function ErrorFallback({ error }: ErrorFallbackProps) {
 
         <button
           onClick={() => window.location.reload()}
-          className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+          className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
           Seite neu laden
         </button>

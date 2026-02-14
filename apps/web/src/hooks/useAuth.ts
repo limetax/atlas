@@ -8,11 +8,11 @@ import { trpc } from '@/lib/trpc';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Advisor } from '@atlas/shared';
 
-export interface UseAuthReturn {
+export type UseAuthReturn = {
   user: SupabaseUser | null | undefined;
   advisor: Advisor | null | undefined;
   isLoading: boolean;
-}
+};
 
 export function useAuth(): UseAuthReturn {
   const { data: user, isLoading: userLoading } = trpc.auth.getUser.useQuery();

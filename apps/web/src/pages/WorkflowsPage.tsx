@@ -1,47 +1,13 @@
-import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Workflow, Sparkles } from 'lucide-react';
-import { Header } from '@/components/layouts/Header';
-import { Sidebar } from '@/components/layouts/Sidebar';
-import { useChatSessions } from './useChatSessions';
+import { Sparkles, Workflow } from 'lucide-react';
 
-export const WorkflowsPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { sessions, currentSessionId, handleNewChat, handleSessionSelect, handleDeleteSession } =
-    useChatSessions();
-
-  // Handle new chat - navigate to new chat URL
-  const handleNewChatWithNavigation = () => {
-    const newSessionId = handleNewChat();
-    navigate({ to: '/chat/$chatId', params: { chatId: newSessionId } });
-  };
-
-  // Handle session select - navigate to chat URL
-  const handleSessionSelectWithNavigation = (sessionId: string) => {
-    handleSessionSelect(sessionId);
-    navigate({ to: '/chat/$chatId', params: { chatId: sessionId } });
-  };
-
+export const WorkflowsPage = () => {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSessionSelect={handleSessionSelectWithNavigation}
-        onNewChat={handleNewChatWithNavigation}
-        onDeleteSession={handleDeleteSession}
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          <div className="max-w-3xl mx-auto">
-            <PageHeader />
-            <ComingSoonCard />
-          </div>
-        </main>
+    <main className="flex-1 overflow-y-auto bg-background p-6">
+      <div className="max-w-3xl mx-auto">
+        <PageHeader />
+        <ComingSoonCard />
       </div>
-    </div>
+    </main>
   );
 };
 

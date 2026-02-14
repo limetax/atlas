@@ -1,16 +1,15 @@
-import React from 'react';
-
 import {
-  EllipsisVertical,
+  Building2,
   FileText,
+  LayoutGrid,
+  LogOut,
   MessageSquare,
-  Pencil,
-  Plus,
-  Trash2,
+  Settings,
+  User,
   Workflow,
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,55 +17,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChatSession } from '@atlas/shared';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { getInitials } from '@/utils/formatters';
 import { Link, useLocation } from '@tanstack/react-router';
 
-type SidebarProps = {
-  sessions: ChatSession[];
-  currentSessionId?: string;
-  onSessionSelect: (sessionId: string) => void;
-  onNewChat: () => void;
-  onDeleteSession?: (sessionId: string) => void;
-  onRenameSession?: (sessionId: string) => void;
-};
-
-export const Sidebar: React.FC<SidebarProps> = ({
-  sessions,
-  currentSessionId,
-  onSessionSelect,
-  onNewChat,
-  onDeleteSession,
-  onRenameSession,
-}) => {
+export const Sidebar = () => {
   return (
-    <aside className="w-72 bg-card border-r border-border flex flex-col h-full overflow-hidden">
-      <NewChatButton onNewChat={onNewChat} />
+    <aside className="w-[260px] bg-sidebar border-r border-border flex flex-col h-full overflow-hidden">
+      {/* Top section - Logo */}
+      <div className="flex-shrink-0 p-6">
+        <SidebarLogo />
+      </div>
 
-      <Navigation />
+      {/* Middle section - Navigation (scrollable) */}
+      <div className="flex-1 overflow-y-auto px-4">
+        <Navigation />
+      </div>
 
-      <ChatHistory
-        sessions={sessions}
-        currentSessionId={currentSessionId}
-        onSessionSelect={onSessionSelect}
-        onDeleteSession={onDeleteSession}
-        onRenameSession={onRenameSession}
-      />
+      {/* Bottom section - Settings + User Card */}
+      <div className="flex-shrink-0 p-4 space-y-2">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] text-muted-foreground font-medium hover:bg-card hover:shadow-sm transition-all cursor-not-allowed opacity-60">
+          <Settings className="w-5 h-5" />
+          <span className="flex-1">Einstellungen</span>
+          <span className="text-xs text-muted-foreground font-normal">Bald</span>
+        </div>
+        <UserCard />
+      </div>
     </aside>
-  );
-};
-
-type NewChatButtonProps = {
-  onNewChat: () => void;
-};
-
-const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
-  return (
-    <div className="flex-shrink-0 p-4 border-b border-border">
-      <Button variant="outline" className="w-full" onClick={onNewChat}>
-        <Plus className="w-4 h-4 mr-2" />
-        Neuer Chat
-      </Button>
-    </div>
   );
 };
 
@@ -76,189 +53,146 @@ const Navigation = () => {
   const navItems = [
     {
       to: '/',
+      label: 'Dashboard',
+      icon: LayoutGrid,
+      badge: null,
+      isActiveCheck: (path: string): boolean => path === '/' || path.startsWith('/tools/'),
+    },
+    {
+      to: '/chat',
       label: 'Chat',
       icon: MessageSquare,
       badge: null,
-      // Active for / and /chat/* routes
-      isActiveCheck: (path: string) => path === '/' || path.startsWith('/chat/'),
+      isActiveCheck: (path: string): boolean => path === '/chat' || path.startsWith('/chat/'),
     },
     {
       to: '/assistants',
       label: 'Vorlagen',
       icon: FileText,
       badge: null,
-      isActiveCheck: (path: string) => path.startsWith('/assistants'),
+      isActiveCheck: (path: string): boolean => path.startsWith('/assistants'),
     },
     {
       to: '/workflows',
       label: 'Workflows',
       icon: Workflow,
       badge: 'bald',
-      isActiveCheck: (path: string) => path.startsWith('/workflows'),
+      isActiveCheck: (path: string): boolean => path.startsWith('/workflows'),
     },
   ];
 
   return (
-    <div className="flex-shrink-0 p-3 border-b border-border">
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-        Navigation
-      </h2>
-      <nav className="space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.isActiveCheck(location.pathname);
+    <nav className="space-y-1">
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = item.isActiveCheck(location.pathname);
 
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
-                isActive
-                  ? 'bg-accent text-accent-foreground border-orange-200'
-                  : 'text-foreground border-transparent hover:bg-muted'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="flex-1">{item.label}</span>
-              {item.badge && (
-                <span className="text-xs text-muted-foreground font-normal">{item.badge}</span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] transition-all ${
+              isActive
+                ? 'bg-card text-foreground font-semibold shadow-sm'
+                : 'text-muted-foreground font-medium hover:bg-card hover:shadow-sm'
+            }`}
+          >
+            <Icon className="w-5 h-5" />
+            <span className="flex-1">{item.label}</span>
+            {item.badge && (
+              <span className="text-xs text-muted-foreground font-normal">{item.badge}</span>
+            )}
+          </Link>
+        );
+      })}
+    </nav>
   );
 };
 
-type ChatHistoryProps = {
-  sessions: ChatSession[];
-  currentSessionId?: string;
-  onSessionSelect: (sessionId: string) => void;
-  onDeleteSession?: (sessionId: string) => void;
-  onRenameSession?: (sessionId: string) => void;
-};
-
-const ChatHistory = ({
-  sessions,
-  currentSessionId,
-  onSessionSelect,
-  onDeleteSession,
-  onRenameSession,
-}: ChatHistoryProps) => {
+const SidebarLogo = () => {
   return (
-    <div className="flex-1 overflow-y-auto p-3 min-h-0">
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-2">
-        Verlauf
-      </h2>
-
-      {sessions.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <SessionList
-          sessions={sessions}
-          currentSessionId={currentSessionId}
-          onSessionSelect={onSessionSelect}
-          onDeleteSession={onDeleteSession}
-          onRenameSession={onRenameSession}
-        />
-      )}
-    </div>
-  );
-};
-
-const EmptyState = () => {
-  return (
-    <div className="text-center py-8 px-4">
-      <MessageSquare className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-      <p className="text-sm text-muted-foreground">Noch keine Chats</p>
-    </div>
-  );
-};
-
-type SessionListProps = {
-  sessions: ChatSession[];
-  currentSessionId?: string;
-  onSessionSelect: (sessionId: string) => void;
-  onDeleteSession?: (sessionId: string) => void;
-  onRenameSession?: (sessionId: string) => void;
-};
-
-const SessionList = ({
-  sessions,
-  currentSessionId,
-  onSessionSelect,
-  onDeleteSession,
-  onRenameSession,
-}: SessionListProps) => {
-  return (
-    <div className="space-y-1">
-      {sessions.map((session) => (
-        <SessionItem
-          key={session.id}
-          session={session}
-          isActive={currentSessionId === session.id}
-          onSelect={() => onSessionSelect(session.id)}
-          onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
-          onRename={onRenameSession ? () => onRenameSession(session.id) : undefined}
-        />
-      ))}
-    </div>
-  );
-};
-
-type SessionItemProps = {
-  session: ChatSession;
-  isActive: boolean;
-  onSelect: () => void;
-  onDelete?: () => void;
-  onRename?: () => void;
-};
-
-const SessionItem = ({ session, isActive, onSelect, onDelete, onRename }: SessionItemProps) => {
-  return (
-    <div
-      className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${
-        isActive ? 'bg-accent border-orange-200' : 'border-transparent hover:bg-muted'
-      }`}
-      onClick={onSelect}
-    >
-      <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{session.title}</p>
-        <p className="text-xs text-muted-foreground">
-          {new Date(session.updatedAt).toLocaleDateString('de-DE')}
-        </p>
+    <Link to="/" className="flex items-center gap-3 rounded-lg p-2">
+      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
+        <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
       </div>
-      {(onDelete ?? onRename) && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 p-1 hover:bg-muted rounded transition-all"
-            >
-              <EllipsisVertical className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="start">
-            {onRename && (
-              <DropdownMenuItem onClick={onRename}>
-                <Pencil className="w-4 h-4" />
-                Umbenennen
-              </DropdownMenuItem>
-            )}
-            {onRename && onDelete && <DropdownMenuSeparator />}
-            {onDelete && (
-              <DropdownMenuItem onClick={onDelete} className="text-destructive">
-                <Trash2 className="w-4 h-4" />
-                Löschen
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
+      <h1 className="text-lg font-bold text-foreground">Limetax App</h1>
+    </Link>
+  );
+};
+
+const UserCard = () => {
+  const { user, advisor, isLoading, logout } = useAuthContext();
+
+  if (isLoading || !user) {
+    return <div className="h-[72px]" />;
+  }
+
+  const displayName = advisor?.full_name || user.email?.split('@')[0] || 'Benutzer';
+  const displayRole = advisor?.role === 'admin' ? 'Administrator' : 'Benutzer';
+  const initials = getInitials(displayName);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="w-full bg-card border border-border rounded-lg shadow-sm p-3 hover:bg-muted transition-colors cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+          <div className="flex items-center gap-3">
+            <Avatar className="w-10 h-10">
+              {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
+              <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
+              <p className="text-xs text-muted-foreground truncate">{displayRole}</p>
+            </div>
+          </div>
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" side="right" className="w-64">
+        {/* User Info Header */}
+        <div className="px-3 py-3 border-b border-border">
+          <div className="flex items-center gap-3">
+            <Avatar className="w-10 h-10">
+              {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
+              <AvatarFallback className="bg-accent text-accent-foreground font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Menu Items */}
+        <DropdownMenuItem disabled>
+          <User className="w-5 h-5 text-muted-foreground" />
+          <span className="flex-1">Profil</span>
+          <span className="text-xs text-muted-foreground">Bald</span>
+        </DropdownMenuItem>
+
+        {advisor?.advisory_id && (
+          <DropdownMenuItem disabled>
+            <Building2 className="w-5 h-5 text-muted-foreground" />
+            <span className="flex-1">Kanzlei</span>
+            <span className="text-xs text-muted-foreground">Bald</span>
+          </DropdownMenuItem>
+        )}
+
+        <DropdownMenuSeparator />
+
+        {/* Logout */}
+        <DropdownMenuItem
+          onClick={logout}
+          className="text-destructive focus:text-destructive focus:bg-error-bg"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Abmelden</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };

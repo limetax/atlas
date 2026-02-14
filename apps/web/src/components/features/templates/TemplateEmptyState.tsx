@@ -3,20 +3,23 @@
  * Main empty state UI showing templates, search, and category filters
  */
 
-import React, { useState, useMemo } from 'react';
-import { Link } from '@tanstack/react-router';
-import { Search, Bot } from 'lucide-react';
-import { TEMPLATES } from '@/data/templates';
-import { TemplateCategory, TEMPLATE_CATEGORIES } from '@/types/template';
-import { TemplateCard } from './TemplateCard';
-import { CategoryChip } from './CategoryChip';
+import { useMemo, useState } from 'react';
+
+import { Bot, Search } from 'lucide-react';
+
 import { Input } from '@/components/ui/input';
+import { TEMPLATES } from '@/data/templates';
+import { TEMPLATE_CATEGORIES, TemplateCategory } from '@/types/template';
+import { Link } from '@tanstack/react-router';
 
-interface TemplateEmptyStateProps {
+import { CategoryChip } from './CategoryChip';
+import { TemplateCard } from './TemplateCard';
+
+type TemplateEmptyStateProps = {
   onInsertTemplate: (content: string) => void;
-}
+};
 
-export const TemplateEmptyState: React.FC<TemplateEmptyStateProps> = ({ onInsertTemplate }) => {
+export const TemplateEmptyState = ({ onInsertTemplate }: TemplateEmptyStateProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | null>(null);
 
@@ -52,8 +55,8 @@ export const TemplateEmptyState: React.FC<TemplateEmptyStateProps> = ({ onInsert
       <div className="max-w-6xl mx-auto px-4 pt-40 pb-20">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Willkommen!</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Willkommen!</h1>
+          <p className="text-muted-foreground">
             Wählen Sie eine Vorlage aus oder starten Sie eine neue Unterhaltung
           </p>
         </div>
@@ -61,7 +64,7 @@ export const TemplateEmptyState: React.FC<TemplateEmptyStateProps> = ({ onInsert
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               type="text"
               placeholder="Vorlagen durchsuchen..."
@@ -95,20 +98,20 @@ export const TemplateEmptyState: React.FC<TemplateEmptyStateProps> = ({ onInsert
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               Keine Vorlagen gefunden. Versuchen Sie eine andere Suche oder Kategorie.
             </p>
           </div>
         )}
 
         {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-600 mb-2">
+        <div className="text-center mt-12 pt-8 border-t border-border">
+          <p className="text-sm text-muted-foreground mb-2">
             Oder arbeiten Sie mit einem spezialisierten Assistenten
           </p>
           <Link
             to="/assistants"
-            className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium"
           >
             <Bot className="w-4 h-4" />
             Assistenten anzeigen

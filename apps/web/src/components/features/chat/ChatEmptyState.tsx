@@ -3,9 +3,7 @@
  * Minimal welcoming empty state for new chats
  */
 
-import React from 'react';
-
-export const ChatEmptyState: React.FC = () => {
+export const ChatEmptyState = () => {
   return (
     <div className="flex-1 flex items-center justify-center px-4">
       <div className="text-center max-w-2xl">

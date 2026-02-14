@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { Building2, ChevronDown, LogOut, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,12 +17,12 @@ import type { Advisor } from '@atlas/shared';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useNavigate } from '@tanstack/react-router';
 
-interface UserMenuProps {
+type UserMenuProps = {
   user: SupabaseUser;
   advisor?: Advisor | null;
-}
+};
 
-export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
+export const UserMenu = ({ user, advisor }: UserMenuProps) => {
   const navigate = useNavigate({ from: ROUTES.HOME });
   const { removeToken } = useAuthToken();
 
@@ -49,7 +47,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
         <Button variant="ghost" className="flex items-center gap-2 px-3 py-2 h-auto">
           <Avatar className="w-8 h-8">
             {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
-            <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold text-sm">
+            <AvatarFallback className="bg-accent text-accent-foreground font-semibold text-sm">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -62,13 +60,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, advisor }) => {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" side="right" className="w-64">
         {/* User Info Header */}
         <div className="px-3 py-3 border-b border-border">
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10">
               {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
-              <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
+              <AvatarFallback className="bg-accent text-accent-foreground font-semibold">
                 {initials}
               </AvatarFallback>
             </Avatar>

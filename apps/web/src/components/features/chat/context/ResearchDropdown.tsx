@@ -29,7 +29,7 @@ const RESEARCH_OPTIONS: ResearchOption[] = [
   { id: 'law_publishers', label: 'Rechtsverlage', icon: BookOpen, disabled: false },
 ];
 
-export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, onChange }) => {
+export const ResearchDropdown = ({ selected, onChange }: ResearchDropdownProps) => {
   const [open, setOpen] = useState(false);
 
   const handleToggle = (sourceId: ResearchSource) => {
@@ -46,16 +46,16 @@ export const ResearchDropdown: React.FC<ResearchDropdownProps> = ({ selected, on
         <button
           type="button"
           className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors',
+            'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
             selected.length > 0
-              ? 'bg-accent border-orange-300 text-accent-foreground'
-              : 'bg-card border-input text-foreground hover:bg-muted'
+              ? 'bg-accent text-accent-foreground'
+              : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
           )}
         >
-          <Database className="w-4 h-4" />
+          <Database className={cn('w-4 h-4', selected.length > 0 && 'text-primary')} />
           <span>Recherche</span>
           {selected.length > 0 && (
-            <span className="bg-primary text-primary-foreground text-xs px-1.5 rounded-full">
+            <span className="bg-primary text-primary-foreground text-xs px-1.5 rounded-full font-semibold">
               {selected.length}
             </span>
           )}

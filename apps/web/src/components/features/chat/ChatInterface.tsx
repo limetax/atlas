@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { Paperclip, Send, StopCircle } from 'lucide-react';
+import { Paperclip, StopCircle } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 
 import { Button } from '@/components/ui/button';
+import { type ToolCallState } from '@/hooks/useChatStream';
 import { isValidPdfFile } from '@/utils/validators';
 import { ChatContext, Message } from '@atlas/shared';
 
@@ -12,12 +13,8 @@ import { ChatMessage } from './ChatMessage';
 import { ChatScrollAnchor } from './ChatScrollAnchor';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ContextToggles } from './context/ContextToggles';
+import { DeepThinkingToggle } from './context/DeepThinkingToggle';
 import { DropZoneOverlay, PendingFileList } from './FileUpload';
-
-export type ToolCallState = {
-  name: string;
-  status: 'started' | 'completed';
-};
 
 type ChatInterfaceProps = {
   messages: Message[];
@@ -33,7 +30,7 @@ type ChatInterfaceProps = {
   onRemovePendingFile: (index: number) => void;
 };
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+export const ChatInterface = ({
   messages,
   onSendMessage,
   onCancelRequest,
@@ -45,7 +42,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   pendingFiles,
   onAddFiles,
   onRemovePendingFile,
-}) => {
+}: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -223,6 +220,7 @@ const InputArea = ({
   onRemovePendingFile,
 }: InputAreaProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDeepThinking, setIsDeepThinking] = useState(false);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -237,75 +235,91 @@ const InputArea = ({
   const hasPendingContent = inputValue.trim() || pendingFiles.length > 0;
 
   return (
-    <div className="flex-shrink-0 bg-card border-t border-border p-4">
+    <div className="flex-shrink-0 bg-background/80 backdrop-blur-sm pb-10 pt-4 px-6">
       <form onSubmit={onSubmit} className="max-w-4xl mx-auto">
-        <div className="flex gap-3 items-end">
-          {/* Paperclip button */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-muted-foreground hover:text-primary flex-shrink-0"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            title="PDF hochladen"
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf,.pdf"
-            multiple
-            className="hidden"
-            onChange={handleFileInputChange}
-          />
+        {/* Main input card */}
+        <div className="relative bg-card rounded-xl shadow-lg border border-border focus-within:ring-2 focus-within:ring-ring/20 focus-within:border-ring transition-all flex flex-col min-h-[120px]">
+          {/* Textarea section */}
+          <div className="px-4 pt-4 pb-2 flex-1">
+            <TextareaAutosize
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Geben Sie Limetax eine Aufgabe oder stellen Sie eine Frage"
+              disabled={isLoading}
+              minRows={2}
+              maxRows={8}
+              className="w-full bg-transparent border-none text-foreground placeholder:text-muted-foreground focus:ring-0 focus:outline-none resize-none text-base leading-relaxed p-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
 
-          <TextareaAutosize
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="Stellen Sie Ihre steuerrechtliche Frage..."
-            disabled={isLoading}
-            minRows={1}
-            maxRows={8}
-            className="flex-1 px-4 py-3 text-sm bg-background border border-input rounded-xl outline-none transition-all duration-150 resize-none focus:border-primary focus:ring-4 focus:ring-ring/10 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              lineHeight: '1.5',
-              transition: 'height 0.3s ease-out',
-            }}
-          />
-          {isLoading ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={onCancelRequest}
-              className="h-10 w-10 border-destructive/50 text-destructive hover:bg-error-bg hover:border-destructive flex-shrink-0"
-            >
-              <StopCircle className="w-5 h-5" />
-            </Button>
-          ) : (
-            <Button type="submit" variant="default" size="default" disabled={!hasPendingContent}>
-              <Send className="w-5 h-5" />
-            </Button>
+          {/* Pending files (not yet sent) */}
+          {pendingFiles.length > 0 && (
+            <div className="px-4 pb-2">
+              <PendingFileList pendingFiles={pendingFiles} onRemovePending={onRemovePendingFile} />
+            </div>
           )}
+
+          {/* Bottom controls section */}
+          <div className="flex items-center justify-between px-3 pb-3 mt-2 gap-3 flex-wrap">
+            {/* Left: Context controls */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <DeepThinkingToggle enabled={isDeepThinking} onChange={setIsDeepThinking} />
+              <div className="h-4 w-px bg-border" />
+              <ContextToggles context={context} onContextChange={onContextChange} />
+            </div>
+
+            {/* Right: Action buttons */}
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                multiple
+                className="hidden"
+                onChange={handleFileInputChange}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                title="Datei anhängen"
+              >
+                <Paperclip className="h-5 w-5" />
+              </Button>
+              {isLoading ? (
+                <Button
+                  type="button"
+                  variant="default"
+                  size="default"
+                  onClick={onCancelRequest}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  <StopCircle className="w-4 h-4 mr-2" />
+                  <span>Stoppen</span>
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  variant="default"
+                  size="default"
+                  disabled={!hasPendingContent}
+                  className="bg-foreground text-background hover:bg-foreground/90"
+                >
+                  <span>Fragen</span>
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Pending files (not yet sent) */}
-        <PendingFileList pendingFiles={pendingFiles} onRemovePending={onRemovePendingFile} />
-
-        {/* Context toggles and hint */}
-        <div className="flex items-center justify-between mt-2">
-          <ContextToggles context={context} onContextChange={onContextChange} />
-          {inputValue.length > 0 && (
-            <span className="text-xs text-muted-foreground">Shift+Enter für neue Zeile</span>
-          )}
-        </div>
-
-        <p className="text-xs text-muted-foreground mt-2 text-center">
-          limetaxIQ kann Fehler machen. Überprüfen Sie wichtige Informationen.
+        {/* Disclaimer text */}
+        <p className="text-[11px] text-muted-foreground font-medium mt-4 text-center">
+          Limetax App kann Fehler machen. Überprüfen Sie wichtige Informationen.
         </p>
       </form>
     </div>

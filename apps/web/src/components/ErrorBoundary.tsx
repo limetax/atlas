@@ -2,15 +2,15 @@ import React, { Component, ReactNode } from 'react';
 import { logger } from '@/utils/logger';
 import { ErrorFallback } from './ErrorFallback';
 
-interface ErrorBoundaryProps {
+type ErrorBoundaryProps = {
   children: ReactNode;
   fallback?: ReactNode;
-}
+};
 
-interface ErrorBoundaryState {
+type ErrorBoundaryState = {
   hasError: boolean;
   error: Error | null;
-}
+};
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {

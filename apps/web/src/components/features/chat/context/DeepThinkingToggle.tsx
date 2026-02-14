@@ -1,14 +1,14 @@
-import { Link } from 'lucide-react';
+import { Brain } from 'lucide-react';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-type IntegrationToggleProps = {
+type DeepThinkingToggleProps = {
   enabled: boolean;
   onChange: (enabled: boolean) => void;
 };
 
-export const IntegrationToggle = ({ enabled, onChange }: IntegrationToggleProps) => {
+export const DeepThinkingToggle = ({ enabled, onChange }: DeepThinkingToggleProps) => {
   return (
     <TooltipProvider>
       <Tooltip>
@@ -23,12 +23,12 @@ export const IntegrationToggle = ({ enabled, onChange }: IntegrationToggleProps)
                 : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
           >
-            <Link className={cn('w-4 h-4', enabled && 'text-primary')} />
-            <span>DATEV</span>
+            <Brain className={cn('w-4 h-4', enabled && 'text-primary')} />
+            <span>Deep Thinking</span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={5}>
-          <p className="text-xs">DATEV-Integration {enabled ? 'deaktivieren' : 'aktivieren'}</p>
+          <p className="text-xs">Erweiterte Denkweise {enabled ? 'deaktivieren' : 'aktivieren'}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
