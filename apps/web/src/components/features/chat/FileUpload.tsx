@@ -1,4 +1,4 @@
-import React from 'react';
+import { type DragEvent, type ReactElement } from 'react';
 
 import { FileText, Upload, X } from 'lucide-react';
 
@@ -13,10 +13,10 @@ type DropZoneOverlayProps = {
   onDrop: (files: File[]) => void;
 };
 
-export const DropZoneOverlay: React.FC<DropZoneOverlayProps> = ({ isVisible, onDrop }) => {
+export const DropZoneOverlay = ({ isVisible, onDrop }: DropZoneOverlayProps): ReactElement | null => {
   if (!isVisible) return null;
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -26,7 +26,7 @@ export const DropZoneOverlay: React.FC<DropZoneOverlayProps> = ({ isVisible, onD
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
@@ -53,10 +53,10 @@ type PendingFileListProps = {
   onRemovePending: (index: number) => void;
 };
 
-export const PendingFileList: React.FC<PendingFileListProps> = ({
+export const PendingFileList = ({
   pendingFiles,
   onRemovePending,
-}) => {
+}: PendingFileListProps): ReactElement | null => {
   if (pendingFiles.length === 0) return null;
 
   return (
@@ -74,7 +74,7 @@ export const PendingFileList: React.FC<PendingFileListProps> = ({
 
 // ─── File Chips ───────────────────────────────────────────────────────────────
 
-const PendingFileChip: React.FC<{ file: File; onRemove: () => void }> = ({ file, onRemove }) => (
+const PendingFileChip = ({ file, onRemove }: { file: File; onRemove: () => void }): ReactElement => (
   <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted px-2.5 py-1.5 text-xs">
     <FileText className="h-3.5 w-3.5 text-primary flex-shrink-0" />
     <span className="truncate max-w-[140px] text-foreground">{file.name}</span>

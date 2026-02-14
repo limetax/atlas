@@ -1,4 +1,4 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 
 import {
   Building2,
@@ -19,14 +19,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ROUTES } from '@/constants';
-import { useAuth } from '@/hooks/useAuth';
-import { useAuthToken } from '@/hooks/useAuthToken';
-import { trpc } from '@/lib/trpc';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { getInitials } from '@/utils/formatters';
-import { Link, useLocation, useNavigate } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 
-export const Sidebar: React.FC = () => {
+export const Sidebar = (): ReactElement => {
   return (
     <aside className="w-[260px] bg-sidebar border-r border-border flex flex-col h-full overflow-hidden">
       {/* Top section - Logo */}
@@ -41,7 +38,6 @@ export const Sidebar: React.FC = () => {
 
       {/* Bottom section - Settings + User Card */}
       <div className="flex-shrink-0 p-4 space-y-2">
-        {/* Settings item */}
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] text-muted-foreground font-medium hover:bg-card hover:shadow-sm transition-all cursor-not-allowed opacity-60">
           <Settings className="w-5 h-5" />
           <span className="flex-1">Einstellungen</span>
@@ -53,7 +49,7 @@ export const Sidebar: React.FC = () => {
   );
 };
 
-const Navigation = (): React.ReactElement => {
+const Navigation = (): ReactElement => {
   const location = useLocation();
 
   const navItems = [
@@ -62,7 +58,6 @@ const Navigation = (): React.ReactElement => {
       label: 'Dashboard',
       icon: LayoutGrid,
       badge: null,
-      // Active for / and /tools/* routes
       isActiveCheck: (path: string): boolean => path === '/' || path.startsWith('/tools/'),
     },
     {
@@ -70,7 +65,6 @@ const Navigation = (): React.ReactElement => {
       label: 'Chat',
       icon: MessageSquare,
       badge: null,
-      // Active for /chat and /chat/* routes
       isActiveCheck: (path: string): boolean => path === '/chat' || path.startsWith('/chat/'),
     },
     {
@@ -117,7 +111,7 @@ const Navigation = (): React.ReactElement => {
   );
 };
 
-const SidebarLogo = (): React.ReactElement => {
+const SidebarLogo = (): ReactElement => {
   return (
     <Link to="/" className="flex items-center gap-3 rounded-lg p-2">
       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
@@ -128,31 +122,16 @@ const SidebarLogo = (): React.ReactElement => {
   );
 };
 
-const UserCard = (): React.ReactElement => {
-  const { user, advisor, isLoading } = useAuth();
-  const navigate = useNavigate({ from: ROUTES.HOME });
-  const { removeToken } = useAuthToken();
+const UserCard = (): ReactElement => {
+  const { user, advisor, isLoading, logout } = useAuthContext();
 
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      removeToken();
-      navigate({ to: ROUTES.LOGIN });
-    },
-  });
-
-  // Don't show card while loading or if no user
   if (isLoading || !user) {
-    return <div className="h-[72px]" />; // Placeholder to prevent layout shift
+    return <div className="h-[72px]" />;
   }
 
-  // Get display values
   const displayName = advisor?.full_name || user.email?.split('@')[0] || 'Benutzer';
   const displayRole = advisor?.role === 'admin' ? 'Administrator' : 'Benutzer';
   const initials = getInitials(displayName);
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
 
   return (
     <DropdownMenu>
@@ -209,12 +188,11 @@ const UserCard = (): React.ReactElement => {
 
         {/* Logout */}
         <DropdownMenuItem
-          onClick={handleLogout}
-          disabled={logoutMutation.isPending}
+          onClick={logout}
           className="text-destructive focus:text-destructive focus:bg-error-bg"
         >
           <LogOut className="w-5 h-5" />
-          <span>{logoutMutation.isPending ? 'Abmelden...' : 'Abmelden'}</span>
+          <span>Abmelden</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

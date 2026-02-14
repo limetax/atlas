@@ -3,18 +3,18 @@
  * Pill-shaped filter button for template categories
  */
 
-import React from 'react';
+import { type ReactElement } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TemplateCategory, TEMPLATE_CATEGORIES } from '@/types/template';
 import { cn } from '@/lib/utils';
 
-interface CategoryChipProps {
+type CategoryChipProps = {
   category: TemplateCategory;
   isActive: boolean;
   onClick: () => void;
-}
+};
 
-export const CategoryChip: React.FC<CategoryChipProps> = ({ category, isActive, onClick }) => {
+export const CategoryChip = ({ category, isActive, onClick }: CategoryChipProps): ReactElement => {
   const categoryInfo = TEMPLATE_CATEGORIES.find((c) => c.id === category);
   const label = categoryInfo?.label || category;
 

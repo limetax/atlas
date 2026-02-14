@@ -1,12 +1,12 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 
-interface LoadingSpinnerProps {
+type LoadingSpinnerProps = {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-}
+};
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'md', className = '' }) => {
+export const LoadingSpinner = ({ size = 'md', className = '' }: LoadingSpinnerProps): ReactElement => {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-8 h-8',

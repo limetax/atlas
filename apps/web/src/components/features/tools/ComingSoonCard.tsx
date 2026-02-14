@@ -1,4 +1,4 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 import { Sparkles, type LucideIcon } from 'lucide-react';
 
 type ComingSoonCardProps = {
@@ -8,12 +8,12 @@ type ComingSoonCardProps = {
   plannedFeatures: string[];
 };
 
-export const ComingSoonCard: React.FC<ComingSoonCardProps> = ({
+export const ComingSoonCard = ({
   icon: Icon,
   title,
   description,
   plannedFeatures,
-}) => {
+}: ComingSoonCardProps): ReactElement => {
   return (
     <div className="bg-card rounded-2xl border border-border p-12 text-center shadow-sm">
       <div className="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6">

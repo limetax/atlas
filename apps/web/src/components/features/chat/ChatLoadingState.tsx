@@ -1,4 +1,4 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -7,7 +7,7 @@ type ChatLoadingStateProps = {
   count?: number;
 };
 
-export const ChatLoadingState: React.FC<ChatLoadingStateProps> = ({ className, count = 3 }) => {
+export const ChatLoadingState = ({ className, count = 3 }: ChatLoadingStateProps): ReactElement => {
   return (
     <div className={cn('space-y-6', className)}>
       {Array.from({ length: count }).map((_, i) => (
@@ -17,7 +17,7 @@ export const ChatLoadingState: React.FC<ChatLoadingStateProps> = ({ className, c
   );
 };
 
-const ChatMessageSkeleton: React.FC<{ isUser: boolean }> = ({ isUser }) => {
+const ChatMessageSkeleton = ({ isUser }: { isUser: boolean }): ReactElement => {
   return (
     <div className={cn('flex gap-4', isUser ? 'justify-end' : 'justify-start')}>
       {!isUser && <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />}

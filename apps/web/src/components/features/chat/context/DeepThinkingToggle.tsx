@@ -1,4 +1,4 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 
 import { Brain } from 'lucide-react';
 
@@ -10,7 +10,7 @@ type DeepThinkingToggleProps = {
   onChange: (enabled: boolean) => void;
 };
 
-export const DeepThinkingToggle: React.FC<DeepThinkingToggleProps> = ({ enabled, onChange }) => {
+export const DeepThinkingToggle = ({ enabled, onChange }: DeepThinkingToggleProps): ReactElement => {
   return (
     <TooltipProvider>
       <Tooltip>

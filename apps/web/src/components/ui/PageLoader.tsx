@@ -1,7 +1,7 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 import { LoadingSpinner } from './LoadingSpinner';
 
-export const PageLoader: React.FC = () => {
+export const PageLoader = (): ReactElement => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted">
       <div className="text-center">

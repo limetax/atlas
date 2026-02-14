@@ -1,33 +1,25 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 
 import { Sparkles, Workflow } from 'lucide-react';
 
-import { Sidebar } from '@/components/layouts/Sidebar';
-
-export const WorkflowsPage: React.FC = () => {
+export const WorkflowsPage = (): ReactElement => {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          <div className="max-w-3xl mx-auto">
-            <PageHeader />
-            <ComingSoonCard />
-          </div>
-        </main>
+    <main className="flex-1 overflow-y-auto bg-background p-6">
+      <div className="max-w-3xl mx-auto">
+        <PageHeader />
+        <ComingSoonCard />
       </div>
-    </div>
+    </main>
   );
 };
 
-const PageHeader = () => (
+const PageHeader = (): ReactElement => (
   <div className="flex items-center gap-3 mb-8">
     <h1 className="text-2xl font-bold text-foreground">Workflows</h1>
   </div>
 );
 
-const ComingSoonCard = () => (
+const ComingSoonCard = (): ReactElement => (
   <div className="bg-card rounded-2xl border border-border p-12 text-center shadow-sm">
     <div className="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
       <Workflow className="w-10 h-10 text-primary" />

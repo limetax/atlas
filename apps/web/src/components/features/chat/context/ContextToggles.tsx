@@ -1,4 +1,4 @@
-import React from 'react';
+import { type ReactElement } from 'react';
 import { ChatContext } from '@atlas/shared';
 import { ResearchDropdown } from './ResearchDropdown';
 import { IntegrationToggle } from './IntegrationToggle';
@@ -9,7 +9,7 @@ type ContextTogglesProps = {
   onContextChange: (context: ChatContext) => void;
 };
 
-export const ContextToggles: React.FC<ContextTogglesProps> = ({ context, onContextChange }) => {
+export const ContextToggles = ({ context, onContextChange }: ContextTogglesProps): ReactElement => {
   return (
     <div className="flex gap-2 items-center flex-wrap">
       <ResearchDropdown

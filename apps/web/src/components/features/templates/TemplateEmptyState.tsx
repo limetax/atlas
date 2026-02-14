@@ -3,7 +3,7 @@
  * Main empty state UI showing templates, search, and category filters
  */
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactElement } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Search, Bot } from 'lucide-react';
 import { TEMPLATES } from '@/data/templates';
@@ -12,11 +12,11 @@ import { TemplateCard } from './TemplateCard';
 import { CategoryChip } from './CategoryChip';
 import { Input } from '@/components/ui/input';
 
-interface TemplateEmptyStateProps {
+type TemplateEmptyStateProps = {
   onInsertTemplate: (content: string) => void;
-}
+};
 
-export const TemplateEmptyState: React.FC<TemplateEmptyStateProps> = ({ onInsertTemplate }) => {
+export const TemplateEmptyState = ({ onInsertTemplate }: TemplateEmptyStateProps): ReactElement => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TemplateCategory | null>(null);
 

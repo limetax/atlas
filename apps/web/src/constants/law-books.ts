@@ -3,11 +3,11 @@
  * Supports linking to German tax law references
  */
 
-export interface LawBook {
+export type LawBook = {
   name: string;
   pattern: RegExp;
   urlTemplate: string;
-}
+};
 
 export const LAW_BOOKS = {
   AO: {

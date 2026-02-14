@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, type ReactElement } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
@@ -8,7 +8,7 @@ import { useAuthToken } from '@/hooks/useAuthToken';
 import { ROUTES } from '@/constants';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
-export const LoginForm: React.FC = () => {
+export const LoginForm = (): ReactElement => {
   const navigate = useNavigate({ from: ROUTES.LOGIN });
   const { setToken } = useAuthToken();
   const [email, setEmail] = useState('');
@@ -65,12 +65,12 @@ const ErrorAlert = ({ error }: { error?: string }) => {
   );
 };
 
-interface EmailFieldProps {
+type EmailFieldProps = {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   disabled: boolean;
   error: boolean;
-}
+};
 
 const EmailField = ({ value, onChange, disabled, error }: EmailFieldProps) => {
   return (
@@ -96,12 +96,12 @@ const EmailField = ({ value, onChange, disabled, error }: EmailFieldProps) => {
   );
 };
 
-interface PasswordFieldProps {
+type PasswordFieldProps = {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   disabled: boolean;
   error: boolean;
-}
+};
 
 const PasswordFieldWithReset = ({ value, onChange, disabled, error }: PasswordFieldProps) => {
   return (
