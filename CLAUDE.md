@@ -109,6 +109,14 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 
 - **No direct `localStorage` reads in components** — use `useAuthContext()` or `useLocalStorage()`. Route guards (`beforeLoad`) are the only exception since they run outside the React tree
 
+#### Toasts (user feedback)
+
+- **Library:** [Sonner](https://sonner.emilkowal.ski/) via `components/ui/sonner.tsx` wrapper. `<Toaster />` is mounted in `_authenticated.tsx`
+- **Import:** `import { toast } from 'sonner'` — call `toast.success()`, `toast.error()`, etc. directly
+- **Mutations must show feedback:** every `useMutation` with a user-triggered action needs `onError` → `toast.error()`. Add `onSuccess` → `toast.success()` for destructive or explicit actions (delete, rename). Silent context updates can skip success toasts
+- **Language:** toast messages are in German (matches UI)
+- **Don't toast streaming errors** — chat streaming errors use inline assistant messages, not toasts
+
 ### Design System
 
 `design.json` in repo root is the source of truth for all design tokens — colors, typography, spacing, components, and layouts. Consult it when building or modifying UI components. Key decisions:
