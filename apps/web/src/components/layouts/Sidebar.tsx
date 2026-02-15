@@ -1,10 +1,13 @@
 import {
   Building2,
+  Calculator,
   FileText,
+  Folder,
   LayoutGrid,
   LogOut,
   MessageSquare,
   Settings,
+  TrendingUp,
   User,
   Workflow,
   Wrench,
@@ -24,7 +27,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 
 export const Sidebar = () => {
   return (
-    <aside className="w-[260px] bg-sidebar border-r border-border flex flex-col h-full overflow-hidden">
+    <aside className="w-[280px] bg-sidebar border-r border-border flex flex-col h-full overflow-hidden">
       {/* Top section - Logo */}
       <div className="flex-shrink-0 p-6">
         <SidebarLogo />
@@ -60,13 +63,6 @@ const Navigation = () => {
       isActiveCheck: (path: string): boolean => path === '/',
     },
     {
-      to: '/tools',
-      label: 'Tools',
-      icon: Wrench,
-      badge: null,
-      isActiveCheck: (path: string): boolean => path === '/tools',
-    },
-    {
       to: '/chat',
       label: 'Chat',
       icon: MessageSquare,
@@ -74,18 +70,46 @@ const Navigation = () => {
       isActiveCheck: (path: string): boolean => path === '/chat' || path.startsWith('/chat/'),
     },
     {
-      to: '/assistants',
+      to: '/tools',
+      label: 'Tools',
+      icon: Wrench,
+      badge: null,
+      isActiveCheck: (path: string): boolean => path === '/tools',
+    },
+    {
+      to: '/assistenten',
       label: 'Vorlagen',
       icon: FileText,
       badge: null,
-      isActiveCheck: (path: string): boolean => path.startsWith('/assistants'),
+      isActiveCheck: (path: string): boolean => path.startsWith('/assistenten'),
     },
     {
-      to: '/workflows',
-      label: 'Workflows',
+      to: '/automatisierungen',
+      label: 'Automatisierungen',
       icon: Workflow,
       badge: 'bald',
-      isActiveCheck: (path: string): boolean => path.startsWith('/workflows'),
+      isActiveCheck: (path: string): boolean => path.startsWith('/automatisierungen'),
+    },
+    {
+      to: '/buchhaltung',
+      label: 'Buchhaltung',
+      icon: Calculator,
+      badge: 'bald',
+      isActiveCheck: (path: string): boolean => path.startsWith('/buchhaltung'),
+    },
+    {
+      to: '/controlling',
+      label: 'Controlling',
+      icon: TrendingUp,
+      badge: 'bald',
+      isActiveCheck: (path: string): boolean => path.startsWith('/controlling'),
+    },
+    {
+      to: '/portal',
+      label: 'Portal',
+      icon: Folder,
+      badge: 'bald',
+      isActiveCheck: (path: string): boolean => path.startsWith('/portal'),
     },
   ];
 
