@@ -66,7 +66,7 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 - Prefix booleans with `is`, `has`, `should`, `can`
 - Functions use action verbs (`getUser`, `handleClick`, `validateInput`)
 - Prefer arrow functions (`const fn = () => {}`) — use `function` declarations only when hoisting is needed
-- Explicit return types on all exported functions
+- Explicit return types on all exported functions (exception: JSX components — TypeScript infers these correctly)
 
 ### Backend (`apps/api`)
 
