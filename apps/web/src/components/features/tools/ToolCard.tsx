@@ -28,13 +28,11 @@ export const ToolCard = ({ tool }: ToolCardProps): JSX.Element => {
   const isDisabled = tool.status === 'coming-soon' || tool.status === 'offline';
 
   return (
-    <div
+    <button
+      type="button"
       onClick={handleClick}
-      className={`relative bg-card rounded-xl border border-border shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 ${
-        isDisabled
-          ? 'cursor-not-allowed opacity-60'
-          : 'cursor-pointer hover:shadow-lg hover:border-primary'
-      }`}
+      disabled={isDisabled}
+      className="relative w-full text-left bg-card rounded-xl border border-border shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 enabled:cursor-pointer enabled:hover:shadow-lg enabled:hover:border-primary"
     >
       {/* Status Badge */}
       {tool.badge && (
@@ -89,6 +87,6 @@ export const ToolCard = ({ tool }: ToolCardProps): JSX.Element => {
           strokeWidth={1.75}
         />
       </div>
-    </div>
+    </button>
   );
 };
