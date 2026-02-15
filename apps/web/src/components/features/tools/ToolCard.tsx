@@ -1,16 +1,17 @@
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { type Tool } from '@/data/tools';
+import type { Tool } from '@/data/tools';
+import { ArrowRight } from 'lucide-react';
+import { type JSX } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 
 type ToolCardProps = {
   tool: Tool;
 };
 
-export const ToolCard = ({ tool }: ToolCardProps) => {
+export const ToolCard = ({ tool }: ToolCardProps): JSX.Element => {
   const navigate = useNavigate();
 
-  const handleStart = () => {
+  const handleClick = () => {
     if (tool.status === 'active' || tool.status === 'beta') {
       // Special handling for Recherche tool - opens chat with template
       if (tool.id === 'recherche-chat') {
@@ -27,7 +28,14 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
   const isDisabled = tool.status === 'coming-soon' || tool.status === 'offline';
 
   return (
-    <div className="relative bg-card rounded-xl border border-border shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-lg hover:border-primary">
+    <div
+      onClick={handleClick}
+      className={`relative bg-card rounded-xl border border-border shadow-sm p-6 flex flex-col gap-4 transition-all duration-200 ${
+        isDisabled
+          ? 'cursor-not-allowed opacity-60'
+          : 'cursor-pointer hover:shadow-lg hover:border-primary'
+      }`}
+    >
       {/* Status Badge */}
       {tool.badge && (
         <Badge
@@ -65,15 +73,22 @@ export const ToolCard = ({ tool }: ToolCardProps) => {
         <p className="text-sm text-muted-foreground line-clamp-2">{tool.description}</p>
       </div>
 
-      {/* Action Button */}
-      <Button
-        variant={tool.featured ? 'default' : 'outline'}
-        onClick={handleStart}
-        disabled={isDisabled}
-        className="w-full"
-      >
-        Start
-      </Button>
+      {/* Start Link */}
+      <div className="flex justify-end items-center gap-2">
+        <span
+          className={`text-sm font-semibold transition-colors ${
+            isDisabled ? 'text-muted-foreground' : 'text-primary'
+          }`}
+        >
+          Start
+        </span>
+        <ArrowRight
+          className={`w-4 h-4 transition-colors ${
+            isDisabled ? 'text-muted-foreground' : 'text-primary'
+          }`}
+          strokeWidth={1.75}
+        />
+      </div>
     </div>
   );
 };

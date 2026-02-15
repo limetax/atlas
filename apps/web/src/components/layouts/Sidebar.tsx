@@ -7,6 +7,7 @@ import {
   Settings,
   User,
   Workflow,
+  Wrench,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -56,7 +57,14 @@ const Navigation = () => {
       label: 'Dashboard',
       icon: LayoutGrid,
       badge: null,
-      isActiveCheck: (path: string): boolean => path === '/' || path.startsWith('/tools/'),
+      isActiveCheck: (path: string): boolean => path === '/',
+    },
+    {
+      to: '/tools',
+      label: 'Tools',
+      icon: Wrench,
+      badge: null,
+      isActiveCheck: (path: string): boolean => path === '/tools',
     },
     {
       to: '/chat',

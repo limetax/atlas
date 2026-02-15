@@ -17,6 +17,26 @@ import {
 export const TOOL_STATUSES = ['active', 'beta', 'coming-soon', 'offline'] as const;
 export type ToolStatus = (typeof TOOL_STATUSES)[number];
 
+export const TOOL_CATEGORIES = ['analyse-recherche', 'dokumentenverarbeitung'] as const;
+export type ToolCategory = (typeof TOOL_CATEGORIES)[number];
+
+export type CategoryMeta = {
+  id: ToolCategory;
+  name: string;
+  description?: string;
+};
+
+export const CATEGORY_META: CategoryMeta[] = [
+  {
+    id: 'analyse-recherche',
+    name: 'Analyse & Recherche',
+  },
+  {
+    id: 'dokumentenverarbeitung',
+    name: 'Dokumentenverarbeitung',
+  },
+];
+
 export type Tool = {
   id: string;
   name: string;
@@ -24,6 +44,7 @@ export type Tool = {
   icon: LucideIcon;
   route: string;
   status: ToolStatus;
+  category: ToolCategory;
   featured?: boolean; // For primary button styling
   badge?: string; // Display text for badge (OFFLINE, BETA, etc.)
 };
@@ -36,6 +57,7 @@ export const TOOLS: Tool[] = [
     icon: Search,
     route: '/chat', // Opens new chat with template
     status: 'active',
+    category: 'analyse-recherche',
     featured: true, // Primary tool with filled button
   },
   {
@@ -45,6 +67,7 @@ export const TOOLS: Tool[] = [
     icon: GitCompare,
     route: '/tools/hr-abgleich',
     status: 'coming-soon',
+    category: 'dokumentenverarbeitung',
     badge: 'BALD',
   },
   {
@@ -54,6 +77,7 @@ export const TOOLS: Tool[] = [
     icon: FileCheck,
     route: '/tools/bescheid-pruefen',
     status: 'coming-soon',
+    category: 'analyse-recherche',
     badge: 'BALD',
   },
   {
@@ -63,6 +87,7 @@ export const TOOLS: Tool[] = [
     icon: Lightbulb,
     route: '/tools/gestaltung',
     status: 'coming-soon',
+    category: 'analyse-recherche',
     badge: 'BALD',
   },
   {
@@ -72,6 +97,7 @@ export const TOOLS: Tool[] = [
     icon: FileText,
     route: '/tools/dokument-zusammenfassen',
     status: 'coming-soon',
+    category: 'dokumentenverarbeitung',
     badge: 'BALD',
   },
   {
@@ -81,6 +107,11 @@ export const TOOLS: Tool[] = [
     icon: FileSpreadsheet,
     route: '/tools/pdf-to-excel',
     status: 'coming-soon',
+    category: 'dokumentenverarbeitung',
     badge: 'BALD',
   },
 ];
+
+export const getToolsByCategory = (category: ToolCategory): Tool[] => {
+  return TOOLS.filter((tool) => tool.category === category);
+};
