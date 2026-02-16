@@ -10,6 +10,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { ChatSession, Message, ChatContext, ChatMessageMetadata } from '@atlas/shared';
 import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
@@ -125,16 +126,31 @@ export function useChatSessions(): UseChatSessionsReturn {
   // ─── Mutations ─────────────────────────────────────────────────────────
 
   const deleteChatMutation = trpc.chat.deleteChat.useMutation({
-    onSuccess: () => utils.chat.listChats.invalidate(),
-    onError: (error) => logger.error('Failed to delete chat:', error),
+    onSuccess: () => {
+      utils.chat.listChats.invalidate();
+      toast.success('Chat wurde gelöscht');
+    },
+    onError: (error) => {
+      logger.error('Failed to delete chat:', error);
+      toast.error('Chat konnte nicht gelöscht werden');
+    },
   });
   const updateTitleMutation = trpc.chat.updateChatTitle.useMutation({
-    onSuccess: () => utils.chat.listChats.invalidate(),
-    onError: (error) => logger.error('Failed to update chat title:', error),
+    onSuccess: () => {
+      utils.chat.listChats.invalidate();
+      toast.success('Titel wurde aktualisiert');
+    },
+    onError: (error) => {
+      logger.error('Failed to update chat title:', error);
+      toast.error('Titel konnte nicht aktualisiert werden');
+    },
   });
   const updateContextMutation = trpc.chat.updateChatContext.useMutation({
     onSuccess: () => utils.chat.listChats.invalidate(),
-    onError: (error) => logger.error('Failed to update chat context:', error),
+    onError: (error) => {
+      logger.error('Failed to update chat context:', error);
+      toast.error('Kontext konnte nicht aktualisiert werden');
+    },
   });
 
   // ─── Actions ───────────────────────────────────────────────────────────

@@ -109,27 +109,47 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 
 - **No direct `localStorage` reads in components** — use `useAuthContext()` or `useLocalStorage()`. Route guards (`beforeLoad`) are the only exception since they run outside the React tree
 
+#### Toasts (user feedback)
+
+- **Library:** [Sonner](https://sonner.emilkowal.ski/) via `components/ui/sonner.tsx` wrapper. `<Toaster />` is mounted in `_authenticated.tsx`
+- **Import:** `import { toast } from 'sonner'` — call `toast.success()`, `toast.error()`, etc. directly
+- **Mutations must show feedback:** every `useMutation` with a user-triggered action needs `onError` → `toast.error()`. Add `onSuccess` → `toast.success()` for destructive or explicit actions (delete, rename). Silent context updates can skip success toasts
+- **Language:** toast messages are in German (matches UI)
+- **Don't toast streaming errors** — chat streaming errors use inline assistant messages, not toasts
+
+#### Tailwind + shadcn styling
+
+**Critical rules:**
+
+- ❌ **Never concatenate class names**: `className={`bg-${color}-500`}` breaks in production (Tailwind can't detect)
+- ✅ **Use complete strings**: `className={isError ? 'bg-red-500' : 'bg-green-500'}` or object maps
+- ✅ **Dynamic runtime values**: `style={{ "--bg": color }} className="bg-[var(--bg)]"`
+- ✅ **Use `cn()` for conditionals**: `cn('base-class', isActive && 'active-class', className)`
+- ✅ **Order classes logically**: layout → sizing → spacing → typography → colors → borders → effects → states
+
+**shadcn component patterns:**
+
+- ✅ **Extend with CVA**: add variants to `buttonVariants` (don't fork components)
+- ✅ **Composition over props**: `<Card className="p-6"><CardHeader>...</CardHeader></Card>` not `<Card padding="large">`
+- ✅ **Always accept `className` prop**: allow consumers to override styles (spread it last in `cn()`)
+
 ### Design System
 
-`design.json` in repo root is the source of truth for all design tokens — colors, typography, spacing, components, and layouts. Consult it when building or modifying UI components. Key decisions:
+**Architecture:** `design.json` (design decisions) → `globals.css` (CSS variables + Tailwind mappings) → components (semantic classes)
 
-- **Theme via CSS variables** — customize in `globals.css` `:root`, not by hardcoding Tailwind color classes in components
-- **Primary:** `#FF5E00` (orange). **Neutrals:** cold gray (Tailwind gray scale). No warm tinting, no lime/green accent
-- **Fonts:** Manrope (display), Inter (body), Geist Mono (code)
-- **Only custom tokens defined** — standard Tailwind defaults (spacing scale, font sizes, weights, breakpoints) are inherited, not redeclared
-- **Semantic token references** — components use palette keys (e.g., `primary.orange.500`, `neutral.gray.200`), not raw hex
-- **Dark mode is deprioritized** — cold dark values defined for future use
-- Related Linear issue: TEC-69
+**Color styling rules:**
 
-**CRITICAL: Never hardcode Tailwind color classes** (e.g., `bg-gray-100`, `text-slate-400`, `border-blue-200`). Always use:
+❌ **Never hardcode Tailwind color classes** (`bg-gray-100`, `text-slate-400`, `border-blue-200`)
 
-1. **Semantic CSS variables** via Tailwind arbitrary values: `bg-[var(--chat-message-user-bg)]`, `text-[var(--muted-foreground)]`
-2. **Shadcn semantic classes** when available: `bg-card`, `text-foreground`, `border-border`
-3. **Design token classes** if explicitly mapped in `globals.css`: `bg-orange-500` (only when defined in `@theme inline`)
+✅ **Always use (in order of preference):**
 
-**Exception:** Standard Tailwind utilities for spacing (`p-4`, `mx-auto`), typography (`text-sm`, `font-bold`), layout (`flex`, `grid`), and other non-color properties are OK.
+1. **Semantic classes**: `bg-primary`, `text-foreground`, `border-border`, `bg-muted` (first choice)
+2. **Token classes**: `bg-orange-500`, `text-gray-700` (when mapped in `globals.css @theme inline`)
+3. **Arbitrary values**: `bg-[var(--chat-message-user-bg)]` (for CSS variables not in `@theme`)
 
-**Why:** Hardcoded colors break theming, make maintenance difficult, and bypass the design system. CSS variables enable consistent theming, dark mode support, and centralized design token management.
+✅ **Standard Tailwind utilities are OK:** `p-4`, `text-sm`, `font-bold`, `flex`, `rounded-md`, `shadow-lg` (spacing, typography, layout, effects)
+
+**Why:** CSS variables enable theming and centralized token management. Hardcoded colors bypass the design system.
 
 ## Commits
 

@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { Sidebar } from '@/components/layouts/Sidebar';
+import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { STORAGE_KEYS, ROUTES } from '@/constants';
 import { isTokenExpired } from '@/utils/validators';
@@ -29,6 +30,7 @@ function AuthenticatedLayout() {
           <Outlet />
         </div>
       </div>
+      <Toaster position="bottom-right" />
     </AuthProvider>
   );
 }
