@@ -1,5 +1,5 @@
 import { createTRPCReact } from '@trpc/react-query';
-import { httpBatchLink, type TRPCLink } from '@trpc/client';
+import { httpBatchLink, type TRPCLink, TRPCClientError } from '@trpc/client';
 import { observable } from '@trpc/server/observable';
 import type { AppRouter } from '@atlas/api/@generated';
 import { env } from '@/config/env';
@@ -10,10 +10,27 @@ import { STORAGE_KEYS, API_ENDPOINTS, ROUTES } from '@/constants';
 export type { AppRouter };
 
 /**
- * Prevents multiple concurrent 401 responses (common with httpBatchLink)
- * from triggering repeated navigations.
+ * Type guard to check if an error is a tRPC UNAUTHORIZED error.
+ * Checks both the tRPC error code and HTTP status for completeness.
  */
-let isRedirecting = false;
+export const isTrpcUnauthorized = (error: unknown): error is TRPCClientError<AppRouter> => {
+  if (!(error instanceof TRPCClientError)) {
+    return false;
+  }
+  // Check tRPC error code (primary check)
+  if (error.data?.code === 'UNAUTHORIZED') {
+    return true;
+  }
+  // Fallback: check HTTP status (for edge cases where code isn't set)
+  const data = error.data as Record<string, unknown> | undefined;
+  return data?.httpStatus === 401;
+};
+
+/**
+ * Checks if we're already on the login page to prevent duplicate navigations.
+ * More robust than a timeout-based flag since it checks actual router state.
+ */
+const isOnLoginPage = (): boolean => router.state.location.pathname === ROUTES.LOGIN;
 
 /**
  * Custom tRPC link that intercepts UNAUTHORIZED errors and navigates
@@ -29,13 +46,9 @@ const authErrorLink: TRPCLink<AppRouter> = () => {
         },
         error(err) {
           observer.error(err);
-          if (err?.data?.code === 'UNAUTHORIZED' && !isRedirecting) {
-            isRedirecting = true;
+          if (isTrpcUnauthorized(err) && !isOnLoginPage()) {
             localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
             router.navigate({ to: ROUTES.LOGIN, replace: true });
-            setTimeout(() => {
-              isRedirecting = false;
-            }, 1000);
           }
         },
         complete() {
