@@ -141,6 +141,16 @@ Conventional commits with **required scope**: `type(scope): message`
 
 Pre-commit hooks run lint-staged (Prettier + ESLint) and full typecheck.
 
+## Pull Requests
+
+Always use the PR template at [.github/pull_request_template.md](.github/pull_request_template.md) when creating pull requests. The template includes:
+
+- **What**: Summarize code changes for easy reviewer understanding
+- **Why**: Explain the reasoning (1-paragraph summary, not just ticket links)
+- **Test**: Describe testing approach (unit/e2e tests, manual testing, logs, screenshots)
+- **Notes**: PR-specific callouts and gotchas
+- **Links**: Related Notion pages, Miro diagrams, etc.
+
 ## Worktrees
 
 When working in a git worktree, `.env` files are not shared from the main repository. At the start of a worktree session, copy env files:
