@@ -25,6 +25,7 @@
     "@tanstack/react-router-devtools": "^1.94.4",
     "@trpc/client": "^11.0.0-rc.665",
     "@trpc/react-query": "^11.0.0-rc.665",
+    "@trpc/server": "^11.0.0-rc.665",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.554.0",
