@@ -1,0 +1,37 @@
+name: PR Lint
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  pr-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: morrisoncole/pr-lint-action@v1.7.1
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          title-regex: '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)\([^)]+\): [a-z][^.]*$'
+          on-failed-regex-fail-action: true
+          on-failed-regex-request-changes: true
+          on-failed-regex-comment: |
+            ❌ PR title must follow conventional commit format with required scope:
+
+            **Format:** `type(scope): message`
+
+            **Valid types:** feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+            **Scope:** Any non-empty scope in parentheses (e.g., api, tec-123, auth, custom-scope)
+
+            **Rules:**
+            - Message must start with lowercase letter
+            - Message must not end with a period
+            - Max 100 characters total
+
+            **Examples:**
+            - ✅ `feat(tec-123): add user authentication`
+            - ✅ `fix(api): resolve memory leak in chat service`
+            - ✅ `docs(web): update component documentation`
+            - ❌ `feat: add feature` (missing scope)
+            - ❌ `feat(tec-123): Add feature` (uppercase message)
+            - ❌ `feat(tec-123): add feature.` (ends with period)
+          on-succeeded-regex-dismiss-review-comment: '✅ PR title follows conventional commit format!'
