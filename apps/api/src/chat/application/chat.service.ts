@@ -388,7 +388,9 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
 
     // 3. Process uploaded files in parallel (before LLM call so content is available for RAG)
     let processedDocuments: ChatDocument[] = [];
+    this.logger.debug(`Files received: ${files?.length ?? 0} file(s)`);
     if (files && files.length > 0) {
+      this.logger.log(`Processing ${files.length} file(s) for chat ${resolvedChatId}`);
       const results = await Promise.all(
         files.map((file) => this.documentService.processAndStore(file, resolvedChatId, advisorId))
       );
