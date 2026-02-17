@@ -8,6 +8,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 import { DocumentPersistenceMapper } from './document-persistence.mapper';
+import { sanitizeTextForPostgres } from './text-sanitizer.util';
 
 /**
  * Supabase Document Repository - Infrastructure implementation for document data access
@@ -122,36 +123,27 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
     return true;
   }
 
-  /**
-   * Sanitize text to remove invalid Unicode characters that PostgreSQL can't handle
-   * Removes null bytes, surrogate pairs, and other problematic characters
-   */
-  private sanitizeText(text: string): string {
-    return (
-      text
-        // Remove null bytes
-        // eslint-disable-next-line no-control-regex -- Intentionally removing control characters for PostgreSQL compatibility
-        .replace(/\u0000/g, '')
-        // Remove surrogate pairs (invalid UTF-8)
-        .replace(/[\uD800-\uDFFF]/g, '')
-        // Remove other problematic control characters but keep newlines and tabs
-        // eslint-disable-next-line no-control-regex -- Intentionally removing control characters for PostgreSQL compatibility
-        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
-        // Normalize Unicode to NFC form (canonical composition)
-        .normalize('NFC')
-    );
-  }
-
   async insertChunks(chunks: DocumentChunkInsert[]): Promise<void> {
-    const rows = chunks.map((chunk) => ({
-      document_id: chunk.documentId,
-      chat_id: chunk.chatId,
-      advisor_id: chunk.advisorId,
-      content: this.sanitizeText(chunk.content),
-      page_number: chunk.pageNumber ?? null,
-      chunk_index: chunk.chunkIndex,
-      embedding: chunk.embedding,
-    }));
+    const rows = chunks.map((chunk) => {
+      const { sanitized, charsRemoved } = sanitizeTextForPostgres(chunk.content);
+
+      // Log when sanitization removes characters to track data loss
+      if (charsRemoved > 0) {
+        this.logger.warn(
+          `Sanitization removed ${charsRemoved} character${charsRemoved !== 1 ? 's' : ''} from document chunk (${chunk.content.length} → ${sanitized.length} chars)`
+        );
+      }
+
+      return {
+        document_id: chunk.documentId,
+        chat_id: chunk.chatId,
+        advisor_id: chunk.advisorId,
+        content: sanitized,
+        page_number: chunk.pageNumber ?? null,
+        chunk_index: chunk.chunkIndex,
+        embedding: chunk.embedding,
+      };
+    });
 
     const { error } = await this.supabase.db.from('chat_document_chunks').insert(rows);
 
