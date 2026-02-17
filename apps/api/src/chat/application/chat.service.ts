@@ -1,18 +1,15 @@
-import { ChatContext, type ChatDocument, ChatMessageMetadata, MessageRole } from '@atlas/shared';
+import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
 import { IChatRepository } from '@chat/domain/chat.entity';
 import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
 import { ClientService } from '@datev/application/client.service';
 import { DocumentService } from '@document/application/document.service';
 import { LlmService } from '@llm/application/llm.service';
+import { LlmMessage } from '@llm/domain/llm-provider.interface';
+import { encodeFileToContentBlock } from '@llm/infrastructure/file-encoding.util';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 
 import { CONTEXT_PROMPTS, TITLE_GENERATION_PROMPT } from './chat.prompts';
-
-type LlmMessage = {
-  role: MessageRole;
-  content: string;
-};
 
 /**
  * Chat Service - Application layer for chat functionality
@@ -38,6 +35,9 @@ export class ChatService {
    * @param history - Previous messages in the conversation
    * @param customSystemPrompt - Optional custom system prompt (for assistants)
    * @param chatContext - Optional context for MCP tool selection and client filtering
+   * @param chatId - Optional chat ID for RAG context
+   * @param files - Optional uploaded files (PDFs, images)
+   * @param advisorId - Optional advisor ID for RAG storage
    * @returns AsyncGenerator yielding response chunks and citations
    */
   async *processMessage(
@@ -45,7 +45,9 @@ export class ChatService {
     history: Message[],
     customSystemPrompt?: string,
     chatContext?: ChatContext,
-    chatId?: string
+    chatId?: string,
+    files?: Express.Multer.File[],
+    advisorId?: string
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     // 1. Extract and validate client filter
     let clientIdFilter: string | undefined;
@@ -92,12 +94,25 @@ export class ChatService {
     // 4. Convert message history to LLM format (type-safe, no assertions)
     const llmMessages: LlmMessage[] = [
       ...this.filterUserAssistantMessages(history),
-      { role: 'user', content: userMessage },
+      {
+        role: 'user',
+        content: files?.length
+          ? [{ type: 'text', text: userMessage }, ...files.map(encodeFileToContentBlock)]
+          : userMessage,
+      },
     ];
 
     // 5. Yield citations first (if any)
     if (citations.length > 0) {
       yield { type: 'citations', citations };
+    }
+
+    // 5b. Fire-and-forget: Store files in RAG async (doesn't block response)
+    if (files?.length && chatId && advisorId) {
+      this.storeFilesInRagAsync(files, chatId, advisorId).catch((error: Error) => {
+        this.logger.error('Background RAG storage failed', error.stack);
+        // Silent failure - user already got their response
+      });
     }
 
     // 6. Stream response from LLM with context for tool access
@@ -386,32 +401,11 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       );
     }
 
-    // 3. Process uploaded files in parallel (before LLM call so content is available for RAG)
-    let processedDocuments: ChatDocument[] = [];
+    // 3. Log files received (RAG storage happens async in processMessage)
     this.logger.debug(`Files received: ${files?.length ?? 0} file(s)`);
-    if (files && files.length > 0) {
-      this.logger.log(`Processing ${files.length} file(s) for chat ${resolvedChatId}`);
-      const results = await Promise.all(
-        files.map((file) => this.documentService.processAndStore(file, resolvedChatId, advisorId))
-      );
-      processedDocuments = results.map((doc) => ({
-        id: doc.id,
-        chatId: doc.chatId,
-        fileName: doc.fileName,
-        fileSize: doc.fileSize,
-        status: doc.status,
-        errorMessage: doc.errorMessage,
-        chunkCount: doc.chunkCount,
-        createdAt: doc.createdAt,
-      }));
 
-      yield { type: 'files_processed', documents: processedDocuments };
-    }
-
-    // 4. Persist user message (with document metadata if files were attached)
-    const userMetadata: ChatMessageMetadata =
-      processedDocuments.length > 0 ? { documents: processedDocuments } : {};
-    await this.chatRepo.addMessage(resolvedChatId, 'user', message, userMetadata);
+    // 4. Persist user message (files will be stored in RAG asynchronously)
+    await this.chatRepo.addMessage(resolvedChatId, 'user', message, {});
 
     // 5. Stream response, accumulate for persistence
     let assistantContent = '';
@@ -422,7 +416,9 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       history,
       customSystemPrompt,
       context,
-      resolvedChatId
+      resolvedChatId,
+      files,
+      advisorId
     )) {
       yield chunk;
 
@@ -464,6 +460,30 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     if (trimmedTitle) {
       await this.chatRepo.updateTitle(chatId, advisorId, trimmedTitle);
       this.logger.debug(`Generated smart title for chat ${chatId}: "${trimmedTitle}"`);
+    }
+  }
+
+  /**
+   * Store files in RAG asynchronously (fire-and-forget)
+   * Errors are logged but don't block the user response
+   */
+  private async storeFilesInRagAsync(
+    files: Express.Multer.File[],
+    chatId: string,
+    advisorId: string
+  ): Promise<void> {
+    for (const file of files) {
+      try {
+        // Use Claude for text extraction instead of DocumentService
+        await this.documentService.processAndStoreWithClaude(file, chatId, advisorId);
+        this.logger.log(`Successfully stored file "${file.originalname}" in RAG`);
+      } catch (error) {
+        this.logger.error(
+          `Failed to store file "${file.originalname}" in RAG`,
+          error instanceof Error ? error.stack : String(error)
+        );
+        // Continue with other files
+      }
     }
   }
 }

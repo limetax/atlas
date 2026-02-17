@@ -275,7 +275,7 @@ const InputArea = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="application/pdf,.pdf"
+                accept="application/pdf,.pdf,.jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                 multiple
                 className="hidden"
                 onChange={handleFileInputChange}
