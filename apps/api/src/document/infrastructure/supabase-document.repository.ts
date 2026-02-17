@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import { type DocumentStatus } from '@atlas/shared';
 import {
-  IDocumentRepository,
   type ChatDocumentEntity,
   type DocumentChunkInsert,
+  IDocumentRepository,
 } from '@document/domain/document.entity';
+import { Injectable, Logger } from '@nestjs/common';
+import { SupabaseService } from '@shared/infrastructure/supabase.service';
+
 import { DocumentPersistenceMapper } from './document-persistence.mapper';
+import { sanitizeTextForPostgres } from './text-sanitizer.util';
 
 /**
  * Supabase Document Repository - Infrastructure implementation for document data access
@@ -122,15 +124,26 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
   }
 
   async insertChunks(chunks: DocumentChunkInsert[]): Promise<void> {
-    const rows = chunks.map((chunk) => ({
-      document_id: chunk.documentId,
-      chat_id: chunk.chatId,
-      advisor_id: chunk.advisorId,
-      content: chunk.content,
-      page_number: chunk.pageNumber ?? null,
-      chunk_index: chunk.chunkIndex,
-      embedding: chunk.embedding,
-    }));
+    const rows = chunks.map((chunk) => {
+      const { sanitized, charsRemoved } = sanitizeTextForPostgres(chunk.content);
+
+      // Log when sanitization removes characters to track data loss
+      if (charsRemoved > 0) {
+        this.logger.warn(
+          `Sanitization removed ${charsRemoved} character${charsRemoved !== 1 ? 's' : ''} from document chunk (${chunk.content.length} → ${sanitized.length} chars)`
+        );
+      }
+
+      return {
+        document_id: chunk.documentId,
+        chat_id: chunk.chatId,
+        advisor_id: chunk.advisorId,
+        content: sanitized,
+        page_number: chunk.pageNumber ?? null,
+        chunk_index: chunk.chunkIndex,
+        embedding: chunk.embedding,
+      };
+    });
 
     const { error } = await this.supabase.db.from('chat_document_chunks').insert(rows);
 
