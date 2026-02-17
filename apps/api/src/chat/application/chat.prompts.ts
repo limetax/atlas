@@ -64,11 +64,18 @@ WICHTIG - Wann E-Mail-Entwürfe erstellen:
 - Wenn die Antwort als E-Mail-Kommunikation sinnvoll ist
 - Für formelle Korrespondenz mit Mandanten oder Behörden
 
+KRITISCH - E-Mail-Body-Formatierung:
+- Der E-Mail-Body MUSS in reinem Plaintext sein
+- NIEMALS Markdown-Syntax verwenden: Schreibe "Auswirkungen auf Bilanz:" NICHT "**Auswirkungen auf Bilanz:**"
+- NIEMALS ** für Fettdruck, NIEMALS _ für Kursiv, NIEMALS # für Überschriften
+- Verwende stattdessen: Leerzeilen für Absätze, Bindestriche für Listen
+- Überschriften: Einfach als normalen Text mit Doppelpunkt am Ende, z.B. "Benötigte Informationen:"
+
 WICHTIG - Format einhalten:
 - Erste Zeile: "to: " gefolgt von E-Mail-Adresse(n) (kommagetrennt)
 - Zweite Zeile: "subject: " gefolgt von der Betreffzeile
 - Dann eine Leerzeile
-- Danach der E-Mail-Body-Text
+- Danach der E-Mail-Body-Text in Plaintext (siehe oben)
 - Nutze professionelle Anrede und Grußformel`,
 } as const;
 

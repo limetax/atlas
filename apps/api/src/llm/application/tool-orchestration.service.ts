@@ -61,9 +61,16 @@ export class ToolOrchestrationService {
 
     const allMessages = [
       new HumanMessage(systemPrompt),
-      ...messages.map((m) =>
-        m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)
-      ),
+      ...messages.map((m) => {
+        if (m.role === 'user') {
+          // HumanMessage accepts both string and ContentBlock[]
+          return new HumanMessage(m.content);
+        }
+        // AIMessage only accepts string (assistant doesn't send content blocks)
+        return new AIMessage(
+          typeof m.content === 'string' ? m.content : extractTextContent(m.content)
+        );
+      }),
     ];
 
     // No tools = simple streaming

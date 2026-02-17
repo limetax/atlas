@@ -10,20 +10,24 @@ import { ToolResolutionService } from '@llm/application/tool-resolution.service'
 import { ToolOrchestrationService } from '@llm/application/tool-orchestration.service';
 import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
 import { IToolProvider } from '@llm/domain/tool-provider.interface';
+import { ITextExtractor } from '@llm/domain/text-extractor.interface';
 
 /**
  * LLM Module - Provides language model and embeddings services
  * @Global so these services are available throughout the app
  *
  * Architecture (DDD with LangChain as foundation):
- * - Domain: LangChain types + business types (Tool, ChatContext)
- * - Application: Business logic using LangChain framework (AgentExecutor, MultiQueryRetriever)
- * - Infrastructure: Vendor connections (AnthropicProvider, McpToolProviderAdapter)
+ * - Domain: LangChain types + business types (Tool, ChatContext) + interfaces
+ * - Application: Business logic using domain interfaces (vendor-agnostic)
+ * - Infrastructure: Vendor connections (AnthropicProvider, EmbeddingsClient, McpToolProviderAdapter)
  *
- * Provider pattern:
+ * Provider pattern (Interface → Implementation):
  * - IEmbeddingsProvider → EmbeddingsClient (local Transformers.js)
  * - IToolProvider → McpToolProviderAdapter (MCP connection)
- * - LLM → AnthropicProvider (Anthropic API connection)
+ * - ITextExtractor → AnthropicProvider (Claude text extraction with OCR)
+ * - LLM → AnthropicProvider (Anthropic API connection + text extraction)
+ *
+ * To switch to OpenAI: Create OpenAIProvider implementing ITextExtractor, update bindings here
  */
 @Global()
 @Module({
@@ -35,7 +39,7 @@ import { IToolProvider } from '@llm/domain/tool-provider.interface';
     OpenRegisterMcpService,
     McpToolProviderAdapter,
 
-    // Domain abstract class providers (NestJS DI pattern)
+    // Domain interface providers (NestJS DI pattern)
     {
       provide: IEmbeddingsProvider,
       useClass: EmbeddingsClient,
@@ -43,6 +47,10 @@ import { IToolProvider } from '@llm/domain/tool-provider.interface';
     {
       provide: IToolProvider,
       useClass: McpToolProviderAdapter,
+    },
+    {
+      provide: ITextExtractor,
+      useExisting: AnthropicProvider,
     },
 
     // Application services
@@ -54,6 +62,7 @@ import { IToolProvider } from '@llm/domain/tool-provider.interface';
   exports: [
     IEmbeddingsProvider,
     IToolProvider,
+    ITextExtractor,
     AnthropicProvider,
     LlmService,
     EmbeddingsService,

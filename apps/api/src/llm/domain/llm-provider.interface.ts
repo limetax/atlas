@@ -8,11 +8,27 @@ import { ToolCall } from './tool.types';
  */
 
 /**
+ * Content block types for Anthropic's multimodal messages
+ * Supports text, documents (PDFs), and images
+ */
+export type ContentBlock =
+  | { type: 'text'; text: string }
+  | {
+      type: 'document';
+      source: { type: 'base64'; media_type: string; data: string };
+    }
+  | {
+      type: 'image';
+      source: { type: 'base64'; media_type: string; data: string };
+    };
+
+/**
  * Represents a message in a conversation
+ * Content can be a string or an array of content blocks for multimodal messages
  */
 export interface LlmMessage {
   role: MessageRole;
-  content: string;
+  content: string | ContentBlock[];
 }
 
 /**

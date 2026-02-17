@@ -8,7 +8,10 @@ import {
   BadRequestException,
   Body,
   Controller,
+  FileTypeValidator,
   Logger,
+  MaxFileSizeValidator,
+  ParseFilePipe,
   Post,
   Req,
   Res,
@@ -47,7 +50,18 @@ export class ChatController {
   @UseInterceptors(FilesInterceptor('files', 5))
   async streamChat(
     @Body() body: unknown,
-    @UploadedFiles() files: Express.Multer.File[] | undefined,
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({
+            fileType: /(application\/pdf|image\/(jpeg|png|gif|webp))/,
+          }),
+        ],
+        fileIsRequired: false,
+      })
+    )
+    files: Express.Multer.File[] | undefined,
     @Req() req: Request,
     @Res() res: Response
   ): Promise<void> {
