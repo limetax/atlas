@@ -12,6 +12,15 @@ const SUPPORTED_MIME_TYPES = {
   'image/webp': 'image',
 } as const;
 
+type SupportedMimeType = keyof typeof SUPPORTED_MIME_TYPES;
+
+/**
+ * Type guard to check if a MIME type is supported
+ */
+const isSupportedMimeType = (mime: string): mime is SupportedMimeType => {
+  return mime in SUPPORTED_MIME_TYPES;
+};
+
 /**
  * Encodes an uploaded file to an Anthropic content block
  * Converts file buffer to base64 and wraps in appropriate content block format
@@ -21,11 +30,11 @@ const SUPPORTED_MIME_TYPES = {
  * @throws Error if file type is not supported
  */
 export const encodeFileToContentBlock = (file: Express.Multer.File): ContentBlock => {
-  const blockType = SUPPORTED_MIME_TYPES[file.mimetype as keyof typeof SUPPORTED_MIME_TYPES];
-  if (!blockType) {
+  if (!isSupportedMimeType(file.mimetype)) {
     throw new Error(`Unsupported file type: ${file.mimetype}`);
   }
 
+  const blockType = SUPPORTED_MIME_TYPES[file.mimetype];
   const base64Data = Buffer.from(file.buffer).toString('base64');
 
   return {

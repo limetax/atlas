@@ -107,6 +107,20 @@ export class ChatService {
       yield { type: 'citations', citations };
     }
 
+    // 5a. Acknowledge files received (with 'processing' status)
+    if (files?.length && chatId) {
+      const processingDocuments = files.map((file) => ({
+        id: 'pending',
+        chatId,
+        fileName: file.originalname,
+        fileSize: file.size,
+        status: 'processing' as const,
+        chunkCount: 0,
+        createdAt: new Date().toISOString(),
+      }));
+      yield { type: 'files_processed', documents: processingDocuments };
+    }
+
     // 5b. Fire-and-forget: Store files in RAG async (doesn't block response)
     if (files?.length && chatId && advisorId) {
       this.storeFilesInRagAsync(files, chatId, advisorId).catch((error: Error) => {
