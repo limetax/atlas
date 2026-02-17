@@ -69,7 +69,8 @@ WICHTIG - Format einhalten:
 - Zweite Zeile: "subject: " gefolgt von der Betreffzeile
 - Dann eine Leerzeile
 - Danach der E-Mail-Body-Text
-- Nutze professionelle Anrede und Grußformel`,
+- Nutze professionelle Anrede und Grußformel
+- KEIN Markdown im E-Mail-Body: Verwende normalen Text ohne **fett**, _kursiv_ oder andere Markdown-Formatierung`,
 } as const;
 
 /**
