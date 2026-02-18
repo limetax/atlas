@@ -67,7 +67,7 @@ export const ChatInterface = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if ((inputValue.trim() || pendingFiles.length > 0) && !isLoading) {
+    if (inputValue.trim() && !isLoading) {
       onSendMessage(inputValue.trim());
       setInputValue('');
     }
@@ -77,7 +77,7 @@ export const ChatInterface = ({
     // Submit on Enter (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if ((inputValue.trim() || pendingFiles.length > 0) && !isLoading) {
+      if (inputValue.trim() && !isLoading) {
         onSendMessage(inputValue.trim());
         setInputValue('');
       }
@@ -232,7 +232,7 @@ const InputArea = ({
     e.target.value = '';
   };
 
-  const hasPendingContent = inputValue.trim() || pendingFiles.length > 0;
+  const hasPendingContent = Boolean(inputValue.trim());
 
   return (
     <div className="flex-shrink-0 bg-background/80 backdrop-blur-sm pb-10 pt-4 px-6">
