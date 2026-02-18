@@ -23,6 +23,27 @@ export const TEMPLATES: Template[] = [
 
 Bitte prüfe relevante Gesetzestexte, Rechtsprechung und Verwaltungsanweisungen. Gib klare Handlungsempfehlungen mit Quellenangaben.`,
   },
+  {
+    id: 'vertrag-zusammenfassen',
+    title: 'Vertrag zusammenfassen',
+    description: 'Vertragsanalyse mit HGB-Buchhaltungs-Expertise',
+    category: 'prozessautomatisierung',
+    content: `Du bist mein Buchhaltungs Co-Pilot mit Expertise in der Vertragsanalyse nach HGB.
+
+Ich habe den beigefügten Vertrag von meinem Mandanten erhalten. Analysiere den Vertrag systematisch, identifiziere alle buchhalterisch relevanten Konditionen, erstelle präzise Buchungssatz-Vorschläge und entwerfe eine E-Mail an den Mandanten. Fokussiere dich dabei ausschließlich auf Konditionen die für die buchhalterische Behandlung nach HGB relevant sind (z.B. Zahlungsbedingungen, Lieferkonditionen, Preisanpassungsklauseln, Garantien, Anzahlungen). Gehe wie folgt vor:
+
+1. Erstelle eine Zusammenfassung des gesamten Vertrags in 2-3 Sätzen, damit ich einen Überblick habe. Benenne dabei: Vertragsart, Vertragsparteien, Hauptleistung und Laufzeit.
+
+2. Erstelle eine detailliertere Zusammenfassung der relevanten Konditionen in einer Tabelle mit folgenden Spalten: Kondition, Details, HGB-Relevanz, Auswirkung auf Bilanzierung.
+
+3. Erstelle eine Übersicht mit Themen die unklar sind und mit dem Mandanten geklärt werden müssen (falls es welche gibt).
+
+4. Formuliere diese als konkrete Rückfragen. Fasse zusammen wie ich den Vertrag für die Buchhaltung des Mandanten behandeln soll, inklusive Vorschläge für Buchungssätze. Füge dabei eine präzise Erklärung mit HGB-Referenz zu jedem Buchungssatz-Vorschlag hinzu. Gib Soll- und Haben-Konten mit Kontonummern (SKR03/04) an.
+
+5. Entwerfe eine E-Mail an den Mandanten mit einer Zusammenfassung wie sich der Vertrag auf die GuV und Bilanz des Mandanten auswirkt und der Liste mit unklaren Themen aus Punkt 3 (falls es welche gibt).
+
+Verwende einen professionellen aber verständlichen Ton. Die Antwort kann stichpunktartig formuliert sein, sollte aber klar strukturiert und formatiert sein.`,
+  },
   // Mandantenkommunikation (Client Communication) - 4 templates
   {
     id: 'mandanten-email',
