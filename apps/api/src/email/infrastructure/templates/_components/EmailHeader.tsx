@@ -1,12 +1,12 @@
 import React from 'react';
-import type { ReactElement } from 'react';
+
 import { Head, Heading } from '@react-email/components';
 
 type EmailHeaderProps = {
   title?: string;
 };
 
-export const EmailHeader = ({ title }: EmailHeaderProps): ReactElement => {
+export const EmailHeader = ({ title }: EmailHeaderProps) => {
   return (
     <>
       <Head>

@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import React from 'react';
-import type { ReactElement, ReactNode } from 'react';
+
 import { Body, Container, Html, Preview, Section, Text } from '@react-email/components';
+
 import { EmailFooter } from './_components/EmailFooter';
 import { EmailHeader } from './_components/EmailHeader';
 
@@ -9,7 +11,7 @@ type BaseEmailProps = {
   children: ReactNode;
 };
 
-export const BaseEmail = ({ preview, children }: BaseEmailProps): ReactElement => {
+export const BaseEmail = ({ preview, children }: BaseEmailProps) => {
   return (
     <Html lang="de">
       {preview ? <Preview>{preview}</Preview> : null}

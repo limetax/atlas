@@ -1,8 +1,8 @@
 import React from 'react';
-import type { ReactElement } from 'react';
+
 import { Hr, Text } from '@react-email/components';
 
-export const EmailFooter = (): ReactElement => {
+export const EmailFooter = () => {
   const currentYear = new Date().getFullYear();
 
   return (
