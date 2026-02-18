@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { TRPCModule } from 'nestjs-trpc';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
 import { AppContext } from '@shared/trpc/app.context';
@@ -23,14 +22,6 @@ import { HealthModule } from '@/health/health.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    // Rate limiting configuration (TEC-88)
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 900000, // 15 minutes in milliseconds
-        limit: 10, // 10 requests per 15 minutes
-      },
-    ]),
     InfrastructureModule,
     LlmModule,
     // nestjs-trpc module with auto-schema generation

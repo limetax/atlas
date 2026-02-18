@@ -1,11 +1,19 @@
-import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
-import { AppModule } from '@/app.module';
 import helmet from 'helmet';
 
-async function bootstrap() {
+import { AppModule } from '@/app.module';
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+
+async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  // Validate environment configuration (TEC-89, TEC-90)
+  const frontendUrl = process.env.FRONTEND_URL;
+
+  if (!frontendUrl) {
+    throw new Error('FRONTEND_URL environment variable must be set in production');
+  }
 
   // Security headers with Helmet.js (TEC-89)
   app.use(
@@ -16,7 +24,7 @@ async function bootstrap() {
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-          connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:5173'],
+          connectSrc: ["'self'", frontendUrl],
           imgSrc: ["'self'", 'data:'],
           objectSrc: ["'none'"],
           frameSrc: ["'none'"],
@@ -31,15 +39,7 @@ async function bootstrap() {
   );
 
   // CORS configuration with environment-aware whitelist (TEC-90)
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  const allowedOrigins = isDevelopment
-    ? ['http://localhost:5173', 'http://localhost:3000']
-    : [process.env.FRONTEND_URL].filter(Boolean);
-
-  // Validate production CORS configuration
-  if (!isDevelopment && allowedOrigins.length === 0) {
-    throw new Error('FRONTEND_URL environment variable must be set in production');
-  }
+  const allowedOrigins = frontendUrl;
 
   app.enableCors({
     origin: (

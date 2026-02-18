@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { TRPCMiddleware, MiddlewareOptions } from 'nestjs-trpc';
 import { TRPCError } from '@trpc/server';
 import type { Request } from 'express';
+import type { User } from '@supabase/supabase-js';
 
 // Type the context from AppContext
 interface AppContextType {
-  user: unknown;
+  user: User | null;
   requestId: string;
   req: Request;
 }
@@ -28,11 +29,13 @@ interface RateLimitRecord {
  * - Type safety with no `as any`
  */
 @Injectable()
-export class RateLimitMiddleware implements TRPCMiddleware {
+export class RateLimitMiddleware implements TRPCMiddleware, OnModuleDestroy {
   private readonly logger = new Logger(RateLimitMiddleware.name);
   private readonly storage = new Map<string, RateLimitRecord>();
-  private readonly ttl = 900000; // 15 minutes in milliseconds
-  private readonly limit = 10; // 10 requests per 15 minutes
+  private readonly TTL = 900000; // 15 minutes in milliseconds
+  private readonly LIMIT = 10; // 10 requests per 15 minutes
+  private readonly CLEANUP_INTERVAL_MS = 300000; // 5 minutes in milliseconds
+  private cleanupTimer?: NodeJS.Timeout;
 
   async use(opts: MiddlewareOptions<AppContextType>): Promise<unknown> {
     const { ctx } = opts;
@@ -56,7 +59,7 @@ export class RateLimitMiddleware implements TRPCMiddleware {
     if (!record || now > record.resetTime) {
       record = {
         count: 0,
-        resetTime: now + this.ttl,
+        resetTime: now + this.TTL,
       };
       this.storage.set(key, record);
     }
@@ -65,7 +68,7 @@ export class RateLimitMiddleware implements TRPCMiddleware {
     record.count += 1;
 
     // Check if limit exceeded
-    if (record.count > this.limit) {
+    if (record.count > this.LIMIT) {
       const timeToReset = Math.max(0, record.resetTime - now);
       this.logger.warn(`Rate limit exceeded for IP ${ip}: ${record.count} attempts`);
 
@@ -75,7 +78,7 @@ export class RateLimitMiddleware implements TRPCMiddleware {
       });
     }
 
-    this.logger.debug(`Rate limit for IP ${ip}: ${record.count}/${this.limit}`);
+    this.logger.debug(`Rate limit for IP ${ip}: ${record.count}/${this.LIMIT}`);
 
     return opts.next();
   }
@@ -90,8 +93,16 @@ export class RateLimitMiddleware implements TRPCMiddleware {
     }
   }
 
-  // Run cleanup every 5 minutes
+  // Initialize cleanup timer on module startup
   constructor() {
-    setInterval(() => this.cleanupExpiredRecords(), 300000);
+    this.cleanupTimer = setInterval(() => this.cleanupExpiredRecords(), this.CLEANUP_INTERVAL_MS);
+  }
+
+  // Clear cleanup timer on module shutdown to prevent memory leaks
+  onModuleDestroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.logger.debug('Rate limit cleanup timer cleared');
+    }
   }
 }
