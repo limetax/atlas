@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { TRPCMiddleware, MiddlewareOptions } from 'nestjs-trpc';
 import { TRPCError } from '@trpc/server';
 import type { User } from '@supabase/supabase-js';
+import type { Request } from 'express';
 
 // Type the context from AppContext
 interface AppContextType {
   user: User | null;
   requestId: string;
+  req: Request;
 }
 
 /**

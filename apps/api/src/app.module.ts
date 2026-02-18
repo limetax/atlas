@@ -4,6 +4,7 @@ import { TRPCModule } from 'nestjs-trpc';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
 import { AppContext } from '@shared/trpc/app.context';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
+import { RateLimitMiddleware } from '@shared/trpc/rate-limit.middleware';
 import { LlmModule } from '@llm/llm.module';
 import { AuthModule } from '@auth/auth.module';
 import { ChatModule } from '@chat/chat.module';
@@ -37,6 +38,6 @@ import { HealthModule } from '@/health/health.module';
     DocumentModule,
     HealthModule,
   ],
-  providers: [AppContext, AuthMiddleware],
+  providers: [AppContext, AuthMiddleware, RateLimitMiddleware],
 })
 export class AppModule {}

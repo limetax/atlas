@@ -2,6 +2,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { TRPCContext, ContextOptions } from 'nestjs-trpc';
 import { SupabaseService } from '../infrastructure/supabase.service';
 import type { User } from '@supabase/supabase-js';
+import type { Request } from 'express';
 
 /**
  * App Context for nestjs-trpc
@@ -13,7 +14,9 @@ export class AppContext implements TRPCContext {
 
   constructor(@Inject(SupabaseService) private readonly supabase: SupabaseService) {}
 
-  async create(opts: ContextOptions): Promise<{ user: User | null; requestId: string }> {
+  async create(
+    opts: ContextOptions
+  ): Promise<{ user: User | null; requestId: string; req: Request }> {
     const req = opts.req;
 
     // Get request ID from header or generate new one
@@ -27,7 +30,7 @@ export class AppContext implements TRPCContext {
     const authValue = Array.isArray(authHeader) ? authHeader[0] : authHeader;
 
     if (!authValue?.startsWith('Bearer ')) {
-      return { user: null, requestId };
+      return { user: null, requestId, req };
     }
 
     const token = authValue.replace('Bearer ', '');
@@ -40,10 +43,10 @@ export class AppContext implements TRPCContext {
       if (error) throw error;
 
       this.logger.debug(`[${requestId}] Authenticated user: ${user?.email}`);
-      return { user, requestId };
+      return { user, requestId, req };
     } catch (error) {
       this.logger.warn(`[${requestId}] Token validation failed:`, error);
-      return { user: null, requestId };
+      return { user: null, requestId, req };
     }
   }
 }
