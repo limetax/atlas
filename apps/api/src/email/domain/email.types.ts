@@ -4,14 +4,6 @@
  */
 
 /**
- * Email address with optional name
- */
-export type EmailAddress = {
-  email: string;
-  name?: string;
-};
-
-/**
  * Parameters for sending an email
  */
 export type SendEmailParams = {

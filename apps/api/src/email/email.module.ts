@@ -17,7 +17,6 @@ import { ResendEmailAdapter } from './infrastructure/resend-email.adapter';
 @Module({
   imports: [ConfigModule],
   providers: [
-    ResendEmailAdapter,
     EmailService,
     {
       provide: EmailAdapter,

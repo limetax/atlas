@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { Hr, Text } from '@react-email/components';
 
 export const EmailFooter = () => {

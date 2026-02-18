@@ -41,23 +41,28 @@ export class ResendEmailAdapter implements EmailAdapter {
         bcc: params.bcc,
       });
 
-      if (error) {
-        this.logger.error(`E-Mail konnte nicht gesendet werden: ${error.message}`);
+      if (error || !data) {
+        this.logger.error(
+          `E-Mail konnte nicht gesendet werden: ${error?.message ?? 'Keine Daten vom E-Mail-Provider erhalten'}`
+        );
         return {
           success: false,
-          error: error.message,
+          error: error?.message ?? 'Keine Daten vom E-Mail-Provider erhalten',
         };
       }
 
-      this.logger.log(`E-Mail erfolgreich gesendet. Message ID: ${data?.id}`);
+      this.logger.log(`E-Mail erfolgreich gesendet. Message ID: ${data.id}`);
       return {
         success: true,
-        messageId: data?.id,
+        messageId: data.id,
       };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler beim E-Mail-Versand';
-      this.logger.error(`E-Mail-Versand fehlgeschlagen: ${errorMessage}`);
+      this.logger.error(
+        `E-Mail-Versand fehlgeschlagen: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined
+      );
 
       return {
         success: false,

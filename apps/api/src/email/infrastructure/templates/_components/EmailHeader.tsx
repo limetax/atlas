@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { Head, Heading } from '@react-email/components';
 
 type EmailHeaderProps = {

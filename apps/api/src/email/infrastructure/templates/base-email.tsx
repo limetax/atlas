@@ -1,6 +1,4 @@
 import type { ReactNode } from 'react';
-import React from 'react';
-
 import { Body, Container, Html, Preview, Section, Text } from '@react-email/components';
 
 import { EmailFooter } from './_components/EmailFooter';
