@@ -10,14 +10,19 @@ async function bootstrap(): Promise<void> {
 
   // Trust proxy for accurate IP detection (Coolify with Traefik)
   // Traefik adds X-Forwarded-* headers, so we trust 1 proxy level
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  const trustProxyLevel = process.env.TRUST_PROXY ?? '1';
+  app.getHttpAdapter().getInstance().set('trust proxy', trustProxyLevel);
+  logger.log(`Trust proxy set to: ${trustProxyLevel}`);
 
   // Validate environment configuration (TEC-89, TEC-90)
   const frontendUrl = process.env.FRONTEND_URL;
 
   if (!frontendUrl) {
-    throw new Error('FRONTEND_URL environment variable must be set in production');
+    logger.error('FRONTEND_URL environment variable is not set!');
+    throw new Error('FRONTEND_URL environment variable must be set');
   }
+
+  logger.log(`Frontend URL: ${frontendUrl}`);
 
   // Security headers with Helmet.js (TEC-89)
   app.use(

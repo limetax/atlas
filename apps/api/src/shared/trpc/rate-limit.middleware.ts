@@ -40,6 +40,12 @@ export class RateLimitMiddleware implements TRPCMiddleware, OnModuleDestroy {
   async use(opts: MiddlewareOptions<AppContextType>): Promise<unknown> {
     const { ctx } = opts;
 
+    // Emergency escape hatch: disable rate limiting via env var if needed
+    if (process.env.DISABLE_RATE_LIMITING === 'true') {
+      this.logger.warn('Rate limiting is DISABLED via DISABLE_RATE_LIMITING env var');
+      return opts.next();
+    }
+
     if (!ctx.req) {
       // If request is not available, we can't rate limit by IP
       // This should not happen in normal operation (defensive programming)
@@ -51,8 +57,19 @@ export class RateLimitMiddleware implements TRPCMiddleware, OnModuleDestroy {
     // TODO: Consider blocking requests with unknown IPs in production for stricter security
     // For now, use unique ID per request to prevent unknown IPs from sharing rate limits
     const ip = ctx.req.ip ?? ctx.req.socket.remoteAddress ?? crypto.randomUUID();
+
+    // Log IP detection for debugging (only first time per IP)
     const key = `auth.login:${ip}`;
     const now = Date.now();
+    const isFirstAttempt = !this.storage.has(key);
+
+    if (isFirstAttempt) {
+      this.logger.log(
+        `New IP detected - req.ip: ${ctx.req.ip ?? 'undefined'}, ` +
+          `remoteAddress: ${ctx.req.socket.remoteAddress ?? 'undefined'}, ` +
+          `using: ${ip}`
+      );
+    }
 
     // Get or create rate limit record
     let record = this.storage.get(key);
