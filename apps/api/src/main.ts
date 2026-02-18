@@ -8,6 +8,10 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
+  // Trust proxy for accurate IP detection (Coolify with Traefik)
+  // Traefik adds X-Forwarded-* headers, so we trust 1 proxy level
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   // Validate environment configuration (TEC-89, TEC-90)
   const frontendUrl = process.env.FRONTEND_URL;
 

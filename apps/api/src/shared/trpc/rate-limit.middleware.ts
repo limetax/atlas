@@ -48,7 +48,9 @@ export class RateLimitMiddleware implements TRPCMiddleware, OnModuleDestroy {
     }
 
     // Get IP address from Express request
-    const ip = ctx.req.ip ?? ctx.req.socket.remoteAddress ?? 'unknown';
+    // TODO: Consider blocking requests with unknown IPs in production for stricter security
+    // For now, use unique ID per request to prevent unknown IPs from sharing rate limits
+    const ip = ctx.req.ip ?? ctx.req.socket.remoteAddress ?? crypto.randomUUID();
     const key = `auth.login:${ip}`;
     const now = Date.now();
 
