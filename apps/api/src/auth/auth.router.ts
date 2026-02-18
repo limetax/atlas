@@ -3,6 +3,7 @@ import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc
 import { z } from 'zod';
 import { AuthService } from '@auth/application/auth.service';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
+import { RateLimitMiddleware } from '@shared/trpc/rate-limit.middleware';
 import type { User } from '@supabase/supabase-js';
 
 // Define schemas inline for nestjs-trpc to properly generate types
@@ -25,6 +26,7 @@ export class AuthRouter {
   @Mutation({
     input: LoginInputSchema,
   })
+  @UseMiddlewares(RateLimitMiddleware)
   async login(@Input('email') email: string, @Input('password') password: string) {
     return this.authService.login(email, password);
   }
