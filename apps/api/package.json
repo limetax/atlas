@@ -43,6 +43,7 @@
     "axios": "^1.13.4",
     "axios-retry": "^4.5.0",
     "date-fns": "^4.1.0",
+    "helmet": "^8.1.0",
     "langchain": "^1.2.14",
     "nestjs-trpc": "^1.6.1",
     "openregister-mcp": "^2.2.0",
