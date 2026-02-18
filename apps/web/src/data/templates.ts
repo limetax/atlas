@@ -4,7 +4,7 @@
  * Extracted from research/Atikon_Prompts.md
  */
 
-import { Template } from '@/types/template';
+import type { Template } from '@/types/template';
 
 export const TEMPLATES: Template[] = [
   // Recherche & Gestaltung - 1 template
