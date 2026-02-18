@@ -76,7 +76,46 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 - DTOs for input validation, Zod for tRPC procedure inputs
 - Let errors bubble up — global exception handler catches them
 - Try-catch is acceptable only at system boundaries (streaming, external API calls)
-- Modules: auth, chat, llm, rag, datev, assistant, shared, health
+
+#### DDD Naming Conventions (Hexagonal Architecture)
+
+Atlas backend follows Hexagonal Architecture Adapters with modern, clean naming:
+
+**Abstract Classes (Domain Contracts):**
+
+- **No I-prefix** — modern TypeScript convention, avoids Hungarian notation
+- **Adapter pattern** (external service integration): `{Capability}Adapter`
+  - Examples: `AuthAdapter`, `DatevAdapter`, `EmailAdapter`
+  - Use for: External APIs, third-party services, authentication providers
+  - File naming: `email.adapter.ts` (not `email-adapter.interface.ts`)
+- **Repository pattern** (data persistence): `{Domain}Repository`
+  - Examples: `AdvisorRepository`, `ChatRepository`, `ClientRepository`
+  - Use for: CRUD operations on aggregate roots
+  - File naming: `advisor.repository.ts`
+- **Technical note**: All are abstract classes (required for NestJS DI, not TypeScript interfaces)
+
+**Implementations (Infrastructure Layer):**
+
+- Pattern: `{Technology}{Capability}{Suffix}`
+- Examples:
+  - `SupabaseAuthAdapter` implements `AuthAdapter`
+  - `KlardatenDatevAdapter` implements `DatevAdapter`
+  - `ResendEmailAdapter` implements `EmailAdapter`
+  - `SupabaseAdvisorRepository` implements `AdvisorRepository`
+- File naming: `resend-email.adapter.ts`, `supabase-advisor.repository.ts`
+
+**Application Layer Services:**
+
+- Pattern: `{Domain}Service`
+- Examples: `AuthService`, `ChatService`, `EmailService`
+- Services depend only on abstract classes (never concrete implementations)
+- Clean injection: `constructor(private emailAdapter: EmailAdapter) {}` (no `@Inject()` needed)
+
+**Why abstract classes over TypeScript interfaces?**
+
+- NestJS cannot use interfaces as injection tokens (only classes, strings, symbols)
+- Abstract classes provide type-safe, clean injection without string tokens
+- Enables: `{ provide: EmailAdapter, useClass: ResendEmailAdapter }`
 
 ### Frontend (`apps/web`)
 

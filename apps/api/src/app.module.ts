@@ -6,6 +6,7 @@ import { AppContext } from '@shared/trpc/app.context';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
 import { RateLimitMiddleware } from '@shared/trpc/rate-limit.middleware';
 import { LlmModule } from '@llm/llm.module';
+import { EmailModule } from '@/email/email.module';
 import { AuthModule } from '@auth/auth.module';
 import { ChatModule } from '@chat/chat.module';
 import { RAGModule } from '@rag/rag.module';
@@ -24,6 +25,7 @@ import { HealthModule } from '@/health/health.module';
     }),
     InfrastructureModule,
     LlmModule,
+    EmailModule,
     // nestjs-trpc module with auto-schema generation
     TRPCModule.forRoot({
       autoSchemaFile: './src/@generated',
