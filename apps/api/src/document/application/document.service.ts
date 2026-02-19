@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
@@ -19,7 +19,7 @@ export class DocumentService {
   private readonly logger = new Logger(DocumentService.name);
 
   constructor(
-    @Inject(DocumentRepository) private readonly documentRepo: DocumentRepository,
+    private readonly documentRepo: DocumentRepository,
     private readonly embeddingsService: EmbeddingsService,
     private readonly supabase: SupabaseService,
     private readonly textExtractionService: TextExtractionService

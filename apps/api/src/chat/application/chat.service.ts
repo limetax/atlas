@@ -6,7 +6,7 @@ import { DocumentService } from '@document/application/document.service';
 import { LlmService } from '@llm/application/llm.service';
 import { LlmMessage } from '@llm/domain/llm-provider.interface';
 import { encodeFileToContentBlock } from '@llm/infrastructure/file-encoding.util';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 
 import { CONTEXT_PROMPTS, TITLE_GENERATION_PROMPT } from './chat.prompts';
@@ -25,7 +25,7 @@ export class ChatService {
     private readonly llm: LlmService,
     private readonly rag: RAGService,
     private readonly clientService: ClientService,
-    @Inject(ChatRepository) private readonly chatRepo: ChatRepository,
+    private readonly chatRepo: ChatRepository,
     private readonly documentService: DocumentService
   ) {}
 

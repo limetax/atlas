@@ -8,6 +8,11 @@ import {
 import {
   type DatevClientMatch,
   type DatevOrderMatch,
+  type DatevAddresseeMatch,
+  type DatevCorpTaxMatch,
+  type DatevTradeTaxMatch,
+  type DatevAnalyticsOrderValuesMatch,
+  type DatevHrEmployeeMatch,
   type ChatDocumentChunkMatch,
   VectorStoreAdapter,
 } from '@rag/domain/vector-store.adapter';
@@ -357,7 +362,7 @@ export class RAGService {
     maxResults: number = 3,
     clientIdFilter?: string
   ): Promise<{
-    addressees: import('@rag/domain/vector-store.adapter').DatevAddresseeMatch[];
+    addressees: DatevAddresseeMatch[];
     context: string;
   }> {
     try {
@@ -525,9 +530,7 @@ export class RAGService {
    * Format DATEV addressees as context string
    * Phase 1.1: New formatter for contact persons/managing directors
    */
-  private formatDatevAddresseesContext(
-    addressees: import('@rag/domain/vector-store.adapter').DatevAddresseeMatch[]
-  ): string {
+  private formatDatevAddresseesContext(addressees: DatevAddresseeMatch[]): string {
     if (addressees.length === 0) return '';
 
     const typeNames: Record<number, string> = {
@@ -598,7 +601,7 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    corpTax: import('@rag/domain/vector-store.adapter').DatevCorpTaxMatch[];
+    corpTax: DatevCorpTaxMatch[];
     context: string;
   }> {
     try {
@@ -645,7 +648,7 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    tradeTax: import('@rag/domain/vector-store.adapter').DatevTradeTaxMatch[];
+    tradeTax: DatevTradeTaxMatch[];
     context: string;
   }> {
     try {
@@ -692,7 +695,7 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    analytics: import('@rag/domain/vector-store.adapter').DatevAnalyticsOrderValuesMatch[];
+    analytics: DatevAnalyticsOrderValuesMatch[];
     context: string;
   }> {
     try {
@@ -740,7 +743,7 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    employees: import('@rag/domain/vector-store.adapter').DatevHrEmployeeMatch[];
+    employees: DatevHrEmployeeMatch[];
     context: string;
   }> {
     try {

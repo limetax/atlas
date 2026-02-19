@@ -1,4 +1,3 @@
-import { Inject } from '@nestjs/common';
 import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc';
 import { z } from 'zod';
 import { ChatRepository } from '@chat/domain/chat.repository';
@@ -38,7 +37,7 @@ const ChatIdInputSchema = z.object({
  */
 @Router({ alias: 'chat' })
 export class ChatRouter {
-  constructor(@Inject(ChatRepository) private readonly chatRepo: ChatRepository) {}
+  constructor(private readonly chatRepo: ChatRepository) {}
 
   @Query()
   @UseMiddlewares(AuthMiddleware)
