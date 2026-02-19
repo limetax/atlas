@@ -1,17 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage } from '@langchain/core/messages';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { LlmProviderAdapter } from '@llm/domain/llm-provider.adapter';
+
 /**
- * Anthropic Provider - Infrastructure layer
- * Creates and configures ChatAnthropic instances
- * Provides document text extraction via Claude API
- * This is where vendor-specific configuration lives
+ * Anthropic LLM Adapter - Infrastructure implementation of LlmProviderAdapter
+ *
+ * Encapsulates all Anthropic-specific configuration and API usage.
+ * To switch to a different provider (OpenAI, Bedrock, etc.), implement
+ * LlmProviderAdapter with the new vendor's LangChain class — no application
+ * layer changes required.
  */
 @Injectable()
-export class AnthropicProvider {
-  private readonly logger = new Logger(AnthropicProvider.name);
+export class AnthropicLlmAdapter extends LlmProviderAdapter {
+  private readonly logger = new Logger(AnthropicLlmAdapter.name);
 
-  createModel(): ChatAnthropic {
+  createModel(): BaseChatModel {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       throw new Error('ANTHROPIC_API_KEY environment variable is required');
@@ -50,7 +55,6 @@ export class AnthropicProvider {
       }),
     ]);
 
-    // Extract text from response
     const extractedText =
       typeof response.content === 'string'
         ? response.content

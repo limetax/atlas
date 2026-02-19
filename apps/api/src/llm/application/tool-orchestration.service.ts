@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { LlmMessage } from '@llm/domain/llm-provider.interface';
 import { ChatContext } from '@atlas/shared';
 import { ToolResolutionService } from './tool-resolution.service';
-import { AnthropicProvider } from '@llm/infrastructure/anthropic.provider';
-import { ChatAnthropic } from '@langchain/anthropic';
+import { LlmProviderAdapter } from '@llm/domain/llm-provider.adapter';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { BaseMessage, HumanMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 
 /**
@@ -37,19 +37,19 @@ function extractTextContent(content: unknown): string {
 }
 
 /**
- * Tool Orchestration Service - LangChain-based implementation
- * Uses ChatAnthropic, bindTools(), and LangChain message types
+ * Tool Orchestration Service - Application layer for multi-turn tool calling
+ * Uses LangChain BaseChatModel (provider-agnostic), bindTools(), and LangChain message types
  */
 @Injectable()
 export class ToolOrchestrationService {
   private readonly logger = new Logger(ToolOrchestrationService.name);
-  private readonly model: ChatAnthropic;
+  private readonly model: BaseChatModel;
 
   constructor(
-    private readonly anthropicProvider: AnthropicProvider,
+    private readonly llmProvider: LlmProviderAdapter,
     private readonly toolResolution: ToolResolutionService
   ) {
-    this.model = this.anthropicProvider.createModel();
+    this.model = this.llmProvider.createModel();
   }
 
   async *streamCompletionWithTools(
@@ -84,6 +84,9 @@ export class ToolOrchestrationService {
     }
 
     // Bind tools to model (LangChain feature) - tools already in correct format
+    if (!this.model.bindTools) {
+      throw new Error('LLM provider does not support tool binding');
+    }
     const modelWithTools = this.model.bindTools(tools);
 
     // Tool calling loop with LangChain BaseMessage

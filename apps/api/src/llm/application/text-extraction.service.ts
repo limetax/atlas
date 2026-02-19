@@ -1,27 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AnthropicProvider } from '@llm/infrastructure/anthropic.provider';
+import { LlmProviderAdapter } from '@llm/domain/llm-provider.adapter';
 
 /**
  * Text Extraction Service - Application layer service for document text extraction
  *
- * Delegates to AnthropicProvider for Claude-based text extraction with OCR.
- * This replaces the former ITextExtractor domain contract since text extraction
- * is a capability of the Anthropic model, not a standalone adapter boundary.
+ * Delegates to the LlmProviderAdapter for model-based text extraction with OCR.
+ * The concrete implementation (Anthropic, OpenAI, etc.) is resolved via DI.
  */
 @Injectable()
 export class TextExtractionService {
   private readonly logger = new Logger(TextExtractionService.name);
 
-  constructor(private readonly anthropicProvider: AnthropicProvider) {}
+  constructor(private readonly llmProvider: LlmProviderAdapter) {}
 
-  /**
-   * Extract text from a document file using Claude
-   * @param file - The file to extract text from
-   * @returns Promise resolving to extracted text content
-   * @throws Error if extraction fails
-   */
   async extractText(file: Express.Multer.File): Promise<string> {
     this.logger.debug(`Extracting text from ${file.originalname} (${file.mimetype})`);
-    return this.anthropicProvider.extractText(file);
+    return this.llmProvider.extractText(file);
   }
 }
