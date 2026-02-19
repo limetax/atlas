@@ -2,8 +2,8 @@ import { type DocumentStatus } from '@atlas/shared';
 import {
   type ChatDocumentEntity,
   type DocumentChunkInsert,
-  IDocumentRepository,
 } from '@document/domain/document.entity';
+import { DocumentRepository } from '@document/domain/document.repository';
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
@@ -12,16 +12,18 @@ import { sanitizeTextForPostgres } from './text-sanitizer.util';
 
 /**
  * Supabase Document Repository - Infrastructure implementation for document data access
- * Implements IDocumentRepository using Supabase client with service role key
+ * Extends DocumentRepository using Supabase client with service role key
  */
 @Injectable()
-export class SupabaseDocumentRepository implements IDocumentRepository {
+export class SupabaseDocumentRepository extends DocumentRepository {
   private readonly logger = new Logger(SupabaseDocumentRepository.name);
 
   constructor(
     private readonly supabase: SupabaseService,
     private readonly mapper: DocumentPersistenceMapper
-  ) {}
+  ) {
+    super();
+  }
 
   async create(params: {
     chatId: string;

@@ -1,16 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
+import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
 
 /**
  * Embeddings Service - Application layer for embedding operations
  * Contains business logic for embedding generation
- * Depends on IEmbeddingsProvider interface, not concrete implementations
+ * Depends on EmbeddingsAdapter abstract class, not concrete implementations
  */
 @Injectable()
 export class EmbeddingsService {
   private readonly logger = new Logger(EmbeddingsService.name);
 
-  constructor(private readonly embeddingsProvider: IEmbeddingsProvider) {}
+  constructor(private readonly embeddingsAdapter: EmbeddingsAdapter) {}
 
   /**
    * Generate embedding vector for a text string with business logic
@@ -26,7 +26,7 @@ export class EmbeddingsService {
     this.logger.debug(`Generating embedding for text (${text.length} chars)`);
 
     try {
-      return await this.embeddingsProvider.generateEmbedding(text);
+      return await this.embeddingsAdapter.generateEmbedding(text);
     } catch (error) {
       this.logger.error('Embedding generation failed:', error);
       throw error;

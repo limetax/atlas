@@ -2,9 +2,11 @@ import { DatevClient } from '@atlas/shared';
 
 /**
  * Client Repository - Domain contract for client data access
- * Abstract class (not interface) so it can be used directly as injection token
+ *
+ * Abstract class (not interface) so it can be used directly as injection token.
+ * No I-prefix following modern TypeScript conventions.
  */
-export abstract class IClientRepository {
+export abstract class ClientRepository {
   /**
    * Find all active clients
    * @returns Array of active client records

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatevClient } from '@atlas/shared';
-import { IClientRepository } from '@datev/domain/client.repository';
+import { ClientRepository } from '@datev/domain/client.repository';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 /**
@@ -8,10 +8,12 @@ import { SupabaseService } from '@shared/infrastructure/supabase.service';
  * Implements client data access using Supabase PostgreSQL
  */
 @Injectable()
-export class SupabaseClientRepository implements IClientRepository {
+export class SupabaseClientRepository extends ClientRepository {
   private readonly logger = new Logger(SupabaseClientRepository.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly supabase: SupabaseService) {
+    super();
+  }
 
   async findAllActive(): Promise<DatevClient[]> {
     const { data, error } = await this.supabase.db

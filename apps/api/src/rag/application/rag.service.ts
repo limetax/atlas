@@ -1,4 +1,4 @@
-import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
+import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   type Citation,
@@ -9,8 +9,8 @@ import {
   type DatevClientMatch,
   type DatevOrderMatch,
   type ChatDocumentChunkMatch,
-  IVectorStore,
-} from '@rag/domain/vector-store.interface';
+  VectorStoreAdapter,
+} from '@rag/domain/vector-store.adapter';
 import { type ResearchSource } from '@atlas/shared';
 
 /**
@@ -23,8 +23,8 @@ export class RAGService {
   private readonly logger = new Logger(RAGService.name);
 
   constructor(
-    private readonly vectorStore: IVectorStore,
-    private readonly embeddingsProvider: IEmbeddingsProvider
+    private readonly vectorStoreAdapter: VectorStoreAdapter,
+    private readonly embeddingsAdapter: EmbeddingsAdapter
   ) {}
 
   /**
@@ -187,10 +187,10 @@ export class RAGService {
   }> {
     try {
       // Generate embedding for the query
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
       // Query vector store
-      const matches = await this.vectorStore.searchTaxDocuments(
+      const matches = await this.vectorStoreAdapter.searchTaxDocuments(
         queryEmbedding,
         0.3, // Lower threshold for German legal text
         maxResults
@@ -237,10 +237,10 @@ export class RAGService {
   }> {
     try {
       // Generate embedding for the query
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
       // Query vector store
-      const matches = await this.vectorStore.searchLawPublisherDocuments(
+      const matches = await this.vectorStoreAdapter.searchLawPublisherDocuments(
         queryEmbedding,
         0.3, // Lower threshold for German legal text
         maxResults
@@ -305,9 +305,13 @@ export class RAGService {
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
-      const clients = await this.vectorStore.searchDatevClients(queryEmbedding, 0.3, maxResults);
+      const clients = await this.vectorStoreAdapter.searchDatevClients(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
 
       if (!clients || clients.length === 0) {
         return { clients: [], context: '' };
@@ -330,7 +334,7 @@ export class RAGService {
     context: string;
   }> {
     try {
-      const client = await this.vectorStore.getDatevClientById(clientId);
+      const client = await this.vectorStoreAdapter.getDatevClientById(clientId);
 
       if (!client) {
         return { clients: [], context: '' };
@@ -353,15 +357,15 @@ export class RAGService {
     maxResults: number = 3,
     clientIdFilter?: string
   ): Promise<{
-    addressees: import('@rag/domain/vector-store.interface').DatevAddresseeMatch[];
+    addressees: import('@rag/domain/vector-store.adapter').DatevAddresseeMatch[];
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
       const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
 
-      const addressees = await this.vectorStore.searchDatevAddressees(
+      const addressees = await this.vectorStoreAdapter.searchDatevAddressees(
         queryEmbedding,
         0.3,
         maxResults,
@@ -391,9 +395,13 @@ export class RAGService {
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
-      const orders = await this.vectorStore.searchDatevOrders(queryEmbedding, 0.3, maxResults);
+      const orders = await this.vectorStoreAdapter.searchDatevOrders(
+        queryEmbedding,
+        0.3,
+        maxResults
+      );
 
       if (!orders || orders.length === 0) {
         return { orders: [], context: '' };
@@ -518,7 +526,7 @@ export class RAGService {
    * Phase 1.1: New formatter for contact persons/managing directors
    */
   private formatDatevAddresseesContext(
-    addressees: import('@rag/domain/vector-store.interface').DatevAddresseeMatch[]
+    addressees: import('@rag/domain/vector-store.adapter').DatevAddresseeMatch[]
   ): string {
     if (addressees.length === 0) return '';
 
@@ -590,15 +598,15 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    corpTax: import('@rag/domain/vector-store.interface').DatevCorpTaxMatch[];
+    corpTax: import('@rag/domain/vector-store.adapter').DatevCorpTaxMatch[];
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
       const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
 
-      const corpTax = await this.vectorStore.searchDatevCorpTax(
+      const corpTax = await this.vectorStoreAdapter.searchDatevCorpTax(
         queryEmbedding,
         0.3,
         maxResults,
@@ -637,15 +645,15 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    tradeTax: import('@rag/domain/vector-store.interface').DatevTradeTaxMatch[];
+    tradeTax: import('@rag/domain/vector-store.adapter').DatevTradeTaxMatch[];
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
       const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
 
-      const tradeTax = await this.vectorStore.searchDatevTradeTax(
+      const tradeTax = await this.vectorStoreAdapter.searchDatevTradeTax(
         queryEmbedding,
         0.3,
         maxResults,
@@ -684,15 +692,15 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    analytics: import('@rag/domain/vector-store.interface').DatevAnalyticsOrderValuesMatch[];
+    analytics: import('@rag/domain/vector-store.adapter').DatevAnalyticsOrderValuesMatch[];
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
       const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
 
-      const analytics = await this.vectorStore.searchDatevAnalyticsOrderValues(
+      const analytics = await this.vectorStoreAdapter.searchDatevAnalyticsOrderValues(
         queryEmbedding,
         0.3,
         maxResults,
@@ -732,15 +740,15 @@ export class RAGService {
     maxResults: number = 5,
     clientIdFilter?: string
   ): Promise<{
-    employees: import('@rag/domain/vector-store.interface').DatevHrEmployeeMatch[];
+    employees: import('@rag/domain/vector-store.adapter').DatevHrEmployeeMatch[];
     context: string;
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
 
       const filters = clientIdFilter ? { client_id: clientIdFilter } : undefined;
 
-      const employees = await this.vectorStore.searchDatevHrEmployees(
+      const employees = await this.vectorStoreAdapter.searchDatevHrEmployees(
         queryEmbedding,
         0.3,
         maxResults,
@@ -783,8 +791,8 @@ export class RAGService {
     citations: Citation[];
   }> {
     try {
-      const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
-      const matches = await this.vectorStore.searchChatDocumentChunks(
+      const queryEmbedding = await this.embeddingsAdapter.generateEmbedding(query);
+      const matches = await this.vectorStoreAdapter.searchChatDocumentChunks(
         queryEmbedding,
         chatId,
         0.3,

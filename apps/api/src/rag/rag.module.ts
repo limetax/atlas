@@ -1,29 +1,29 @@
 import { Module } from '@nestjs/common';
-import { SupabaseVectorAdapter } from '@rag/infrastructure/supabase-vector.adapter';
+import { SupabaseVectorStoreAdapter } from '@rag/infrastructure/supabase-vector-store.adapter';
 import { RAGService } from '@rag/application/rag.service';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
 import { LlmModule } from '@llm/llm.module';
-import { IVectorStore } from '@rag/domain/vector-store.interface';
+import { VectorStoreAdapter } from '@rag/domain/vector-store.adapter';
 
 /**
  * RAG Module - Provides Retrieval-Augmented Generation services
  *
- * Uses provider pattern to inject interfaces:
- * - IVectorStore → SupabaseVectorAdapter
+ * Uses provider pattern to inject abstract classes:
+ * - VectorStoreAdapter → SupabaseVectorStoreAdapter
  */
 @Module({
   imports: [InfrastructureModule, LlmModule],
   providers: [
     // Infrastructure implementation
-    SupabaseVectorAdapter,
+    SupabaseVectorStoreAdapter,
     // Domain abstract class provider (proper NestJS DI)
     {
-      provide: IVectorStore,
-      useClass: SupabaseVectorAdapter,
+      provide: VectorStoreAdapter,
+      useClass: SupabaseVectorStoreAdapter,
     },
     // Application service
     RAGService,
   ],
-  exports: [IVectorStore, RAGService],
+  exports: [VectorStoreAdapter, RAGService],
 })
 export class RAGModule {}

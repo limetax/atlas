@@ -1,16 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage } from '@langchain/core/messages';
-import { ITextExtractor } from '@llm/domain/text-extractor.interface';
-
 /**
  * Anthropic Provider - Infrastructure layer
  * Creates and configures ChatAnthropic instances
- * Implements ITextExtractor for document text extraction
+ * Provides document text extraction via Claude API
  * This is where vendor-specific configuration lives
  */
 @Injectable()
-export class AnthropicProvider implements ITextExtractor {
+export class AnthropicProvider {
   private readonly logger = new Logger(AnthropicProvider.name);
 
   createModel(): ChatAnthropic {

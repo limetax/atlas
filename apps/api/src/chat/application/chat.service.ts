@@ -1,5 +1,5 @@
 import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
-import { IChatRepository } from '@chat/domain/chat.entity';
+import { ChatRepository } from '@chat/domain/chat.repository';
 import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
 import { ClientService } from '@datev/application/client.service';
 import { DocumentService } from '@document/application/document.service';
@@ -25,7 +25,7 @@ export class ChatService {
     private readonly llm: LlmService,
     private readonly rag: RAGService,
     private readonly clientService: ClientService,
-    @Inject(IChatRepository) private readonly chatRepo: IChatRepository,
+    @Inject(ChatRepository) private readonly chatRepo: ChatRepository,
     private readonly documentService: DocumentService
   ) {}
 
