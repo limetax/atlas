@@ -4,15 +4,15 @@ import { SupabaseAdvisorRepository } from '@auth/infrastructure/supabase-advisor
 import { AuthService } from '@auth/application/auth.service';
 import { AuthRouter } from '@auth/auth.router';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
-import { IAuthAdapter } from '@auth/domain/auth-adapter.interface';
-import { IAdvisorRepository } from '@auth/domain/advisor.entity';
+import { AuthAdapter } from '@auth/domain/auth.adapter';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 
 /**
  * Auth Module - Provides authentication and advisor services
  *
- * Uses provider pattern to inject interfaces:
- * - IAuthAdapter → SupabaseAuthAdapter
- * - IAdvisorRepository → SupabaseAdvisorRepository
+ * Uses provider pattern to inject abstract classes:
+ * - AuthAdapter → SupabaseAuthAdapter
+ * - AdvisorRepository → SupabaseAdvisorRepository
  */
 @Module({
   imports: [InfrastructureModule],
@@ -22,11 +22,11 @@ import { IAdvisorRepository } from '@auth/domain/advisor.entity';
     SupabaseAdvisorRepository,
     // Domain abstract class providers (proper NestJS DI)
     {
-      provide: IAuthAdapter,
+      provide: AuthAdapter,
       useClass: SupabaseAuthAdapter,
     },
     {
-      provide: IAdvisorRepository,
+      provide: AdvisorRepository,
       useClass: SupabaseAdvisorRepository,
     },
     // Application service
@@ -34,6 +34,6 @@ import { IAdvisorRepository } from '@auth/domain/advisor.entity';
     // tRPC Router
     AuthRouter,
   ],
-  exports: [IAuthAdapter, IAdvisorRepository, AuthService],
+  exports: [AuthAdapter, AdvisorRepository, AuthService],
 })
 export class AuthModule {}

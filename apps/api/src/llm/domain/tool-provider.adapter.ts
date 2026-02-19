@@ -1,19 +1,12 @@
 import { ToolDefinition, ToolCall, ToolResult } from './tool.types';
 
 /**
- * Tool Provider - Domain contract for tool providers
+ * Tool Provider Adapter - Domain contract for tool providers
  *
- * Abstract class (not interface) so it can be used as injection token in NestJS
- * This defines what we expect from any tool provider,
- * regardless of the underlying implementation (MCP, REST APIs, custom tools, etc.)
- *
- * Implementations should handle:
- * - Fetching available tools
- * - Executing tool calls
- * - Error handling and recovery
- * - Provider-specific type conversions
+ * Abstract class (not interface) so it can be used as injection token in NestJS.
+ * No I-prefix following modern TypeScript conventions.
  */
-export abstract class IToolProvider {
+export abstract class ToolProviderAdapter {
   /**
    * Get all available tools from this provider
    * @returns Promise resolving to array of available tools

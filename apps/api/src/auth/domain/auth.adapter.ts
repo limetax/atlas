@@ -3,11 +3,10 @@ import type { User, Session } from '@supabase/supabase-js';
 /**
  * Auth Adapter - Domain contract for authentication providers
  *
- * Abstract class (not interface) so it can be used directly as injection token
- * This defines what we expect from any auth provider,
- * regardless of the underlying implementation (Supabase, Auth0, etc.)
+ * Abstract class (not interface) so it can be used directly as injection token.
+ * No I-prefix following modern TypeScript conventions.
  */
-export abstract class IAuthAdapter {
+export abstract class AuthAdapter {
   /**
    * Sign in with email and password
    * @param email - User email

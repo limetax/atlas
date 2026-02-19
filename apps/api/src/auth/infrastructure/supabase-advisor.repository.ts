@@ -1,16 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
-import { IAdvisorRepository, Advisor, AdvisorWithAdvisory } from '@auth/domain/advisor.entity';
+import type { Advisor, AdvisorWithAdvisory } from '@auth/domain/advisor.entity';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 
 /**
  * Supabase Advisor Repository - Infrastructure implementation for advisor data access
- * Implements IAdvisorRepository interface using Supabase client
+ * Extends AdvisorRepository using Supabase client
  */
 @Injectable()
-export class SupabaseAdvisorRepository implements IAdvisorRepository {
+export class SupabaseAdvisorRepository extends AdvisorRepository {
   private readonly logger = new Logger(SupabaseAdvisorRepository.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly supabase: SupabaseService) {
+    super();
+  }
 
   /**
    * Find advisor by user ID

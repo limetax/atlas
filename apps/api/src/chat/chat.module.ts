@@ -4,7 +4,7 @@ import { DocumentModule } from '@/document/document.module';
 import { ChatService } from '@chat/application/chat.service';
 import { ChatController } from '@chat/chat.controller';
 import { ChatRouter } from '@chat/chat.router';
-import { IChatRepository } from '@chat/domain/chat.entity';
+import { ChatRepository } from '@chat/domain/chat.repository';
 import { ChatPersistenceMapper } from '@chat/infrastructure/chat-persistence.mapper';
 import { SupabaseChatRepository } from '@chat/infrastructure/supabase-chat.repository';
 import { LlmModule } from '@llm/llm.module';
@@ -25,10 +25,10 @@ import { RAGModule } from '@rag/rag.module';
     ChatPersistenceMapper,
     SupabaseChatRepository,
     {
-      provide: IChatRepository,
+      provide: ChatRepository,
       useClass: SupabaseChatRepository,
     },
   ],
-  exports: [ChatService, IChatRepository],
+  exports: [ChatService, ChatRepository],
 })
 export class ChatModule {}

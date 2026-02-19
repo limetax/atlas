@@ -1,11 +1,12 @@
-import { Inject, Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { EmbeddingsService } from '@llm/application/embeddings.service';
-import { ITextExtractor } from '@llm/domain/text-extractor.interface';
+import { TextExtractionService } from '@llm/application/text-extraction.service';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
-import { IDocumentRepository, type ChatDocumentEntity } from '@document/domain/document.entity';
+import { DocumentRepository } from '@document/domain/document.repository';
+import { type ChatDocumentEntity } from '@document/domain/document.entity';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -18,10 +19,10 @@ export class DocumentService {
   private readonly logger = new Logger(DocumentService.name);
 
   constructor(
-    @Inject(IDocumentRepository) private readonly documentRepo: IDocumentRepository,
+    private readonly documentRepo: DocumentRepository,
     private readonly embeddingsService: EmbeddingsService,
     private readonly supabase: SupabaseService,
-    @Inject(ITextExtractor) private readonly textExtractor: ITextExtractor
+    private readonly textExtractionService: TextExtractionService
   ) {}
 
   /**
@@ -144,7 +145,7 @@ export class DocumentService {
 
     try {
       // Extract text using the text extractor service (abstracted via interface)
-      const extractedText = await this.textExtractor.extractText(file);
+      const extractedText = await this.textExtractionService.extractText(file);
 
       // Chunk the extracted text
       const splitter = new RecursiveCharacterTextSplitter({

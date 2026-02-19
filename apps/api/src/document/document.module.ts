@@ -3,7 +3,7 @@ import { DocumentService } from '@document/application/document.service';
 import { DocumentRouter } from '@document/document.router';
 import { DocumentPersistenceMapper } from '@document/infrastructure/document-persistence.mapper';
 import { SupabaseDocumentRepository } from '@document/infrastructure/supabase-document.repository';
-import { IDocumentRepository } from '@document/domain/document.entity';
+import { DocumentRepository } from '@document/domain/document.repository';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
 import { LlmModule } from '@llm/llm.module';
 
@@ -19,7 +19,7 @@ import { LlmModule } from '@llm/llm.module';
     DocumentPersistenceMapper,
     SupabaseDocumentRepository,
     {
-      provide: IDocumentRepository,
+      provide: DocumentRepository,
       useClass: SupabaseDocumentRepository,
     },
   ],

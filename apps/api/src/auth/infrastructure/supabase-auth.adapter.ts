@@ -1,17 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { User, Session } from '@supabase/supabase-js';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
-import { IAuthAdapter } from '@auth/domain/auth-adapter.interface';
+import { AuthAdapter } from '@auth/domain/auth.adapter';
 
 /**
  * Supabase Auth Adapter - Infrastructure implementation for Supabase authentication
- * Implements IAuthAdapter interface using Supabase client
+ * Extends AuthAdapter using Supabase client
  */
 @Injectable()
-export class SupabaseAuthAdapter implements IAuthAdapter {
+export class SupabaseAuthAdapter extends AuthAdapter {
   private readonly logger = new Logger(SupabaseAuthAdapter.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly supabase: SupabaseService) {
+    super();
+  }
 
   /**
    * Sign in with email and password

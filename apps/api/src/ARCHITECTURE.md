@@ -9,34 +9,45 @@ This backend follows a domain-driven design approach with clear separation betwe
 ```
 src/
 ├── auth/                    # Authentication domain
-│   ├── domain/              # Domain layer (interfaces, entities)
+│   ├── domain/              # Domain layer (abstract contracts, entities)
 │   ├── infrastructure/      # Infrastructure layer (Supabase adapters)
 │   ├── application/         # Application layer (business logic)
 │   ├── auth.module.ts
 │   └── auth.router.ts
 ├── llm/                     # Language Model domain
-│   ├── domain/              # LLM & embeddings interfaces
-│   ├── infrastructure/      # Anthropic client implementation
-│   ├── application/         # LLM service with business logic
+│   ├── domain/              # LLM & embeddings abstract contracts
+│   ├── infrastructure/      # Anthropic provider, GTE embeddings adapter
+│   ├── application/         # LLM service, text extraction service
 │   └── llm.module.ts
 ├── rag/                     # Retrieval-Augmented Generation domain
-│   ├── domain/              # Vector store interfaces, entities
+│   ├── domain/              # Vector store abstract contract, entities
 │   ├── infrastructure/      # Supabase pgvector adapter
 │   ├── application/         # RAG orchestration logic
 │   ├── rag.module.ts
 │   └── rag.router.ts
 ├── chat/                    # Chat domain
-│   ├── domain/              # Message entities
+│   ├── domain/              # Message entities, repository contract
+│   ├── infrastructure/      # Supabase chat repository
 │   ├── application/         # Chat orchestration service
 │   ├── chat.module.ts
 │   ├── chat.router.ts
 │   └── chat.controller.ts
 ├── datev/                   # DATEV integration domain
-│   ├── domain/              # DATEV adapter interface, entities
+│   ├── domain/              # DATEV adapter contract, entities
 │   ├── infrastructure/      # Klardaten client & adapter
 │   ├── application/         # DATEV sync service
 │   ├── datev.module.ts
 │   └── datev.router.ts
+├── document/                # Document domain
+│   ├── domain/              # Document entities, repository contract
+│   ├── infrastructure/      # Supabase document repository
+│   ├── application/         # Document processing service
+│   └── document.module.ts
+├── email/                   # Email domain
+│   ├── domain/              # Email adapter contract
+│   ├── infrastructure/      # Resend email adapter
+│   ├── application/         # Email service
+│   └── email.module.ts
 ├── shared/                  # Shared infrastructure
 │   ├── infrastructure/      # Supabase service
 │   └── trpc/                # tRPC configuration
@@ -52,7 +63,7 @@ src/
 
 **Purpose**: Define what WE expect from the outside world
 
-- **Interfaces**: Contracts for external systems (e.g., `IDatevAdapter`, `ILlmProvider`)
+- **Abstract classes**: Contracts for external systems (e.g., `DatevAdapter`, `AuthAdapter`)
 - **Entities**: Domain objects representing business concepts
 - **NO implementation details**
 - **NO external dependencies** (except shared types)
@@ -60,18 +71,18 @@ src/
 **Example**:
 
 ```typescript
-// domain/datev-adapter.interface.ts
-export interface IDatevAdapter {
-  authenticate(): Promise<void>;
-  getClients(): Promise<DatevClient[]>;
+// domain/datev.adapter.ts
+export abstract class DatevAdapter {
+  abstract authenticate(): Promise<void>;
+  abstract getClients(): Promise<DatevClient[]>;
 }
 ```
 
 ### Infrastructure Layer (`infrastructure/`)
 
-**Purpose**: Implement domain interfaces with concrete technologies
+**Purpose**: Implement domain abstract classes with concrete technologies
 
-- **Adapters**: Concrete implementations of domain interfaces
+- **Adapters**: Concrete implementations of domain contracts
 - **Clients**: External API clients (Anthropic, Klardaten, Supabase)
 - **Protocol-specific code**
 - **NO business logic**
@@ -81,7 +92,7 @@ export interface IDatevAdapter {
 ```typescript
 // infrastructure/klardaten-datev.adapter.ts
 @Injectable()
-export class KlardatenDatevAdapter implements IDatevAdapter {
+export class KlardatenDatevAdapter extends DatevAdapter {
   async authenticate(): Promise<void> {
     // Klardaten-specific implementation
   }
@@ -93,7 +104,7 @@ export class KlardatenDatevAdapter implements IDatevAdapter {
 **Purpose**: Orchestrate business logic and use cases
 
 - **Services**: Business logic and orchestration
-- **Depends ONLY on domain interfaces** (via dependency injection)
+- **Depends ONLY on domain abstract classes** (via dependency injection)
 - **NEVER imports from infrastructure directly**
 
 **Example**:
@@ -102,10 +113,10 @@ export class KlardatenDatevAdapter implements IDatevAdapter {
 // application/datev-sync.service.ts
 @Injectable()
 export class DatevSyncService {
-  constructor(@Inject('IDatevAdapter') private adapter: IDatevAdapter) {}
+  constructor(private readonly datevAdapter: DatevAdapter) {}
 
   async sync() {
-    await this.adapter.authenticate();
+    await this.datevAdapter.authenticate();
     // Business logic here
   }
 }
@@ -128,9 +139,9 @@ export class DatevSyncService {
                ▼
 ┌─────────────────────────────────────────┐
 │          Domain Layer                   │
-│   (Interfaces & Domain Entities)        │
+│  (Abstract Classes & Domain Entities)   │
 └──────────────▲──────────────────────────┘
-               │ implements
+               │ extends
                │
 ┌──────────────┴──────────────────────────┐
 │      Infrastructure Layer               │
@@ -138,22 +149,22 @@ export class DatevSyncService {
 └─────────────────────────────────────────┘
 ```
 
-**Key Rule**: Dependencies flow INWARD. Infrastructure implements domain interfaces, but domain never depends on infrastructure.
+**Key Rule**: Dependencies flow INWARD. Infrastructure extends domain abstract classes, but domain never depends on infrastructure.
 
 ## Preventing Circular Dependencies
 
-### ✅ DO
+### DO
 
 1. **Application services import from domain layer**:
 
    ```typescript
-   import { IDatevAdapter } from '../domain/datev-adapter.interface';
+   import { DatevAdapter } from '../domain/datev.adapter';
    ```
 
-2. **Use dependency injection with interfaces**:
+2. **Use dependency injection with abstract classes** (no string tokens or `@Inject()` needed):
 
    ```typescript
-   constructor(@Inject('IDatevAdapter') private adapter: IDatevAdapter) {}
+   constructor(private readonly datevAdapter: DatevAdapter) {}
    ```
 
 3. **Cross-domain communication via modules**:
@@ -165,32 +176,32 @@ export class DatevSyncService {
    })
    ```
 
-4. **Infrastructure implements domain interfaces**:
+4. **Infrastructure extends domain abstract classes**:
    ```typescript
-   export class KlardatenDatevAdapter implements IDatevAdapter {
+   export class KlardatenDatevAdapter extends DatevAdapter {
      // Implementation
    }
    ```
 
-### ❌ DON'T
+### DON'T
 
 1. **Never import infrastructure directly in application**:
 
    ```typescript
-   // ❌ BAD
+   // BAD
    import { KlardatenDatevAdapter } from '../infrastructure/klardaten-datev.adapter';
    ```
 
 2. **Never import from other domains directly**:
 
    ```typescript
-   // ❌ BAD
+   // BAD
    import { DatevSyncService } from '../../datev/application/datev-sync.service';
    ```
 
 3. **Never put business logic in infrastructure**:
    ```typescript
-   // ❌ BAD - Business logic in infrastructure
+   // BAD - Business logic in infrastructure
    export class KlardatenClient {
      async syncData() {
        // Complex business logic here
@@ -200,25 +211,23 @@ export class DatevSyncService {
 
 ## Module Configuration Pattern
 
-Each domain module uses the provider pattern to inject interfaces:
+Each domain module uses abstract classes as injection tokens (no string tokens needed):
 
 ```typescript
 @Module({
   imports: [InfrastructureModule, LlmModule],
   providers: [
-    // Infrastructure implementation
-    KlardatenDatevAdapter,
-    // Domain interface provider
+    // Bind abstract class to concrete implementation
     {
-      provide: 'IDatevAdapter',
+      provide: DatevAdapter,
       useClass: KlardatenDatevAdapter,
     },
-    // Application service
+    // Application service (auto-injects DatevAdapter)
     DatevSyncService,
   ],
   exports: [
-    'IDatevAdapter', // ← IMPORTANT: Export the token!
-    DatevSyncService, // ← Export the service
+    DatevAdapter, // Export the abstract class token
+    DatevSyncService, // Export the service
   ],
 })
 export class DatevModule {}
@@ -226,31 +235,39 @@ export class DatevModule {}
 
 **Critical**: Always export BOTH:
 
-1. The provider token (e.g., `'IDatevAdapter'`) - so other modules can inject it
+1. The abstract class token (e.g., `DatevAdapter`) - so other modules can inject it
 2. The application service (e.g., `DatevSyncService`) - so other modules can use it
+
+## Naming Conventions
+
+### Domain Contracts (Abstract Classes)
+
+- **No I-prefix** — modern TypeScript convention
+- **Adapter pattern**: `{Capability}Adapter` (e.g., `AuthAdapter`, `DatevAdapter`, `EmailAdapter`)
+- **Repository pattern**: `{Domain}Repository` (e.g., `AdvisorRepository`, `ChatRepository`)
+- File naming: `datev.adapter.ts`, `advisor.repository.ts`
+
+### Infrastructure Implementations
+
+- Pattern: `{Technology}{Capability}{Suffix}`
+- Examples: `SupabaseAuthAdapter`, `KlardatenDatevAdapter`, `ResendEmailAdapter`
+- File naming: `supabase-auth.adapter.ts`, `klardaten-datev.adapter.ts`
+
+### Application Services
+
+- Pattern: `{Domain}Service`
+- Examples: `AuthService`, `ChatService`, `EmailService`
+- Depend only on abstract classes (never concrete implementations)
 
 ## Benefits
 
 1. **Type Safety**: Zero `any` types, full TypeScript inference
-2. **Testability**: Easy to mock via domain interfaces
+2. **Testability**: Easy to mock via domain abstract classes
 3. **No Circular Dependencies**: Unidirectional dependency flow
 4. **Swappable Implementations**: Can replace Klardaten with direct DATEV without changing application layer
 5. **Clear Boundaries**: Each layer has a single responsibility
 6. **Scalability**: New domains follow the same pattern
-
-## Future: Prisma Integration
-
-When Prisma is added, it will follow the same pattern:
-
-```
-auth/
-├── domain/
-│   └── advisor.repository.interface.ts  ← Repository interface
-├── infrastructure/
-│   └── prisma-advisor.repository.ts     ← Prisma implementation
-└── application/
-    └── auth.service.ts                  ← Depends on interface
-```
+7. **Clean DI**: Abstract classes as tokens — no string tokens, no `@Inject()` decorators
 
 ## Shared Package
 

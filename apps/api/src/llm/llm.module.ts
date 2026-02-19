@@ -1,69 +1,68 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AnthropicProvider } from '@llm/infrastructure/anthropic.provider';
-import { EmbeddingsClient } from '@llm/infrastructure/embeddings.client';
+import { AnthropicLlmAdapter } from '@llm/infrastructure/anthropic-llm.adapter';
+import { GteEmbeddingsAdapter } from '@llm/infrastructure/gte-embeddings.adapter';
 import { OpenRegisterMcpService } from '@llm/infrastructure/mcp/openregister-mcp.service';
 import { McpToolProviderAdapter } from '@llm/infrastructure/mcp/mcp-tool-provider.adapter';
 import { LlmService } from '@llm/application/llm.service';
 import { EmbeddingsService } from '@llm/application/embeddings.service';
+import { TextExtractionService } from '@llm/application/text-extraction.service';
 import { ToolResolutionService } from '@llm/application/tool-resolution.service';
 import { ToolOrchestrationService } from '@llm/application/tool-orchestration.service';
-import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
-import { IToolProvider } from '@llm/domain/tool-provider.interface';
-import { ITextExtractor } from '@llm/domain/text-extractor.interface';
+import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
+import { ToolProviderAdapter } from '@llm/domain/tool-provider.adapter';
+import { LlmProviderAdapter } from '@llm/domain/llm-provider.adapter';
 
 /**
  * LLM Module - Provides language model and embeddings services
  * @Global so these services are available throughout the app
  *
- * Architecture (DDD with LangChain as foundation):
- * - Domain: LangChain types + business types (Tool, ChatContext) + interfaces
- * - Application: Business logic using domain interfaces (vendor-agnostic)
- * - Infrastructure: Vendor connections (AnthropicProvider, EmbeddingsClient, McpToolProviderAdapter)
+ * Architecture (DDD with LangChain as framework):
+ * - Domain: Abstract adapters + domain types (LlmMessage, ToolDefinition, etc.)
+ * - Application: Business logic depending only on domain contracts
+ * - Infrastructure: Vendor implementations (AnthropicLlmAdapter, GteEmbeddingsAdapter, etc.)
  *
- * Provider pattern (Interface → Implementation):
- * - IEmbeddingsProvider → EmbeddingsClient (local Transformers.js)
- * - IToolProvider → McpToolProviderAdapter (MCP connection)
- * - ITextExtractor → AnthropicProvider (Claude text extraction with OCR)
- * - LLM → AnthropicProvider (Anthropic API connection + text extraction)
- *
- * To switch to OpenAI: Create OpenAIProvider implementing ITextExtractor, update bindings here
+ * Provider bindings (Abstract → Implementation):
+ * - LlmProviderAdapter → AnthropicLlmAdapter (swap for OpenAI, Bedrock, etc.)
+ * - EmbeddingsAdapter  → GteEmbeddingsAdapter (local Transformers.js)
+ * - ToolProviderAdapter → McpToolProviderAdapter (MCP connection)
  */
 @Global()
 @Module({
   imports: [ConfigModule.forRoot()],
   providers: [
-    // Infrastructure (vendor connections)
-    AnthropicProvider,
-    EmbeddingsClient,
+    // Infrastructure (vendor implementations)
+    AnthropicLlmAdapter,
+    GteEmbeddingsAdapter,
     OpenRegisterMcpService,
     McpToolProviderAdapter,
 
-    // Domain interface providers (NestJS DI pattern)
+    // Domain adapter bindings (token → implementation)
     {
-      provide: IEmbeddingsProvider,
-      useClass: EmbeddingsClient,
+      provide: LlmProviderAdapter,
+      useExisting: AnthropicLlmAdapter,
     },
     {
-      provide: IToolProvider,
+      provide: EmbeddingsAdapter,
+      useClass: GteEmbeddingsAdapter,
+    },
+    {
+      provide: ToolProviderAdapter,
       useClass: McpToolProviderAdapter,
-    },
-    {
-      provide: ITextExtractor,
-      useExisting: AnthropicProvider,
     },
 
     // Application services
+    TextExtractionService,
     ToolResolutionService,
     ToolOrchestrationService,
     LlmService,
     EmbeddingsService,
   ],
   exports: [
-    IEmbeddingsProvider,
-    IToolProvider,
-    ITextExtractor,
-    AnthropicProvider,
+    LlmProviderAdapter,
+    EmbeddingsAdapter,
+    ToolProviderAdapter,
+    TextExtractionService,
     LlmService,
     EmbeddingsService,
     ToolResolutionService,

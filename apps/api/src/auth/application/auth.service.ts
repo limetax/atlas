@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { User, Session } from '@supabase/supabase-js';
-import { IAuthAdapter } from '@auth/domain/auth-adapter.interface';
-import {
-  IAdvisorRepository,
-  type Advisor,
-  type AdvisorWithAdvisory,
-} from '@auth/domain/advisor.entity';
+import { AuthAdapter } from '@auth/domain/auth.adapter';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
+import { type Advisor, type AdvisorWithAdvisory } from '@auth/domain/advisor.entity';
 
 /**
  * Auth Service - Application layer for authentication business logic
@@ -14,8 +11,8 @@ import {
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly authAdapter: IAuthAdapter,
-    private readonly advisorRepository: IAdvisorRepository
+    private readonly authAdapter: AuthAdapter,
+    private readonly advisorRepository: AdvisorRepository
   ) {}
 
   /**

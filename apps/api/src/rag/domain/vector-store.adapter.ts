@@ -1,11 +1,10 @@
 /**
- * Vector Store - Domain contract for vector search operations
+ * Vector Store Adapter - Domain contract for vector search operations
  *
- * Abstract class (not interface) so it can be used directly as injection token
- * This defines what we expect from any vector store,
- * regardless of the underlying implementation (Supabase pgvector, Pinecone, etc.)
+ * Abstract class (not interface) so it can be used directly as injection token.
+ * No I-prefix following modern TypeScript conventions.
  */
-export abstract class IVectorStore {
+export abstract class VectorStoreAdapter {
   /**
    * Search for similar tax documents using vector similarity
    * @param queryEmbedding - Query embedding vector
