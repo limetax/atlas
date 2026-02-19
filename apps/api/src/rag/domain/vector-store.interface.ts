@@ -151,15 +151,15 @@ export abstract class IVectorStore {
   ): Promise<LawPublisherDocumentMatch[]>;
 
   /**
-   * Search for similar chunks in uploaded chat documents
-   * Scoped to a specific chat for document isolation
+   * Search for similar chunks in uploaded documents
+   * Scoped to specific document IDs for RAG context
    */
-  abstract searchChatDocumentChunks(
+  abstract searchDocumentChunks(
     queryEmbedding: number[],
-    chatId: string,
+    documentIds: string[],
     matchThreshold: number,
     matchCount: number
-  ): Promise<ChatDocumentChunkMatch[]>;
+  ): Promise<DocumentChunkMatch[]>;
 }
 
 // ============================================
@@ -428,14 +428,14 @@ export type LawPublisherDocumentMatch = {
 };
 
 /**
- * Chat Document Chunk Match - Result from vector search of uploaded documents
+ * Document Chunk Match - Result from vector search of uploaded documents
  */
-export type ChatDocumentChunkMatch = {
+export type DocumentChunkMatch = {
   id: string;
   document_id: string;
   content: string;
   page_number: number | null;
   chunk_index: number;
-  file_name: string;
+  document_name: string;
   similarity: number;
 };

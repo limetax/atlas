@@ -8,6 +8,7 @@ import { ChatContext } from '@atlas/shared';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 
 import { useChatSessions } from './useChatSessions';
+import { useLinkedDocuments } from './useLinkedDocuments';
 
 export const ChatPage = () => {
   // Since ChatPage is shared between '/chat' and '/chat/$chatId', use strict: false
@@ -46,7 +47,26 @@ export const ChatPage = () => {
   const [pendingContext, setPendingContext] = useState<ChatContext>({});
   const chatContext = currentSession?.context ?? pendingContext;
 
+  // ─── Linked documents ────────────────────────────────────────────────────
+  const {
+    linkedDocuments,
+    pendingDocuments,
+    handleDocumentSelect,
+    handleRemovePendingDocument,
+    linkPendingToNewChat,
+    handleDocumentsUploaded,
+    clearPendingDocuments,
+  } = useLinkedDocuments(currentSessionId);
+
   // ─── Streaming ──────────────────────────────────────────────────────────
+  const handleChatCreated = useCallback(
+    (newChatId: string) => {
+      navigate({ to: '/chat/$chatId', params: { chatId: newChatId } });
+      void linkPendingToNewChat(newChatId);
+    },
+    [navigate, linkPendingToNewChat]
+  );
+
   const { isLoading, activeToolCalls, handleSendMessage, handleCancelRequest } = useChatStream({
     messages,
     currentSessionId,
@@ -54,12 +74,11 @@ export const ChatPage = () => {
     updateCurrentSessionMessages,
     setCurrentSessionId,
     invalidateAfterStream,
-    onChatCreated: (newChatId) => {
-      navigate({ to: '/chat/$chatId', params: { chatId: newChatId } });
-    },
+    onChatCreated: handleChatCreated,
     onContextPersisted: () => {
       setPendingContext({});
     },
+    onDocumentsUploaded: handleDocumentsUploaded,
   });
 
   // Sync URL → hook state. The URL is the source of truth for which chat is active.
@@ -75,6 +94,7 @@ export const ChatPage = () => {
       }
       setPendingContext({});
       setPendingFiles([]);
+      clearPendingDocuments();
     }
     // Only react to URL changes. The hook's currentSessionId is intentionally
     // excluded to avoid a feedback loop where hook state re-triggers this effect.
@@ -123,6 +143,7 @@ export const ChatPage = () => {
     handleNewChat();
     setPendingContext({});
     setPendingFiles([]);
+    clearPendingDocuments();
 
     if (chatId) {
       navigate({ to: '/chat' });
@@ -175,6 +196,10 @@ export const ChatPage = () => {
         pendingFiles={pendingFiles}
         onAddFiles={handleAddFiles}
         onRemovePendingFile={handleRemovePendingFile}
+        linkedDocuments={linkedDocuments}
+        pendingDocuments={pendingDocuments}
+        onDocumentSelect={handleDocumentSelect}
+        onRemovePendingDocument={handleRemovePendingDocument}
       />
     </>
   );

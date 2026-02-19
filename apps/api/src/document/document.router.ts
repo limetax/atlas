@@ -1,33 +1,51 @@
 import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc';
 import { z } from 'zod';
 import { DocumentService } from '@document/application/document.service';
-import { type ChatDocumentEntity } from '@document/domain/document.entity';
+import { type DocumentEntity } from '@document/domain/document.entity';
+import { IAdvisorRepository } from '@auth/domain/advisor.entity';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
 import type { User } from '@supabase/supabase-js';
-
-const ChatIdInputSchema = z.object({
-  chatId: z.string().uuid(),
-});
 
 const DocumentIdInputSchema = z.object({
   documentId: z.string().uuid(),
 });
 
+const ChatIdInputSchema = z.object({
+  chatId: z.string().uuid(),
+});
+
+const LinkDocumentSchema = z.object({
+  chatId: z.string().uuid(),
+  documentId: z.string().uuid(),
+});
+
 /**
- * Document Router - tRPC procedures for document management
- * Upload is handled by ChatController (multipart/form-data SSE endpoint)
+ * Document Router - tRPC procedures for advisory-scoped document management
+ * Upload is handled by DocumentController (multipart/form-data HTTP endpoint)
  */
 @Router({ alias: 'document' })
 export class DocumentRouter {
-  constructor(private readonly documentService: DocumentService) {}
+  constructor(
+    private readonly documentService: DocumentService,
+    private readonly advisorRepo: IAdvisorRepository
+  ) {}
+
+  @Query()
+  @UseMiddlewares(AuthMiddleware)
+  async listDocuments(@Ctx() ctx: { user: User }): Promise<DocumentEntity[]> {
+    const advisor = await this.advisorRepo.findById(ctx.user.id);
+    if (!advisor?.advisory_id) return [];
+    return this.documentService.getDocumentsByAdvisory(advisor.advisory_id);
+  }
 
   @Query({ input: ChatIdInputSchema })
   @UseMiddlewares(AuthMiddleware)
   async getDocumentsByChatId(
     @Input('chatId') chatId: string,
     @Ctx() ctx: { user: User }
-  ): Promise<ChatDocumentEntity[]> {
-    return this.documentService.getDocumentsByChat(chatId, ctx.user.id);
+  ): Promise<DocumentEntity[]> {
+    void ctx;
+    return this.documentService.getDocumentsByChatId(chatId);
   }
 
   @Mutation({ input: DocumentIdInputSchema })
@@ -36,6 +54,41 @@ export class DocumentRouter {
     @Input('documentId') documentId: string,
     @Ctx() ctx: { user: User }
   ): Promise<boolean> {
-    return this.documentService.deleteDocument(documentId, ctx.user.id);
+    void ctx;
+    return this.documentService.deleteDocument(documentId);
+  }
+
+  @Mutation({ input: LinkDocumentSchema })
+  @UseMiddlewares(AuthMiddleware)
+  async linkDocumentToChat(
+    @Input('chatId') chatId: string,
+    @Input('documentId') documentId: string,
+    @Ctx() ctx: { user: User }
+  ): Promise<boolean> {
+    void ctx;
+    await this.documentService.linkDocumentToChat(chatId, documentId);
+    return true;
+  }
+
+  @Mutation({ input: LinkDocumentSchema })
+  @UseMiddlewares(AuthMiddleware)
+  async unlinkDocumentFromChat(
+    @Input('chatId') chatId: string,
+    @Input('documentId') documentId: string,
+    @Ctx() ctx: { user: User }
+  ): Promise<boolean> {
+    void ctx;
+    await this.documentService.unlinkDocumentFromChat(chatId, documentId);
+    return true;
+  }
+
+  @Query({ input: DocumentIdInputSchema })
+  @UseMiddlewares(AuthMiddleware)
+  async getDownloadUrl(
+    @Input('documentId') documentId: string,
+    @Ctx() ctx: { user: User }
+  ): Promise<{ url: string }> {
+    void ctx;
+    return this.documentService.getDownloadUrl(documentId);
   }
 }

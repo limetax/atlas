@@ -9,11 +9,13 @@
  * - NO useEffect syncing — eliminates race conditions entirely
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+
 import { toast } from 'sonner';
-import { ChatSession, Message, ChatContext, ChatMessageMetadata } from '@atlas/shared';
+
 import { trpc } from '@/lib/trpc';
 import { logger } from '@/utils/logger';
+import { ChatContext, ChatMessageMetadata, ChatSession, Message } from '@atlas/shared';
 
 export type UseChatSessionsReturn = {
   sessions: ChatSession[];
@@ -72,10 +74,7 @@ function mapPersistedToMessage(msg: {
     role: msg.role,
     content: msg.content,
     toolCalls: msg.metadata?.toolCalls,
-    attachedFiles: msg.metadata?.documents?.map((d) => ({
-      name: d.fileName,
-      size: d.fileSize,
-    })),
+    attachedFiles: msg.metadata?.documents,
     timestamp: msg.createdAt,
   };
 }

@@ -1,8 +1,8 @@
-import { type DocumentStatus } from '@atlas/shared';
+import { type DocumentSource, type DocumentStatus } from '@atlas/shared';
 import {
-  type ChatDocumentEntity,
   type DocumentChunkInsert,
-  IDocumentRepository,
+  type DocumentEntity,
+  DocumentRepository,
 } from '@document/domain/document.entity';
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
@@ -12,32 +12,42 @@ import { sanitizeTextForPostgres } from './text-sanitizer.util';
 
 /**
  * Supabase Document Repository - Infrastructure implementation for document data access
- * Implements IDocumentRepository using Supabase client with service role key
+ * Implements DocumentRepository using Supabase client with service role key
  */
 @Injectable()
-export class SupabaseDocumentRepository implements IDocumentRepository {
+export class SupabaseDocumentRepository extends DocumentRepository {
   private readonly logger = new Logger(SupabaseDocumentRepository.name);
 
   constructor(
     private readonly supabase: SupabaseService,
     private readonly mapper: DocumentPersistenceMapper
-  ) {}
+  ) {
+    super();
+  }
+
+  // --- Document CRUD ---
 
   async create(params: {
-    chatId: string;
-    advisorId: string;
-    fileName: string;
-    fileSize: number;
+    advisoryId: string;
+    uploadedBy: string;
+    name: string;
+    sizeBytes: number;
     storagePath: string;
-  }): Promise<ChatDocumentEntity> {
+    mimeType: string;
+    source?: DocumentSource;
+    clientId?: string;
+  }): Promise<DocumentEntity> {
     const { data, error } = await this.supabase.db
-      .from('chat_documents')
+      .from('documents')
       .insert({
-        chat_id: params.chatId,
-        advisor_id: params.advisorId,
-        file_name: params.fileName,
-        file_size: params.fileSize,
+        advisory_id: params.advisoryId,
+        uploaded_by: params.uploadedBy,
+        name: params.name,
+        size_bytes: params.sizeBytes,
         storage_path: params.storagePath,
+        mime_type: params.mimeType,
+        source: params.source ?? 'limetaxos',
+        client_id: params.clientId ?? null,
       })
       .select()
       .single();
@@ -64,39 +74,39 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
       updateData.chunk_count = chunkCount;
     }
 
-    const { error } = await this.supabase.db
-      .from('chat_documents')
+    const { data, error } = await this.supabase.db
+      .from('documents')
       .update(updateData)
-      .eq('id', documentId);
+      .eq('id', documentId)
+      .select('id');
 
-    if (error) {
-      this.logger.error(`Failed to update document status ${documentId}:`, error);
-      throw new Error(`Failed to update document status: ${error.message}`);
+    if (error ?? !data?.length) {
+      const reason = error?.message ?? 'no rows updated (document not found or RLS blocked)';
+      this.logger.error(`Failed to update document status for ${documentId}: ${reason}`);
+      throw new Error(`Failed to update document status: ${reason}`);
     }
   }
 
-  async findByChatId(chatId: string, advisorId: string): Promise<ChatDocumentEntity[]> {
+  async findByAdvisoryId(advisoryId: string): Promise<DocumentEntity[]> {
     const { data, error } = await this.supabase.db
-      .from('chat_documents')
+      .from('documents')
       .select('*')
-      .eq('chat_id', chatId)
-      .eq('advisor_id', advisorId)
+      .eq('advisory_id', advisoryId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      this.logger.error(`Failed to fetch documents for chat ${chatId}:`, error);
+      this.logger.error(`Failed to fetch documents for advisory ${advisoryId}:`, error);
       throw new Error(`Failed to fetch documents: ${error.message}`);
     }
 
     return (data ?? []).map((row) => this.mapper.toDomain(row));
   }
 
-  async findById(documentId: string, advisorId: string): Promise<ChatDocumentEntity | null> {
+  async findById(documentId: string): Promise<DocumentEntity | null> {
     const { data, error } = await this.supabase.db
-      .from('chat_documents')
+      .from('documents')
       .select('*')
       .eq('id', documentId)
-      .eq('advisor_id', advisorId)
       .single();
 
     if (error) {
@@ -108,12 +118,8 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
     return this.mapper.toDomain(data);
   }
 
-  async delete(documentId: string, advisorId: string): Promise<boolean> {
-    const { error } = await this.supabase.db
-      .from('chat_documents')
-      .delete()
-      .eq('id', documentId)
-      .eq('advisor_id', advisorId);
+  async delete(documentId: string): Promise<boolean> {
+    const { error } = await this.supabase.db.from('documents').delete().eq('id', documentId);
 
     if (error) {
       this.logger.error(`Failed to delete document ${documentId}:`, error);
@@ -123,11 +129,12 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
     return true;
   }
 
+  // --- Chunk operations ---
+
   async insertChunks(chunks: DocumentChunkInsert[]): Promise<void> {
     const rows = chunks.map((chunk) => {
       const { sanitized, charsRemoved } = sanitizeTextForPostgres(chunk.content);
 
-      // Log when sanitization removes characters to track data loss
       if (charsRemoved > 0) {
         this.logger.warn(
           `Sanitization removed ${charsRemoved} character${charsRemoved !== 1 ? 's' : ''} from document chunk (${chunk.content.length} → ${sanitized.length} chars)`
@@ -136,8 +143,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
 
       return {
         document_id: chunk.documentId,
-        chat_id: chunk.chatId,
-        advisor_id: chunk.advisorId,
+        advisory_id: chunk.advisoryId,
         content: sanitized,
         page_number: chunk.pageNumber ?? null,
         chunk_index: chunk.chunkIndex,
@@ -145,11 +151,80 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
       };
     });
 
-    const { error } = await this.supabase.db.from('chat_document_chunks').insert(rows);
+    const { error } = await this.supabase.db.from('document_chunks').insert(rows);
 
     if (error) {
       this.logger.error('Failed to insert document chunks:', error);
       throw new Error(`Failed to insert document chunks: ${error.message}`);
     }
+  }
+
+  // --- Chat-document join operations ---
+
+  async linkToChat(chatId: string, documentId: string): Promise<void> {
+    const { error } = await this.supabase.db
+      .from('chat_documents')
+      .upsert({ chat_id: chatId, document_id: documentId }, { onConflict: 'chat_id,document_id' });
+
+    if (error) {
+      this.logger.error(`Failed to link document ${documentId} to chat ${chatId}:`, error);
+      throw new Error(`Failed to link document to chat: ${error.message}`);
+    }
+  }
+
+  async unlinkFromChat(chatId: string, documentId: string): Promise<void> {
+    const { error } = await this.supabase.db
+      .from('chat_documents')
+      .delete()
+      .eq('chat_id', chatId)
+      .eq('document_id', documentId);
+
+    if (error) {
+      this.logger.error(`Failed to unlink document ${documentId} from chat ${chatId}:`, error);
+      throw new Error(`Failed to unlink document from chat: ${error.message}`);
+    }
+  }
+
+  async findDocumentIdsByChatId(chatId: string): Promise<string[]> {
+    const { data, error } = await this.supabase.db
+      .from('chat_documents')
+      .select('document_id')
+      .eq('chat_id', chatId);
+
+    if (error) {
+      this.logger.error(`Failed to fetch document IDs for chat ${chatId}:`, error);
+      throw new Error(`Failed to fetch document IDs: ${error.message}`);
+    }
+
+    return (data ?? []).map((row) => row.document_id);
+  }
+
+  async findByChatId(chatId: string): Promise<DocumentEntity[]> {
+    const { data: links, error: linkError } = await this.supabase.db
+      .from('chat_documents')
+      .select('document_id')
+      .eq('chat_id', chatId);
+
+    if (linkError) {
+      this.logger.error(`Failed to fetch chat document links for chat ${chatId}:`, linkError);
+      throw new Error(`Failed to fetch chat documents: ${linkError.message}`);
+    }
+
+    if (!links?.length) return [];
+
+    const documentIds = links.map((l) => l.document_id);
+
+    const { data, error } = await this.supabase.db
+      .from('documents')
+      .select('*')
+      .in('id', documentIds)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch documents for chat ${chatId}:`, error);
+      throw new Error(`Failed to fetch documents: ${error.message}`);
+    }
+
+    return (data ?? []).map((row) => this.mapper.toDomain(row));
   }
 }

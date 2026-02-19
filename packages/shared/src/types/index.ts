@@ -86,15 +86,15 @@ export type ChatStreamChunk = {
   error?: string;
   toolCall?: { name: string; status: 'started' | 'completed' };
   chatId?: string;
-  documents?: ChatDocument[];
+  documents?: Array<{ name: string; size: number }>;
 };
 
 // Metadata stored alongside chat messages
 // - assistant messages: toolCalls used during response
-// - user messages: documents attached to the message
+// - user messages: file attachments (name + size) on the message
 export type ChatMessageMetadata = {
   toolCalls?: Array<{ name: string; status: 'started' | 'completed' }>;
-  documents?: ChatDocument[];
+  documents?: Array<{ name: string; size: number }>;
 };
 
 // Persisted message (DB representation)
@@ -107,15 +107,24 @@ export type PersistedMessage = {
   metadata?: ChatMessageMetadata;
 };
 
-// Document upload types
+// Document types
 export const DOCUMENT_STATUSES = ['processing', 'ready', 'error'] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
-export type ChatDocument = {
+export const DOCUMENT_SOURCES = ['limetaxos', 'datev'] as const;
+export type DocumentSource = (typeof DOCUMENT_SOURCES)[number];
+
+export type Document = {
   id: string;
-  chatId: string;
-  fileName: string;
-  fileSize: number;
+  advisoryId: string;
+  clientId: string | null;
+  uploadedBy: string;
+  name: string;
+  sizeBytes: number;
+  storagePath: string;
+  mimeType: string;
+  source: DocumentSource;
+  datevDocumentId: string | null;
   status: DocumentStatus;
   errorMessage?: string;
   chunkCount: number;

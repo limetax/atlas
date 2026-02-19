@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { Paperclip, StopCircle } from 'lucide-react';
+import { FileImage, FileText, Library, Paperclip, StopCircle, X } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 
 import { Button } from '@/components/ui/button';
 import { type ToolCallState } from '@/hooks/useChatStream';
 import { isValidPdfFile } from '@/utils/validators';
-import { ChatContext, Message } from '@atlas/shared';
+import { ChatContext, type Document, Message } from '@atlas/shared';
 
 import { ChatEmptyState } from './ChatEmptyState';
 import { ChatMessage } from './ChatMessage';
@@ -14,6 +14,7 @@ import { ChatScrollAnchor } from './ChatScrollAnchor';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ContextToggles } from './context/ContextToggles';
 import { DeepThinkingToggle } from './context/DeepThinkingToggle';
+import { DocumentPickerModal } from './DocumentPickerModal';
 import { DropZoneOverlay, PendingFileList } from './FileUpload';
 
 type ChatInterfaceProps = {
@@ -28,6 +29,10 @@ type ChatInterfaceProps = {
   pendingFiles: File[];
   onAddFiles: (files: File[]) => void;
   onRemovePendingFile: (index: number) => void;
+  linkedDocuments?: Document[];
+  pendingDocuments?: Document[];
+  onDocumentSelect?: (docs: Document[]) => void;
+  onRemovePendingDocument?: (documentId: string) => void;
 };
 
 export const ChatInterface = ({
@@ -42,6 +47,10 @@ export const ChatInterface = ({
   pendingFiles,
   onAddFiles,
   onRemovePendingFile,
+  linkedDocuments = [],
+  pendingDocuments = [],
+  onDocumentSelect,
+  onRemovePendingDocument,
 }: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -147,6 +156,10 @@ export const ChatInterface = ({
         pendingFiles={pendingFiles}
         onAddFiles={onAddFiles}
         onRemovePendingFile={onRemovePendingFile}
+        linkedDocuments={linkedDocuments}
+        pendingDocuments={pendingDocuments}
+        onDocumentSelect={onDocumentSelect}
+        onRemovePendingDocument={onRemovePendingDocument}
       />
     </div>
   );
@@ -203,6 +216,10 @@ type InputAreaProps = {
   pendingFiles: File[];
   onAddFiles: (files: File[]) => void;
   onRemovePendingFile: (index: number) => void;
+  linkedDocuments: Document[];
+  pendingDocuments: Document[];
+  onDocumentSelect?: (docs: Document[]) => void;
+  onRemovePendingDocument?: (documentId: string) => void;
 };
 
 const InputArea = ({
@@ -218,9 +235,13 @@ const InputArea = ({
   pendingFiles,
   onAddFiles,
   onRemovePendingFile,
+  linkedDocuments,
+  pendingDocuments,
+  onDocumentSelect,
 }: InputAreaProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDeepThinking, setIsDeepThinking] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -233,6 +254,13 @@ const InputArea = ({
   };
 
   const hasPendingContent = Boolean(inputValue.trim());
+
+  const excludedIds = new Set([
+    ...linkedDocuments.map((d) => d.id),
+    ...pendingDocuments.map((d) => d.id),
+  ]);
+
+  const hasLinkedDocs = linkedDocuments.length > 0 || pendingDocuments.length > 0;
 
   return (
     <div className="flex-shrink-0 bg-background/80 backdrop-blur-sm pb-10 pt-4 px-6">
@@ -258,6 +286,16 @@ const InputArea = ({
           {pendingFiles.length > 0 && (
             <div className="px-4 pb-2">
               <PendingFileList pendingFiles={pendingFiles} onRemovePending={onRemovePendingFile} />
+            </div>
+          )}
+
+          {/* Linked/pending documents strip */}
+          {hasLinkedDocs && (
+            <div className="px-4 pb-2">
+              <LinkedDocumentsStrip
+                linkedDocuments={linkedDocuments}
+                pendingDocuments={pendingDocuments}
+              />
             </div>
           )}
 
@@ -287,10 +325,30 @@ const InputArea = ({
                 className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                title="Datei anhängen"
+                title="Datei hochladen"
               >
                 <Paperclip className="h-5 w-5" />
               </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                onClick={() => setIsPickerOpen(true)}
+                disabled={isLoading}
+                title="Dokument aus Bibliothek anhängen"
+              >
+                <Library className="h-5 w-5" />
+              </Button>
+              <DocumentPickerModal
+                isOpen={isPickerOpen}
+                onClose={() => setIsPickerOpen(false)}
+                onSelect={(docs) => {
+                  onDocumentSelect?.(docs);
+                  setIsPickerOpen(false);
+                }}
+                excludedIds={excludedIds}
+              />
               {isLoading ? (
                 <Button
                   type="button"
@@ -322,6 +380,57 @@ const InputArea = ({
           Limetax App kann Fehler machen. Überprüfen Sie wichtige Informationen.
         </p>
       </form>
+    </div>
+  );
+};
+
+type LinkedDocumentsStripProps = {
+  linkedDocuments: Document[];
+  pendingDocuments: Document[];
+  onRemovePending?: (documentId: string) => void;
+};
+
+const LinkedDocumentsStrip = ({ linkedDocuments, pendingDocuments }: LinkedDocumentsStripProps) => (
+  <div className="flex flex-wrap gap-1.5">
+    {linkedDocuments.map((doc) => (
+      <DocumentChip key={doc.id} doc={doc} />
+    ))}
+    {pendingDocuments.map((doc) => (
+      <DocumentChip key={doc.id} doc={doc} />
+    ))}
+  </div>
+);
+
+type DocumentChipProps = {
+  doc: Document;
+  isPending?: boolean;
+  onRemove?: () => void;
+};
+
+const DocumentChip = ({ doc, isPending = false, onRemove }: DocumentChipProps) => {
+  const isImage = doc.mimeType.startsWith('image/');
+  const FileIcon = isImage ? FileImage : FileText;
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs ${
+        isPending
+          ? 'bg-muted/50 border-border text-muted-foreground'
+          : 'bg-primary/10 border-primary/20 text-foreground'
+      }`}
+    >
+      <FileIcon className="w-3.5 h-3.5 shrink-0" />
+      <span className="max-w-[140px] truncate">{doc.name}</span>
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+          title={isPending ? 'Entfernen' : 'Verknüpfung aufheben'}
+        >
+          <X className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 };

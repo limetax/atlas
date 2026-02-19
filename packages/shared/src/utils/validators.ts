@@ -36,14 +36,8 @@ export const ChatMessageMetadataSchema = z.object({
   documents: z
     .array(
       z.object({
-        id: z.string(),
-        chatId: z.string(),
-        fileName: z.string(),
-        fileSize: z.number(),
-        status: z.enum(['processing', 'ready', 'error']),
-        errorMessage: z.string().optional(),
-        chunkCount: z.number(),
-        createdAt: z.string(),
+        name: z.string(),
+        size: z.number(),
       })
     )
     .optional(),

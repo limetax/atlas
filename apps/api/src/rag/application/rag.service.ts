@@ -8,7 +8,7 @@ import {
 import {
   type DatevClientMatch,
   type DatevOrderMatch,
-  type ChatDocumentChunkMatch,
+  type DocumentChunkMatch,
   IVectorStore,
 } from '@rag/domain/vector-store.interface';
 import { type ResearchSource } from '@atlas/shared';
@@ -35,13 +35,13 @@ export class RAGService {
     query: string,
     clientIdFilter?: string,
     researchSources?: ResearchSource[],
-    chatId?: string
+    documentIds?: string[]
   ): Promise<{
     context: string;
     citations: Citation[];
   }> {
     const { taxContext, datevContext, lawPublisherContext, uploadedDocContext, citations } =
-      await this.buildContext(query, clientIdFilter, researchSources, chatId);
+      await this.buildContext(query, clientIdFilter, researchSources, documentIds);
 
     // Combine contexts
     let combinedContext = '';
@@ -81,7 +81,7 @@ export class RAGService {
     query: string,
     clientIdFilter?: string,
     researchSources?: ResearchSource[],
-    chatId?: string
+    documentIds?: string[]
   ): Promise<{
     taxContext: string;
     datevContext: string;
@@ -105,14 +105,14 @@ export class RAGService {
       lawPublisherCitations = lawPubCitations;
     }
 
-    // Search uploaded documents for this chat (vector search)
+    // Search uploaded documents by document IDs (vector search)
     let uploadedDocContext = '';
     let uploadedDocCitations: Citation[] = [];
 
-    if (chatId) {
+    if (documentIds && documentIds.length > 0) {
       const { context: uploadCtx, citations: uploadCits } = await this.searchUploadedDocuments(
         query,
-        chatId
+        documentIds
       );
       uploadedDocContext = uploadCtx;
       uploadedDocCitations = uploadCits;
@@ -773,20 +773,20 @@ export class RAGService {
   }
 
   /**
-   * Search uploaded document chunks for a specific chat
+   * Search uploaded document chunks by document IDs
    */
   private async searchUploadedDocuments(
     query: string,
-    chatId: string
+    documentIds: string[]
   ): Promise<{
     context: string;
     citations: Citation[];
   }> {
     try {
       const queryEmbedding = await this.embeddingsProvider.generateEmbedding(query);
-      const matches = await this.vectorStore.searchChatDocumentChunks(
+      const matches = await this.vectorStore.searchDocumentChunks(
         queryEmbedding,
-        chatId,
+        documentIds,
         0.3,
         5
       );
@@ -799,7 +799,7 @@ export class RAGService {
       const citations: Citation[] = matches.map((match) => ({
         id: match.id,
         source: 'upload',
-        title: `${match.file_name} (Seite ${match.page_number ?? '?'}) (${Math.round(match.similarity * 100)}% relevant)`,
+        title: `${match.document_name} (Seite ${match.page_number ?? '?'}) (${Math.round(match.similarity * 100)}% relevant)`,
         content: match.content,
       }));
 
@@ -813,11 +813,11 @@ export class RAGService {
   /**
    * Format uploaded document chunks as context string
    */
-  private formatUploadedDocContext(chunks: ChatDocumentChunkMatch[]): string {
+  private formatUploadedDocContext(chunks: DocumentChunkMatch[]): string {
     if (chunks.length === 0) return '';
 
     return chunks
-      .map((c) => `[${c.file_name}, Seite ${c.page_number ?? '?'}]\n${c.content}`)
+      .map((c) => `[${c.document_name}, Seite ${c.page_number ?? '?'}]\n${c.content}`)
       .join('\n---\n');
   }
 }

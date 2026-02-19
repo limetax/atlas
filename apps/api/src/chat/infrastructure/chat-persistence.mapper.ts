@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common';
 import {
-  ChatRow,
-  ChatMessageRow,
+  ChatContext,
+  ChatContextSchema,
   ChatInsert,
   ChatMessageInsert,
-  ChatContextSchema,
-  ChatMessageMetadataSchema,
-  ChatContext,
   ChatMessageMetadata,
-  MessageRole,
+  ChatMessageMetadataSchema,
+  ChatMessageRow,
+  ChatRow,
   Json,
+  MessageRole,
 } from '@atlas/shared';
 import { Chat, ChatMessage } from '@chat/domain/chat.entity';
+import { Injectable } from '@nestjs/common';
 
 /**
  * Converts a domain value to a Supabase-compatible Json value.

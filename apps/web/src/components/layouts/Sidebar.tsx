@@ -1,6 +1,7 @@
 import {
   Building2,
   Calculator,
+  Files,
   FileText,
   Folder,
   LayoutGrid,
@@ -82,6 +83,13 @@ const Navigation = () => {
       icon: FileText,
       badge: null,
       isActiveCheck: (path: string): boolean => path.startsWith('/assistenten'),
+    },
+    {
+      to: '/dokumente',
+      label: 'Dokumente',
+      icon: Files,
+      badge: null,
+      isActiveCheck: (path: string): boolean => path.startsWith('/dokumente'),
     },
     {
       to: '/mandanten',
