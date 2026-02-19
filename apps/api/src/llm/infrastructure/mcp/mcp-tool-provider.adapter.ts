@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IToolProvider } from '@llm/domain/tool-provider.interface';
+import { ToolProviderAdapter } from '@llm/domain/tool-provider.adapter';
 import { ToolDefinition, ToolCall, ToolResult } from '@llm/domain/tool.types';
 import { OpenRegisterMcpService } from './openregister-mcp.service';
 
@@ -14,10 +14,12 @@ import { OpenRegisterMcpService } from './openregister-mcp.service';
  * - Decouples application layer from MCP implementation details
  */
 @Injectable()
-export class McpToolProviderAdapter implements IToolProvider {
+export class McpToolProviderAdapter extends ToolProviderAdapter {
   private readonly logger = new Logger(McpToolProviderAdapter.name);
 
-  constructor(private readonly mcpService: OpenRegisterMcpService) {}
+  constructor(private readonly mcpService: OpenRegisterMcpService) {
+    super();
+  }
 
   /**
    * Get all available tools from the MCP service

@@ -2,7 +2,7 @@ import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc
 import { z } from 'zod';
 import { DocumentService } from '@document/application/document.service';
 import { type DocumentEntity } from '@document/domain/document.entity';
-import { IAdvisorRepository } from '@auth/domain/advisor.entity';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
 import type { User } from '@supabase/supabase-js';
 
@@ -27,7 +27,7 @@ const LinkDocumentSchema = z.object({
 export class DocumentRouter {
   constructor(
     private readonly documentService: DocumentService,
-    private readonly advisorRepo: IAdvisorRepository
+    private readonly advisorRepo: AdvisorRepository
   ) {}
 
   @Query()

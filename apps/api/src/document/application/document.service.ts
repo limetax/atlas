@@ -1,11 +1,8 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { EmbeddingsService } from '@llm/application/embeddings.service';
-import {
-  type ITextExtractor,
-  ITextExtractor as TEXT_EXTRACTOR_TOKEN,
-} from '@llm/domain/text-extractor.interface';
+import { TextExtractionService } from '@llm/application/text-extraction.service';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import { DocumentRepository, type DocumentEntity } from '@document/domain/document.entity';
 
@@ -25,7 +22,7 @@ export class DocumentService {
     private readonly documentRepo: DocumentRepository,
     private readonly embeddingsService: EmbeddingsService,
     private readonly supabase: SupabaseService,
-    @Inject(TEXT_EXTRACTOR_TOKEN) private readonly textExtractor: ITextExtractor
+    private readonly textExtractionService: TextExtractionService
   ) {}
 
   /**
@@ -74,7 +71,7 @@ export class DocumentService {
     advisoryId: string
   ): Promise<void> {
     try {
-      const extractedText = await this.textExtractor.extractText(file);
+      const extractedText = await this.textExtractionService.extractText(file);
 
       const splitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1000,

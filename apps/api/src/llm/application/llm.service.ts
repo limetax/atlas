@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { LlmMessage } from '@llm/domain/llm-provider.interface';
+import type { LlmMessage } from '@llm/domain/llm.types';
 import { ChatContext } from '@atlas/shared';
 import { ToolOrchestrationService, ToolCallEvent } from './tool-orchestration.service';
 

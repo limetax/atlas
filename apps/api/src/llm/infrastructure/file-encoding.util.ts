@@ -1,4 +1,4 @@
-import { ContentBlock } from '@llm/domain/llm-provider.interface';
+import type { ContentBlock } from '@llm/domain/llm.types';
 
 /**
  * Supported MIME types for file uploads

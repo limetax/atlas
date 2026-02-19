@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import {
-  IVectorStore,
+  VectorStoreAdapter,
   TaxDocumentMatch,
   DatevClientMatch,
   DatevOrderMatch,
@@ -23,17 +23,19 @@ import {
   TradeTaxSearchFilters,
   AnalyticsSearchFilters,
   HrEmployeeSearchFilters,
-} from '@rag/domain/vector-store.interface';
+} from '@rag/domain/vector-store.adapter';
 
 /**
- * Supabase Vector Adapter - Infrastructure implementation for vector search
- * Implements IVectorStore interface using Supabase pgvector
+ * Supabase Vector Store Adapter - Infrastructure implementation for vector search
+ * Extends VectorStoreAdapter using Supabase pgvector
  */
 @Injectable()
-export class SupabaseVectorAdapter implements IVectorStore {
-  private readonly logger = new Logger(SupabaseVectorAdapter.name);
+export class SupabaseVectorStoreAdapter extends VectorStoreAdapter {
+  private readonly logger = new Logger(SupabaseVectorStoreAdapter.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly supabase: SupabaseService) {
+    super();
+  }
 
   /**
    * Search for similar tax documents using vector similarity

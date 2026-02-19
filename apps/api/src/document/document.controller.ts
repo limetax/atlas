@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { DocumentService } from '@document/application/document.service';
 import { type DocumentEntity } from '@document/domain/document.entity';
-import { IAdvisorRepository } from '@auth/domain/advisor.entity';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import {
   BadRequestException,
   Controller,
@@ -35,7 +35,7 @@ export class DocumentController {
   constructor(
     private readonly documentService: DocumentService,
     private readonly supabase: SupabaseService,
-    private readonly advisorRepo: IAdvisorRepository
+    private readonly advisorRepo: AdvisorRepository
   ) {}
 
   @Post('upload')

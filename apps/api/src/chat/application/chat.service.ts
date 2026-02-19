@@ -1,13 +1,13 @@
 import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
-import { IAdvisorRepository } from '@auth/domain/advisor.entity';
-import { IChatRepository } from '@chat/domain/chat.entity';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
+import { ChatRepository } from '@chat/domain/chat.repository';
 import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
 import { ClientService } from '@datev/application/client.service';
 import { DocumentService } from '@document/application/document.service';
 import { LlmService } from '@llm/application/llm.service';
-import { LlmMessage } from '@llm/domain/llm-provider.interface';
+import type { LlmMessage } from '@llm/domain/llm.types';
 import { encodeFileToContentBlock } from '@llm/infrastructure/file-encoding.util';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 
 import { CONTEXT_PROMPTS, TITLE_GENERATION_PROMPT } from './chat.prompts';
@@ -26,9 +26,9 @@ export class ChatService {
     private readonly llm: LlmService,
     private readonly rag: RAGService,
     private readonly clientService: ClientService,
-    @Inject(IChatRepository) private readonly chatRepo: IChatRepository,
+    private readonly chatRepo: ChatRepository,
     private readonly documentService: DocumentService,
-    private readonly advisorRepo: IAdvisorRepository
+    private readonly advisorRepo: AdvisorRepository
   ) {}
 
   /**

@@ -7,15 +7,15 @@ import { ClientService } from '@datev/application/client.service';
 import { DatevRouter } from '@datev/datev.router';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
 import { LlmModule } from '@llm/llm.module';
-import { IDatevAdapter } from '@datev/domain/datev-adapter.interface';
-import { IClientRepository } from '@datev/domain/client.repository';
+import { DatevAdapter } from '@datev/domain/datev.adapter';
+import { ClientRepository } from '@datev/domain/client.repository';
 import { SupabaseClientRepository } from '@datev/infrastructure/repositories/supabase-client.repository';
 
 /**
  * DATEV Module - Provides DATEV data synchronization services
  *
- * Uses provider pattern to inject interfaces:
- * - IDatevAdapter → KlardatenDatevAdapter
+ * Uses provider pattern to inject abstract classes:
+ * - DatevAdapter → KlardatenDatevAdapter
  */
 @Module({
   imports: [ConfigModule.forRoot(), InfrastructureModule, LlmModule],
@@ -25,11 +25,11 @@ import { SupabaseClientRepository } from '@datev/infrastructure/repositories/sup
     KlardatenDatevAdapter,
     // Domain abstract class provider (proper NestJS DI)
     {
-      provide: IDatevAdapter,
+      provide: DatevAdapter,
       useClass: KlardatenDatevAdapter,
     },
     {
-      provide: IClientRepository,
+      provide: ClientRepository,
       useClass: SupabaseClientRepository,
     },
     // Application services
@@ -38,6 +38,6 @@ import { SupabaseClientRepository } from '@datev/infrastructure/repositories/sup
     // tRPC Router
     DatevRouter,
   ],
-  exports: [IDatevAdapter, DatevSyncService, ClientService],
+  exports: [DatevAdapter, DatevSyncService, ClientService],
 })
 export class DatevModule {}

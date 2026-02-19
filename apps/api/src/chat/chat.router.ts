@@ -1,7 +1,7 @@
-import { Inject } from '@nestjs/common';
 import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc';
 import { z } from 'zod';
-import { IChatRepository, Chat, ChatMessage } from '@chat/domain/chat.entity';
+import { ChatRepository } from '@chat/domain/chat.repository';
+import { type Chat, type ChatMessage } from '@chat/domain/chat.entity';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
 import type { User } from '@supabase/supabase-js';
 // Values inlined for nestjs-trpc code generation (it cannot resolve imported constants).
@@ -37,7 +37,7 @@ const ChatIdInputSchema = z.object({
  */
 @Router({ alias: 'chat' })
 export class ChatRouter {
-  constructor(@Inject(IChatRepository) private readonly chatRepo: IChatRepository) {}
+  constructor(private readonly chatRepo: ChatRepository) {}
 
   @Query()
   @UseMiddlewares(AuthMiddleware)

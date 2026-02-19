@@ -5,20 +5,11 @@ import {
   DatevPosting,
   DatevSusa,
   DatevDocument,
-  DatevRelationship,
   DatevCorpTax,
   DatevTradeTax,
-  DatevAnalyticsOrderValues,
-  DatevAnalyticsProcessingStatus,
-  DatevAnalyticsExpenses,
-  DatevAnalyticsFees,
-  DatevHrEmployee,
-  DatevHrTransaction,
-  DatevClientService,
   DatevSyncResult,
 } from '@atlas/shared';
-import { IDatevAdapter } from '@datev/domain/datev-adapter.interface';
-import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
+import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
 import pLimit from 'p-limit';
@@ -36,7 +27,7 @@ import pLimit from 'p-limit';
  * 5. Generate embeddings for all records
  *
  * Data Filter: 2025-01-01+ only
- * Dependencies: KlardatenClient (not IDatevAdapter - direct Klardaten API access)
+ * Dependencies: KlardatenClient (not DatevAdapter - direct Klardaten API access)
  */
 @Injectable()
 export class DatevSyncService {
@@ -45,7 +36,7 @@ export class DatevSyncService {
 
   constructor(
     private readonly klardatenClient: KlardatenClient,
-    private readonly embeddingsProvider: IEmbeddingsProvider,
+    private readonly embeddingsAdapter: EmbeddingsAdapter,
     private readonly supabase: SupabaseService
   ) {}
 
@@ -293,7 +284,7 @@ export class DatevSyncService {
         batch.map(async (addressee) => {
           try {
             const embeddingText = this.generateAddresseeEmbeddingText(addressee);
-            const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+            const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
 
             return {
               addressee_id: addressee.addressee_id,
@@ -426,7 +417,7 @@ export class DatevSyncService {
             const embeddingText = this.generateClientEmbeddingText(client, managingDirector);
 
             // Generate embedding vector
-            const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+            const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
 
             return {
               client_id: client.client_id,
@@ -543,7 +534,7 @@ export class DatevSyncService {
             }
           : null;
         const embeddingText = this.generateClientEmbeddingText(client, managingDirector);
-        const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+        const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
         const { error } = await this.supabase.db.from('datev_clients').upsert(
   */
 
@@ -610,7 +601,7 @@ export class DatevSyncService {
           batch.map(async (posting) => {
             try {
               const embeddingText = this.generatePostingEmbeddingText(posting);
-              const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+              const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
 
               return {
                 client_id: clientId,
@@ -706,7 +697,7 @@ export class DatevSyncService {
           const embeddingText = this.generateSusaEmbeddingText(susa, clientName);
 
           // Generate embedding vector
-          const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+          const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
 
           // Upsert to Supabase
           const { error } = await this.supabase.db.from('datev_susa').upsert(
@@ -785,7 +776,7 @@ export class DatevSyncService {
           const embeddingText = this.generateDocumentEmbeddingText(doc, clientName);
 
           // Generate embedding vector
-          const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+          const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
 
           // Map Klardaten API fields to our DB schema
           // API uses: id, number, description, extension, case_number
@@ -1244,7 +1235,7 @@ export class DatevSyncService {
             const client = clientMap.get(taxReturn.client_number ?? 0);
 
             const embeddingText = this.generateTaxEmbeddingText(taxReturn, 'corporate');
-            const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+            const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
 
             return {
               corp_tax_id: taxReturn.id.toString(),
@@ -1337,7 +1328,7 @@ export class DatevSyncService {
             const client = clientMap.get(taxReturn.client_number ?? 0);
 
             const embeddingText = this.generateTaxEmbeddingText(taxReturn, 'trade');
-            const embedding = await this.embeddingsProvider.generateEmbedding(embeddingText);
+            const embedding = await this.embeddingsAdapter.generateEmbedding(embeddingText);
 
             return {
               trade_tax_id: taxReturn.id.toString(),
@@ -1403,7 +1394,7 @@ export class DatevSyncService {
       const orderValues = await this.klardatenClient.getAnalyticsOrderValues(year);
       this.logger.log(`✅ Fetched ${orderValues.length} order value records`);
       totalSynced += orderValues.length;
-    } catch (error) {
+    } catch {
       this.logger.warn(
         'Analytics order values not available (may require different Klardaten plan)'
       );
@@ -1414,7 +1405,7 @@ export class DatevSyncService {
       const processingStatus = await this.klardatenClient.getAnalyticsProcessingStatus(year);
       this.logger.log(`✅ Fetched ${processingStatus.length} processing status records`);
       totalSynced += processingStatus.length;
-    } catch (error) {
+    } catch {
       this.logger.warn('Analytics processing status not available');
       totalErrors++;
     }
@@ -1423,7 +1414,7 @@ export class DatevSyncService {
       const expenses = await this.klardatenClient.getAnalyticsExpenses(year);
       this.logger.log(`✅ Fetched ${expenses.length} expense records`);
       totalSynced += expenses.length;
-    } catch (error) {
+    } catch {
       this.logger.warn('Analytics expenses not available');
       totalErrors++;
     }
@@ -1432,7 +1423,7 @@ export class DatevSyncService {
       const fees = await this.klardatenClient.getAnalyticsFees(year);
       this.logger.log(`✅ Fetched ${fees.length} fee records`);
       totalSynced += fees.length;
-    } catch (error) {
+    } catch {
       this.logger.warn('Analytics fees not available');
       totalErrors++;
     }
@@ -1479,7 +1470,7 @@ export class DatevSyncService {
         );
         this.logger.log(`✅ Fetched ${transactions.length} transactions for ${client.client_name}`);
         totalTransactions += transactions.length;
-      } catch (error) {
+      } catch {
         this.logger.warn(`HR data not available for ${client.client_name} (may require HR module)`);
       }
     }
@@ -1529,7 +1520,7 @@ export class DatevSyncService {
             totalServices += services.length;
           }
         }
-      } catch (error) {
+      } catch {
         this.logger.warn(`Services not available for ${client.client_name}`);
       }
     }

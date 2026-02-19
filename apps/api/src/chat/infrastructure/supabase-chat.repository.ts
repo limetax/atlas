@@ -1,21 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
-import { IChatRepository, Chat, ChatMessage } from '@chat/domain/chat.entity';
+import type { Chat, ChatMessage } from '@chat/domain/chat.entity';
+import { ChatRepository } from '@chat/domain/chat.repository';
 import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
 import { ChatPersistenceMapper } from './chat-persistence.mapper';
 
 /**
  * Supabase Chat Repository - Infrastructure implementation for chat data access
- * Implements IChatRepository using Supabase client with service role key
+ * Extends ChatRepository using Supabase client with service role key
  */
 @Injectable()
-export class SupabaseChatRepository implements IChatRepository {
+export class SupabaseChatRepository extends ChatRepository {
   private readonly logger = new Logger(SupabaseChatRepository.name);
 
   constructor(
     private readonly supabase: SupabaseService,
     private readonly mapper: ChatPersistenceMapper
-  ) {}
+  ) {
+    super();
+  }
 
   async findAllByAdvisorId(advisorId: string): Promise<Chat[]> {
     const { data, error } = await this.supabase.db

@@ -3,11 +3,10 @@ import { DatevClient, DatevOrder } from '@atlas/shared';
 /**
  * DATEV Adapter - Domain contract for DATEV data providers
  *
- * Abstract class (not interface) so it can be used directly as injection token
- * This defines what we expect from any DATEV provider,
- * regardless of the underlying implementation (Klardaten, direct DATEV, mock)
+ * Abstract class (not interface) so it can be used directly as injection token.
+ * No I-prefix following modern TypeScript conventions.
  */
-export abstract class IDatevAdapter {
+export abstract class DatevAdapter {
   /**
    * Authenticate with the DATEV system
    * Must be called before fetching data

@@ -1,17 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatevClient, DatevOrder } from '@atlas/shared';
-import { IDatevAdapter } from '@datev/domain/datev-adapter.interface';
+import { DatevAdapter } from '@datev/domain/datev.adapter';
 import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
 
 /**
  * Klardaten DATEV Adapter - Infrastructure implementation for DATEV data access
- * Implements IDatevAdapter interface using Klardaten Gateway
+ * Extends DatevAdapter using Klardaten Gateway
  */
 @Injectable()
-export class KlardatenDatevAdapter implements IDatevAdapter {
+export class KlardatenDatevAdapter extends DatevAdapter {
   private readonly logger = new Logger(KlardatenDatevAdapter.name);
 
-  constructor(private readonly klardatenClient: KlardatenClient) {}
+  constructor(private readonly klardatenClient: KlardatenClient) {
+    super();
+  }
 
   /**
    * Get the name of this adapter implementation
@@ -45,7 +47,7 @@ export class KlardatenDatevAdapter implements IDatevAdapter {
    * Fetch orders (Aufträge) for a specific year
    * Phase 1.1: Not implemented - orders postponed to Phase 1.2/2
    */
-  async getOrders(year: number): Promise<DatevOrder[]> {
+  async getOrders(_year: number): Promise<DatevOrder[]> {
     this.logger.warn('getOrders not implemented in Phase 1.1 - orders postponed to Phase 1.2');
     return [];
   }

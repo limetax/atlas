@@ -12,7 +12,7 @@ import { sanitizeTextForPostgres } from './text-sanitizer.util';
 
 /**
  * Supabase Document Repository - Infrastructure implementation for document data access
- * Implements DocumentRepository using Supabase client with service role key
+ * Extends DocumentRepository using Supabase client with service role key
  */
 @Injectable()
 export class SupabaseDocumentRepository extends DocumentRepository {

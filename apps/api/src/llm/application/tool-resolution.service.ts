@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChatContext } from '@atlas/shared';
-import { IToolProvider } from '@llm/domain/tool-provider.interface';
+import { ToolProviderAdapter } from '@llm/domain/tool-provider.adapter';
 import { ToolDefinition } from '@llm/domain/tool.types';
 
 /**
@@ -10,7 +10,7 @@ import { ToolDefinition } from '@llm/domain/tool.types';
  * Maps ChatContext to appropriate tool providers and fetches available tools.
  *
  * This separates the concern of "which tools are needed" (application logic)
- * from "how to get tools" (infrastructure via IToolProvider)
+ * from "how to get tools" (infrastructure via ToolProviderAdapter)
  */
 @Injectable()
 export class ToolResolutionService {
@@ -19,7 +19,7 @@ export class ToolResolutionService {
   constructor(
     // In the future, we can inject multiple tool providers here
     // For now, we have one: MCP tool provider for OpenRegister
-    private readonly mcpToolProvider: IToolProvider
+    private readonly mcpToolProvider: ToolProviderAdapter
   ) {}
 
   /**
@@ -76,7 +76,7 @@ export class ToolResolutionService {
    * @param toolName - Name of the tool to execute
    * @returns The appropriate tool provider for this tool
    */
-  getProviderForTool(toolName: string): IToolProvider {
+  getProviderForTool(toolName: string): ToolProviderAdapter {
     // For now, all tools come from MCP provider
     // In the future, we could route based on tool name:
     // if (toolName.startsWith('law_')) return lawToolProvider;

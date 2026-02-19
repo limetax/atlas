@@ -26,10 +26,10 @@ export type ContentBlock =
  * Represents a message in a conversation
  * Content can be a string or an array of content blocks for multimodal messages
  */
-export interface LlmMessage {
+export type LlmMessage = {
   role: MessageRole;
   content: string | ContentBlock[];
-}
+};
 
 /**
  * Represents a streaming chunk from the LLM
@@ -43,7 +43,7 @@ export type LlmStreamChunk =
  * Represents a complete LLM response
  * Contains text content and optionally tool calls
  */
-export interface LlmResponse {
+export type LlmResponse = {
   /** Text content from the LLM */
   text: string;
   /** Tool calls requested by the LLM (if any) */
@@ -52,4 +52,4 @@ export interface LlmResponse {
   stopReason: 'stop' | 'tool_use' | 'max_tokens';
   /** Provider-specific metadata */
   metadata?: unknown;
-}
+};

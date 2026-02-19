@@ -1,17 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { pipeline } from '@xenova/transformers';
-import { IEmbeddingsProvider } from '@llm/domain/embeddings-provider.interface';
+import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
 
 /**
- * Embeddings Client - Infrastructure implementation for vector embeddings
- * Implements IEmbeddingsProvider using Supabase/gte-small model via Transformers.js
+ * GTE Embeddings Adapter - Infrastructure implementation for vector embeddings
+ * Extends EmbeddingsAdapter using Supabase/gte-small model via Transformers.js
  *
  * This runs locally - no external API calls, GDPR compliant
  * Model: 384 dimensions, ~30MB download on first use
  */
 @Injectable()
-export class EmbeddingsClient implements IEmbeddingsProvider {
-  private readonly logger = new Logger(EmbeddingsClient.name);
+export class GteEmbeddingsAdapter extends EmbeddingsAdapter {
+  private readonly logger = new Logger(GteEmbeddingsAdapter.name);
   private embeddingPipeline: Awaited<ReturnType<typeof pipeline>> | null = null;
 
   /**

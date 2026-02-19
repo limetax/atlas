@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatevClient } from '@atlas/shared';
-import { IClientRepository } from '@datev/domain/client.repository';
+import { ClientRepository } from '@datev/domain/client.repository';
 
 /**
  * Client Service - Application layer for client operations
@@ -10,7 +10,7 @@ import { IClientRepository } from '@datev/domain/client.repository';
 export class ClientService {
   private readonly logger = new Logger(ClientService.name);
 
-  constructor(private readonly clientRepository: IClientRepository) {}
+  constructor(private readonly clientRepository: ClientRepository) {}
 
   /**
    * List all active clients
