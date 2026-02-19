@@ -17,14 +17,22 @@ export const useLinkedDocuments = (currentSessionId: string | undefined) => {
   }, [pendingDocuments]);
 
   const { data: linkedDocuments = [] } = trpc.document.getDocumentsByChatId.useQuery(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     { chatId: currentSessionId! },
     { enabled: !!currentSessionId }
   );
 
-  const linkMutation = trpc.document.linkDocumentToChat.useMutation();
+  const linkMutation = trpc.document.linkDocumentToChat.useMutation({
+    onError: () => {
+      toast.error('Dokument konnte nicht hinzugefügt werden');
+    },
+    onSettled: (_data, _err, { chatId }) => {
+      void utils.document.getDocumentsByChatId.invalidate({ chatId });
+    },
+  });
 
   // Called when user selects docs from the picker:
-  // - existing chat → link immediately
+  // - existing chat → mutate (onMutate handles optimistic update)
   // - new chat (no session) → queue locally until chat_created fires
   const handleDocumentSelect = useCallback(
     (docs: Document[]) => {
@@ -33,15 +41,10 @@ export const useLinkedDocuments = (currentSessionId: string | undefined) => {
           docs.map((doc) =>
             linkMutation.mutateAsync({ chatId: currentSessionId, documentId: doc.id })
           )
-        )
-          .then(() => {
-            const count = docs.length;
-            toast.success(count === 1 ? 'Dokument hinzugefügt' : `${count} Dokumente hinzugefügt`);
-            void utils.document.getDocumentsByChatId.invalidate({ chatId: currentSessionId });
-          })
-          .catch(() => {
-            toast.error('Dokument konnte nicht hinzugefügt werden');
-          });
+        ).then(() => {
+          const count = docs.length;
+          toast.success(count === 1 ? 'Dokument hinzugefügt' : `${count} Dokumente hinzugefügt`);
+        });
       } else {
         setPendingDocuments((prev) => {
           const existingIds = new Set(prev.map((d) => d.id));
@@ -49,7 +52,7 @@ export const useLinkedDocuments = (currentSessionId: string | undefined) => {
         });
       }
     },
-    [currentSessionId, linkMutation, utils]
+    [currentSessionId, linkMutation]
   );
 
   const handleRemovePendingDocument = useCallback((documentId: string) => {
@@ -62,16 +65,19 @@ export const useLinkedDocuments = (currentSessionId: string | undefined) => {
     async (newChatId: string): Promise<void> => {
       const docs = pendingDocumentsRef.current;
       if (docs.length === 0) return;
+
+      setPendingDocuments([]);
+      // Seed cache immediately so docs appear the moment pendingDocuments is cleared,
+      // without waiting for the server round-trip. onSettled will refetch for consistency.
+      utils.document.getDocumentsByChatId.setData({ chatId: newChatId }, docs);
+
       await Promise.all(
         docs.map((doc) => linkMutation.mutateAsync({ chatId: newChatId, documentId: doc.id }))
       );
-      setPendingDocuments([]);
-      void utils.document.getDocumentsByChatId.invalidate({ chatId: newChatId });
     },
     [linkMutation, utils]
   );
 
-  // Invalidate the library list after a new file is uploaded via chat
   const handleDocumentsUploaded = useCallback(() => {
     void utils.document.listDocuments.invalidate();
   }, [utils]);

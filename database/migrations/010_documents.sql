@@ -362,12 +362,13 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Storage RLS: API is the gatekeeper (server-side uploads with service role key).
--- No role restriction here — the bucket is private and upload access is
--- controlled at the HTTP layer. This avoids local Supabase storage quirks
--- where service_role BYPASSRLS is not reliably applied by the storage API.
-CREATE POLICY "Allow all access to documents bucket"
+-- Storage RLS: only the service role (backend API) can access documents storage.
+-- All client access is proxied through the API, which validates advisory membership.
+-- Explicit service_role policy is required because Supabase's storage API does not
+-- reliably honour BYPASSRLS for service_role — a matching policy is needed.
+CREATE POLICY "Allow service role access to documents bucket"
   ON storage.objects FOR ALL
+  TO service_role
   USING (bucket_id = 'documents')
   WITH CHECK (bucket_id = 'documents');
 
