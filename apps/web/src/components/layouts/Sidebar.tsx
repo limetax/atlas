@@ -84,6 +84,13 @@ const Navigation = () => {
       isActiveCheck: (path: string): boolean => path.startsWith('/assistenten'),
     },
     {
+      to: '/mandanten',
+      label: 'Mandanten',
+      icon: Building2,
+      badge: null,
+      isActiveCheck: (path: string): boolean => path.startsWith('/mandanten'),
+    },
+    {
       to: '/automatisierungen',
       label: 'Automatisierungen',
       icon: Workflow,
