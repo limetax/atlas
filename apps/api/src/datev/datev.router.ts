@@ -1,10 +1,10 @@
-import { Inject } from '@nestjs/common';
-import { Router, Mutation, Query, Input, UseMiddlewares } from 'nestjs-trpc';
+import { Input, Mutation, Query, Router, UseMiddlewares } from 'nestjs-trpc';
 import { z } from 'zod';
-import { TRPCError } from '@trpc/server';
-import { DatevSyncService } from '@datev/application/datev-sync.service';
+
 import { ClientService } from '@datev/application/client.service';
+import { DatevSyncService } from '@datev/application/datev-sync.service';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
+import { TRPCError } from '@trpc/server';
 
 const SyncInputSchema = z.object({
   orderYear: z.number().optional().default(2025),
@@ -20,8 +20,8 @@ const ClientIdInputSchema = z.object({
 @Router({ alias: 'datev' })
 export class DatevRouter {
   constructor(
-    @Inject(DatevSyncService) private readonly datevSync: DatevSyncService,
-    @Inject(ClientService) private readonly clientService: ClientService
+    private readonly datevSync: DatevSyncService,
+    private readonly clientService: ClientService
   ) {}
 
   /**

@@ -1,6 +1,9 @@
+import { PropsWithChildren, type ReactNode } from 'react';
+
 import { ArrowLeft, Building2, FileText, Mail, MessageSquare, Phone } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useClientDetail } from '@/hooks/useClientDetail';
 import type { DatevClient } from '@atlas/shared';
@@ -72,13 +75,10 @@ const ClientHeader = ({ client, onOpenChat }: ClientHeaderProps) => (
       <p className="text-sm text-muted-foreground">Mandantennummer {client.client_number}</p>
     </div>
 
-    <button
-      onClick={onOpenChat}
-      className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shrink-0"
-    >
+    <Button onClick={onOpenChat} className="shrink-0">
       <MessageSquare className="w-4 h-4" />
       Chat öffnen
-    </button>
+    </Button>
   </div>
 );
 
@@ -156,10 +156,9 @@ const DocumentsPlaceholder = () => (
 
 type FieldGroupProps = {
   title: string;
-  children: React.ReactNode;
 };
 
-const FieldGroup = ({ title, children }: FieldGroupProps) => (
+const FieldGroup = ({ title, children }: PropsWithChildren<FieldGroupProps>) => (
   <div>
     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
       {title}
@@ -171,7 +170,7 @@ const FieldGroup = ({ title, children }: FieldGroupProps) => (
 type DataFieldProps = {
   label: string;
   value: string | number | null | undefined;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 };
 
 const DataField = ({ label, value, icon }: DataFieldProps) => (

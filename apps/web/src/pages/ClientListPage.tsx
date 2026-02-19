@@ -11,7 +11,11 @@ import { useNavigate } from '@tanstack/react-router';
 export const ClientListPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const { data: clients, isLoading } = trpc.datev.listClients.useQuery(undefined, {
+  const {
+    data: clients,
+    isLoading,
+    isError,
+  } = trpc.datev.listClients.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
   });
 
@@ -50,6 +54,14 @@ export const ClientListPage = () => {
 
           {isLoading ? (
             <ClientListSkeleton />
+          ) : isError ? (
+            <div className="text-center py-16">
+              <Building2
+                className="w-12 h-12 text-muted-foreground mx-auto mb-3"
+                strokeWidth={1.5}
+              />
+              <p className="text-muted-foreground">Mandanten konnten nicht geladen werden</p>
+            </div>
           ) : filteredClients.length === 0 ? (
             <EmptyState hasSearch={searchTerm.trim().length > 0} />
           ) : (
