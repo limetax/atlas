@@ -4,7 +4,7 @@ import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
 import { ClientService } from '@datev/application/client.service';
 import { DocumentService } from '@document/application/document.service';
 import { LlmService } from '@llm/application/llm.service';
-import { LlmMessage } from '@llm/domain/llm-provider.interface';
+import type { LlmMessage } from '@llm/domain/llm.types';
 import { encodeFileToContentBlock } from '@llm/infrastructure/file-encoding.util';
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
