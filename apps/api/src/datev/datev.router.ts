@@ -1,25 +1,31 @@
-import { Inject } from '@nestjs/common';
-import { Router, Mutation, Query, Input } from 'nestjs-trpc';
+import { Input, Mutation, Query, Router, UseMiddlewares } from 'nestjs-trpc';
 import { z } from 'zod';
-import { DatevSyncService } from '@datev/application/datev-sync.service';
+
 import { ClientService } from '@datev/application/client.service';
+import { DatevSyncService } from '@datev/application/datev-sync.service';
+import { AuthMiddleware } from '@shared/trpc/auth.middleware';
+import { TRPCError } from '@trpc/server';
 
 const SyncInputSchema = z.object({
   orderYear: z.number().optional().default(2025),
 });
 
+const ClientIdInputSchema = z.object({
+  clientId: z.string(),
+});
+
 /**
- * DATEV tRPC Router - Exposes DATEV sync functionality via tRPC
+ * DATEV tRPC Router - Exposes DATEV client data and sync functionality via tRPC
  */
 @Router({ alias: 'datev' })
 export class DatevRouter {
   constructor(
-    @Inject(DatevSyncService) private readonly datevSync: DatevSyncService,
-    @Inject(ClientService) private readonly clientService: ClientService
+    private readonly datevSync: DatevSyncService,
+    private readonly clientService: ClientService
   ) {}
 
   /**
-   * List all active clients for dropdown
+   * List all active clients
    */
   @Query({
     output: z.array(
@@ -28,11 +34,31 @@ export class DatevRouter {
         clientNumber: z.number(),
         clientName: z.string(),
         companyForm: z.string().nullable(),
+        mainEmail: z.string().nullable(),
+        correspondenceCity: z.string().nullable(),
       })
     ),
   })
+  @UseMiddlewares(AuthMiddleware)
   async listClients() {
     return await this.clientService.listClients();
+  }
+
+  /**
+   * Get full client details by ID
+   */
+  @Query({
+    input: ClientIdInputSchema,
+  })
+  @UseMiddlewares(AuthMiddleware)
+  async getClient(@Input('clientId') clientId: string) {
+    const client = await this.clientService.getClientById(clientId);
+
+    if (!client) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Mandant nicht gefunden' });
+    }
+
+    return client;
   }
 
   /**
@@ -41,6 +67,7 @@ export class DatevRouter {
   @Mutation({
     input: SyncInputSchema,
   })
+  @UseMiddlewares(AuthMiddleware)
   async sync(@Input('orderYear') orderYear: number) {
     // Run sync in background to prevent blocking the API server
     // Embedding generation is CPU-intensive and would block all requests

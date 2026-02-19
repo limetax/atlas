@@ -18,7 +18,9 @@ export class SupabaseClientRepository extends ClientRepository {
   async findAllActive(): Promise<DatevClient[]> {
     const { data, error } = await this.supabase.db
       .from('datev_clients')
-      .select('client_id, client_number, client_name, client_status, company_form')
+      .select(
+        'client_id, client_number, client_name, client_status, company_form, main_email, correspondence_city'
+      )
       .eq('client_status', '1')
       .order('client_name', { ascending: true });
 

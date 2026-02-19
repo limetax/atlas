@@ -22,6 +22,8 @@ export class ClientService {
       clientNumber: number;
       clientName: string;
       companyForm: string | null;
+      mainEmail: string | null;
+      correspondenceCity: string | null;
     }>
   > {
     const clients = await this.clientRepository.findAllActive();
@@ -31,6 +33,8 @@ export class ClientService {
       clientNumber: client.client_number,
       clientName: client.client_name,
       companyForm: client.company_form ?? null,
+      mainEmail: client.main_email ?? null,
+      correspondenceCity: client.correspondence_city ?? null,
     }));
   }
 

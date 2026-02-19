@@ -17,6 +17,7 @@ export const ChatPage = () => {
 
   const search = useSearch({ strict: false });
   const templateId = search.templateId;
+  const mandantId = search.mandantId;
 
   const templateContent = templateId
     ? TEMPLATES.find((t) => t.id === templateId)?.content
@@ -79,6 +80,13 @@ export const ChatPage = () => {
     // excluded to avoid a feedback loop where hook state re-triggers this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
+
+  // Pre-select client from URL search param (e.g. navigating from client detail page)
+  useEffect(() => {
+    if (mandantId && !chatId) {
+      setPendingContext((prev) => ({ ...prev, mandant: mandantId }));
+    }
+  }, [mandantId, chatId]);
 
   // ─── Context ────────────────────────────────────────────────────────────
   const handleContextChange = useCallback(
