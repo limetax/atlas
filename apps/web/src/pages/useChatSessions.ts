@@ -100,6 +100,7 @@ export function useChatSessions(): UseChatSessionsReturn {
   );
 
   const messagesQuery = trpc.chat.getChatMessages.useQuery(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     { chatId: currentSessionId! },
     { enabled: !!currentSessionId, staleTime: 10_000 }
   );

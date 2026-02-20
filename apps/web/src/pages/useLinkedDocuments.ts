@@ -55,27 +55,18 @@ export const useLinkedDocuments = (currentSessionId: string | undefined) => {
     [currentSessionId, linkMutation]
   );
 
-  const handleRemovePendingDocument = useCallback((documentId: string) => {
-    setPendingDocuments((prev) => prev.filter((d) => d.id !== documentId));
-  }, []);
-
-  // Link all pending docs to a newly created chat.
-  // Uses a ref so this callback stays stable regardless of pendingDocuments changes.
+  // Called after a new chat is created. The backend already persisted the document links
+  // (they were sent with the first message). Just clear pending state and seed the cache
+  // so docs appear immediately without waiting for the query to fetch from the server.
   const linkPendingToNewChat = useCallback(
-    async (newChatId: string): Promise<void> => {
+    (newChatId: string): void => {
       const docs = pendingDocumentsRef.current;
       if (docs.length === 0) return;
 
       setPendingDocuments([]);
-      // Seed cache immediately so docs appear the moment pendingDocuments is cleared,
-      // without waiting for the server round-trip. onSettled will refetch for consistency.
       utils.document.getDocumentsByChatId.setData({ chatId: newChatId }, docs);
-
-      await Promise.all(
-        docs.map((doc) => linkMutation.mutateAsync({ chatId: newChatId, documentId: doc.id }))
-      );
     },
-    [linkMutation, utils]
+    [utils]
   );
 
   const handleDocumentsUploaded = useCallback(() => {
@@ -90,7 +81,6 @@ export const useLinkedDocuments = (currentSessionId: string | undefined) => {
     linkedDocuments,
     pendingDocuments,
     handleDocumentSelect,
-    handleRemovePendingDocument,
     linkPendingToNewChat,
     handleDocumentsUploaded,
     clearPendingDocuments,

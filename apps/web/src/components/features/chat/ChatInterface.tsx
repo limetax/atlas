@@ -32,7 +32,6 @@ type ChatInterfaceProps = {
   linkedDocuments?: Document[];
   pendingDocuments?: Document[];
   onDocumentSelect?: (docs: Document[]) => void;
-  onRemovePendingDocument?: (documentId: string) => void;
 };
 
 export const ChatInterface = ({
@@ -50,7 +49,6 @@ export const ChatInterface = ({
   linkedDocuments = [],
   pendingDocuments = [],
   onDocumentSelect,
-  onRemovePendingDocument,
 }: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState(initialContent || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -159,7 +157,6 @@ export const ChatInterface = ({
         linkedDocuments={linkedDocuments}
         pendingDocuments={pendingDocuments}
         onDocumentSelect={onDocumentSelect}
-        onRemovePendingDocument={onRemovePendingDocument}
       />
     </div>
   );
@@ -219,7 +216,6 @@ type InputAreaProps = {
   linkedDocuments: Document[];
   pendingDocuments: Document[];
   onDocumentSelect?: (docs: Document[]) => void;
-  onRemovePendingDocument?: (documentId: string) => void;
 };
 
 const InputArea = ({

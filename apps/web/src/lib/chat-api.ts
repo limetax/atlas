@@ -118,40 +118,58 @@ function* processSSELine(line: string): Generator<ChatStreamChunk, void, unknown
  * When omitted, the backend creates a new chat and returns `chatId` via a
  * `chat_created` stream chunk.
  */
+
+type ChatStreamFields = {
+  message: string;
+  history: Message[];
+  context?: ChatContext;
+  chatId?: string;
+  documentIds?: string[];
+};
+
+/**
+ * Serializes chat fields + files into a FormData body.
+ * Arrays/objects are JSON-stringified; optional fields are omitted when absent.
+ * Content-Type is NOT set — the browser adds the multipart boundary automatically.
+ */
+function buildFormData(fields: ChatStreamFields, files: File[]): FormData {
+  const formData = new FormData();
+  formData.append('message', fields.message);
+  formData.append('history', JSON.stringify(fields.history));
+  if (fields.context) formData.append('context', JSON.stringify(fields.context));
+  if (fields.chatId) formData.append('chatId', fields.chatId);
+  if (fields.documentIds?.length)
+    formData.append('documentIds', JSON.stringify(fields.documentIds));
+  files.forEach((file) => formData.append('files', file));
+  return formData;
+}
+
 export async function* streamChatMessage(
   message: string,
   history: Message[],
   context?: ChatContext,
   signal?: AbortSignal,
   chatId?: string,
-  files?: File[]
+  files?: File[],
+  documentIds?: string[]
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   const { combinedSignal, timeoutController, timeoutId } = createCombinedAbortSignal(signal);
 
   try {
-    const hasFiles = files && files.length > 0;
-
-    // Build request body: FormData when files present, JSON otherwise
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    let body: FormData | string;
+    const fields = { message, history, context, chatId, documentIds };
 
-    if (hasFiles) {
-      const formData = new FormData();
-      formData.append('message', message);
-      formData.append('history', JSON.stringify(history));
-      if (context) formData.append('context', JSON.stringify(context));
-      if (chatId) formData.append('chatId', chatId);
-      for (const file of files) {
-        formData.append('files', file);
-      }
-      body = formData;
-      // Do NOT set Content-Type — browser sets multipart boundary automatically
+    // Use FormData when uploading files (browser sets multipart boundary automatically).
+    // JSON otherwise — simpler and avoids manual field serialization.
+    let body: FormData | string;
+    if (files && files.length > 0) {
+      body = buildFormData(fields, files);
     } else {
       headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({ message, history, context, chatId });
+      body = JSON.stringify(fields);
     }
 
     // Make the API request

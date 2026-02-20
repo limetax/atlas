@@ -390,7 +390,8 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     chatId?: string,
     customSystemPrompt?: string,
     context?: ChatContext,
-    files?: Express.Multer.File[]
+    files?: Express.Multer.File[],
+    pendingDocumentIds?: string[]
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     // 1. Resolve or create the chat
     let resolvedChatId = chatId;
@@ -401,6 +402,16 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       const chat = await this.chatRepo.create(advisorId, autoTitle, context);
       resolvedChatId = chat.id;
       isFirstMessage = true;
+
+      // Link any pending documents before emitting chat_created so they're available
+      // for RAG in processMessage (which fetches linked docs from DB).
+      if (pendingDocumentIds?.length) {
+        await Promise.all(
+          pendingDocumentIds.map((docId) =>
+            this.documentService.linkDocumentToChat(resolvedChatId!, docId)
+          )
+        );
+      }
 
       yield { type: 'chat_created', chatId: resolvedChatId };
     } else {

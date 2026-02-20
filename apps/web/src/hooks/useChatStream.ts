@@ -25,6 +25,7 @@ type UseChatStreamParams = {
   messages: Message[];
   currentSessionId: string | undefined;
   chatContext: ChatContext;
+  pendingDocumentIds?: string[];
   updateCurrentSessionMessages: (messages: Message[]) => void;
   setCurrentSessionId: (id: string | undefined) => void;
   invalidateAfterStream: (chatIdOverride?: string, finalMessages?: Message[]) => void;
@@ -44,6 +45,7 @@ export const useChatStream = ({
   messages,
   currentSessionId,
   chatContext,
+  pendingDocumentIds,
   updateCurrentSessionMessages,
   setCurrentSessionId,
   invalidateAfterStream,
@@ -103,7 +105,8 @@ export const useChatStream = ({
           chatContext,
           abortController.signal,
           currentSessionId,
-          filesToSend.length > 0 ? filesToSend : undefined
+          filesToSend.length > 0 ? filesToSend : undefined,
+          !currentSessionId ? pendingDocumentIds : undefined
         )) {
           if (chunk.type === 'chat_created' && chunk.chatId) {
             streamChatId = chunk.chatId;
@@ -195,6 +198,7 @@ export const useChatStream = ({
       messages,
       currentSessionId,
       chatContext,
+      pendingDocumentIds,
       updateCurrentSessionMessages,
       setCurrentSessionId,
       invalidateAfterStream,

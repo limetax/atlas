@@ -52,7 +52,6 @@ export const ChatPage = () => {
     linkedDocuments,
     pendingDocuments,
     handleDocumentSelect,
-    handleRemovePendingDocument,
     linkPendingToNewChat,
     handleDocumentsUploaded,
     clearPendingDocuments,
@@ -71,6 +70,7 @@ export const ChatPage = () => {
     messages,
     currentSessionId,
     chatContext,
+    pendingDocumentIds: pendingDocuments.map((d) => d.id),
     updateCurrentSessionMessages,
     setCurrentSessionId,
     invalidateAfterStream,
@@ -199,7 +199,6 @@ export const ChatPage = () => {
         linkedDocuments={linkedDocuments}
         pendingDocuments={pendingDocuments}
         onDocumentSelect={handleDocumentSelect}
-        onRemovePendingDocument={handleRemovePendingDocument}
       />
     </>
   );
