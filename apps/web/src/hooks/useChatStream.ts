@@ -31,7 +31,7 @@ type UseChatStreamParams = {
   invalidateAfterStream: (chatIdOverride?: string, finalMessages?: Message[]) => void;
   onChatCreated?: (chatId: string) => void;
   onContextPersisted?: () => void;
-  onDocumentsUploaded?: () => void;
+  onDocumentsUploaded?: (chatId: string) => void;
 };
 
 export type UseChatStreamReturn = {
@@ -163,8 +163,8 @@ export const useChatStream = ({
             updateCurrentSessionMessages(allMessages);
 
             invalidateAfterStream(streamChatId, allMessages);
-            if (filesToSend.length > 0) {
-              onDocumentsUploaded?.();
+            if (filesToSend.length > 0 && streamChatId) {
+              onDocumentsUploaded?.(streamChatId);
             }
           } else if (chunk.type === 'error') {
             throw new Error(chunk.error);

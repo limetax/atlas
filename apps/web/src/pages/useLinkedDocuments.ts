@@ -69,9 +69,13 @@ export const useLinkedDocuments = (currentSessionId: string | undefined) => {
     [utils]
   );
 
-  const handleDocumentsUploaded = useCallback(() => {
-    void utils.document.listDocuments.invalidate();
-  }, [utils]);
+  const handleDocumentsUploaded = useCallback(
+    (chatId: string) => {
+      void utils.document.listDocuments.invalidate();
+      void utils.document.getDocumentsByChatId.invalidate({ chatId });
+    },
+    [utils]
+  );
 
   const clearPendingDocuments = useCallback(() => {
     setPendingDocuments([]);
