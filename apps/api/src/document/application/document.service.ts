@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+
+import { type DocumentEntity, DocumentRepository } from '@document/domain/document.entity';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { EmbeddingsService } from '@llm/application/embeddings.service';
 import { TextExtractionService } from '@llm/application/text-extraction.service';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
-import { DocumentRepository, type DocumentEntity } from '@document/domain/document.entity';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const STORAGE_BUCKET = 'documents';
@@ -141,9 +142,7 @@ export class DocumentService {
 
   async getDownloadUrl(documentId: string): Promise<{ url: string }> {
     const doc = await this.documentRepo.findById(documentId);
-    if (!doc) {
-      throw new BadRequestException('Dokument nicht gefunden');
-    }
+    if (!doc) throw new BadRequestException('Dokument nicht gefunden');
 
     const bucket = this.getBucketForPath(doc.storagePath);
     const { data, error } = await this.supabase.db.storage

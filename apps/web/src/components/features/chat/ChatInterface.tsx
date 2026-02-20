@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { FileImage, FileText, Library, Paperclip, StopCircle, X } from 'lucide-react';
+import { FileImage, FileText, Library, Paperclip, StopCircle } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 
 import { Button } from '@/components/ui/button';
@@ -399,34 +399,16 @@ const LinkedDocumentsStrip = ({ linkedDocuments, pendingDocuments }: LinkedDocum
 
 type DocumentChipProps = {
   doc: Document;
-  isPending?: boolean;
-  onRemove?: () => void;
 };
 
-const DocumentChip = ({ doc, isPending = false, onRemove }: DocumentChipProps) => {
+const DocumentChip = ({ doc }: DocumentChipProps) => {
   const isImage = doc.mimeType.startsWith('image/');
   const FileIcon = isImage ? FileImage : FileText;
 
   return (
-    <div
-      className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs ${
-        isPending
-          ? 'bg-muted/50 border-border text-muted-foreground'
-          : 'bg-primary/10 border-primary/20 text-foreground'
-      }`}
-    >
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs">
       <FileIcon className="w-3.5 h-3.5 shrink-0" />
       <span className="max-w-[140px] truncate">{doc.name}</span>
-      {onRemove && (
-        <button
-          type="button"
-          onClick={onRemove}
-          className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
-          title={isPending ? 'Entfernen' : 'Verknüpfung aufheben'}
-        >
-          <X className="w-3 h-3" />
-        </button>
-      )}
     </div>
   );
 };

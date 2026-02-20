@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { type DocumentRow } from '@atlas/shared';
+import { type DocumentRow, DOCUMENT_SOURCES, type DocumentSource } from '@atlas/shared';
 import { type DocumentEntity } from '@document/domain/document.entity';
-import { type DocumentSource } from '@atlas/shared';
+
+const isDocumentSource = (value: string): value is DocumentSource =>
+  DOCUMENT_SOURCES.includes(value as DocumentSource);
 
 /**
  * DocumentPersistenceMapper — Maps between DB rows and domain entities.
@@ -20,7 +22,7 @@ export class DocumentPersistenceMapper {
       sizeBytes: row.size_bytes,
       storagePath: row.storage_path,
       mimeType: row.mime_type,
-      source: row.source as DocumentSource,
+      source: isDocumentSource(row.source) ? row.source : 'limetaxos',
       datevDocumentId: row.datev_document_id ?? null,
       status: row.status,
       errorMessage: row.error_message ?? undefined,

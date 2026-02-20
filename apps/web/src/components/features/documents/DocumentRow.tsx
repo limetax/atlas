@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { Download, FileImage, FileText, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { type Document } from '@atlas/shared';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
+import { formatFileSize } from '@/lib/utils';
 
 type DocumentRowProps = {
-  document: {
-    id: string;
-    name: string;
-    mimeType: string;
-    sizeBytes: number;
-    status: string;
-    createdAt: string;
-  };
+  document: Document;
   onDelete: (documentId: string) => void;
   isDeleting: boolean;
 };
@@ -94,10 +89,4 @@ export const DocumentRow = ({ document, onDelete, isDeleting }: DocumentRowProps
       </div>
     </div>
   );
-};
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };

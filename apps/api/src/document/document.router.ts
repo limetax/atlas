@@ -1,10 +1,12 @@
-import { Router, Query, Mutation, UseMiddlewares, Input, Ctx } from 'nestjs-trpc';
+import { Ctx, Input, Mutation, Query, Router, UseMiddlewares } from 'nestjs-trpc';
 import { z } from 'zod';
+
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import { DocumentService } from '@document/application/document.service';
 import { type DocumentEntity } from '@document/domain/document.entity';
-import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import { AuthMiddleware } from '@shared/trpc/auth.middleware';
 import type { User } from '@supabase/supabase-js';
+import { TRPCError } from '@trpc/server';
 
 const DocumentIdInputSchema = z.object({
   documentId: z.string().uuid(),
@@ -22,6 +24,11 @@ const LinkDocumentSchema = z.object({
 /**
  * Document Router - tRPC procedures for advisory-scoped document management
  * Upload is handled by DocumentController (multipart/form-data HTTP endpoint)
+ *
+ * Authorization pattern:
+ *   1. Resolve advisory_id from the authenticated user (via advisorRepo)
+ *   2. For document mutations, verify the document belongs to that advisory before acting
+ *   3. DocumentService is pure domain logic — no auth concerns
  */
 @Router({ alias: 'document' })
 export class DocumentRouter {
@@ -44,8 +51,11 @@ export class DocumentRouter {
     @Input('chatId') chatId: string,
     @Ctx() ctx: { user: User }
   ): Promise<DocumentEntity[]> {
-    void ctx;
-    return this.documentService.getDocumentsByChatId(chatId);
+    const advisor = await this.advisorRepo.findById(ctx.user.id);
+    if (!advisor?.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
+    const docs = await this.documentService.getDocumentsByChatId(chatId);
+
+    return docs.filter((doc) => doc.advisoryId === advisor.advisory_id);
   }
 
   @Mutation({ input: DocumentIdInputSchema })
@@ -54,7 +64,12 @@ export class DocumentRouter {
     @Input('documentId') documentId: string,
     @Ctx() ctx: { user: User }
   ): Promise<boolean> {
-    void ctx;
+    const advisor = await this.advisorRepo.findById(ctx.user.id);
+    if (!advisor?.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
+    const doc = await this.documentService.getDocumentById(documentId);
+
+    if (!doc || doc.advisoryId !== advisor.advisory_id) return false;
+
     return this.documentService.deleteDocument(documentId);
   }
 
@@ -65,7 +80,10 @@ export class DocumentRouter {
     @Input('documentId') documentId: string,
     @Ctx() ctx: { user: User }
   ): Promise<boolean> {
-    void ctx;
+    const advisor = await this.advisorRepo.findById(ctx.user.id);
+    if (!advisor?.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
+    const doc = await this.documentService.getDocumentById(documentId);
+    if (!doc || doc.advisoryId !== advisor.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
     await this.documentService.linkDocumentToChat(chatId, documentId);
     return true;
   }
@@ -77,7 +95,10 @@ export class DocumentRouter {
     @Input('documentId') documentId: string,
     @Ctx() ctx: { user: User }
   ): Promise<boolean> {
-    void ctx;
+    const advisor = await this.advisorRepo.findById(ctx.user.id);
+    if (!advisor?.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
+    const doc = await this.documentService.getDocumentById(documentId);
+    if (!doc || doc.advisoryId !== advisor.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
     await this.documentService.unlinkDocumentFromChat(chatId, documentId);
     return true;
   }
@@ -88,7 +109,10 @@ export class DocumentRouter {
     @Input('documentId') documentId: string,
     @Ctx() ctx: { user: User }
   ): Promise<{ url: string }> {
-    void ctx;
+    const advisor = await this.advisorRepo.findById(ctx.user.id);
+    if (!advisor?.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
+    const doc = await this.documentService.getDocumentById(documentId);
+    if (!doc || doc.advisoryId !== advisor.advisory_id) throw new TRPCError({ code: 'FORBIDDEN' });
     return this.documentService.getDownloadUrl(documentId);
   }
 }

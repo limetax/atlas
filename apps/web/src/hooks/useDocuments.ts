@@ -1,7 +1,7 @@
-import { useRef } from 'react';
 import { toast } from 'sonner';
+
+import { useAuthContext } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
-import { STORAGE_KEYS } from '@/constants';
 
 type UseDocumentsReturn = {
   documents: NonNullable<ReturnType<typeof trpc.document.listDocuments.useQuery>['data']>;
@@ -14,7 +14,7 @@ type UseDocumentsReturn = {
 
 export const useDocuments = (): UseDocumentsReturn => {
   const utils = trpc.useUtils();
-  const uploadAbortRef = useRef<AbortController | null>(null);
+  const { getToken } = useAuthContext();
 
   const documentsQuery = trpc.document.listDocuments.useQuery(undefined, {
     staleTime: 2 * 60 * 1000,
@@ -31,19 +31,15 @@ export const useDocuments = (): UseDocumentsReturn => {
   });
 
   const uploadDocuments = async (files: File[]): Promise<void> => {
-    const abortController = new AbortController();
-    uploadAbortRef.current = abortController;
-
     const formData = new FormData();
     files.forEach((file) => formData.append('files', file));
 
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const token = getToken();
 
     const response = await fetch('/api/documents/upload', {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
-      signal: abortController.signal,
     });
 
     if (!response.ok) {

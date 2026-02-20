@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 
 import { AssistantService } from '@/assistant/assistant.service';
+import { AdvisorRepository } from '@/auth/domain/advisor.repository';
 import { ChatContextSchema, MessageSchema } from '@atlas/shared';
 import { ChatService } from '@chat/application/chat.service';
 import {
@@ -44,7 +45,8 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly assistantService: AssistantService,
-    private readonly supabase: SupabaseService
+    private readonly supabase: SupabaseService,
+    private readonly advisorRepo: AdvisorRepository
   ) {}
 
   @Post('stream')

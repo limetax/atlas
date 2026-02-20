@@ -1,14 +1,6 @@
 import { Files } from 'lucide-react';
+import { type Document } from '@atlas/shared';
 import { DocumentRow } from './DocumentRow';
-
-type Document = {
-  id: string;
-  name: string;
-  mimeType: string;
-  sizeBytes: number;
-  status: string;
-  createdAt: string;
-};
 
 type DocumentListProps = {
   documents: Document[];
