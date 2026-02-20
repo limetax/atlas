@@ -1345,14 +1345,18 @@ export interface Database {
           },
         ];
       };
-      chat_documents: {
+      documents: {
         Row: {
           id: string;
-          chat_id: string;
-          advisor_id: string;
-          file_name: string;
-          file_size: number;
+          advisory_id: string;
+          client_id: string | null;
+          uploaded_by: string;
+          name: string;
+          size_bytes: number;
           storage_path: string;
+          mime_type: string;
+          source: 'limetaxos' | 'datev';
+          datev_document_id: string | null;
           status: 'processing' | 'ready' | 'error';
           error_message: string | null;
           chunk_count: number;
@@ -1360,11 +1364,15 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          chat_id: string;
-          advisor_id: string;
-          file_name: string;
-          file_size: number;
+          advisory_id: string;
+          client_id?: string | null;
+          uploaded_by: string;
+          name: string;
+          size_bytes: number;
           storage_path: string;
+          mime_type: string;
+          source?: 'limetaxos' | 'datev';
+          datev_document_id?: string | null;
           status?: 'processing' | 'ready' | 'error';
           error_message?: string | null;
           chunk_count?: number;
@@ -1372,14 +1380,92 @@ export interface Database {
         };
         Update: {
           id?: string;
-          chat_id?: string;
-          advisor_id?: string;
-          file_name?: string;
-          file_size?: number;
+          advisory_id?: string;
+          client_id?: string | null;
+          uploaded_by?: string;
+          name?: string;
+          size_bytes?: number;
           storage_path?: string;
+          mime_type?: string;
+          source?: 'limetaxos' | 'datev';
+          datev_document_id?: string | null;
           status?: 'processing' | 'ready' | 'error';
           error_message?: string | null;
           chunk_count?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'documents_advisory_id_fkey';
+            columns: ['advisory_id'];
+            referencedRelation: 'advisories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'documents_uploaded_by_fkey';
+            columns: ['uploaded_by'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      document_chunks: {
+        Row: {
+          id: string;
+          document_id: string;
+          advisory_id: string;
+          content: string;
+          page_number: number | null;
+          chunk_index: number;
+          embedding: number[] | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          document_id: string;
+          advisory_id: string;
+          content: string;
+          page_number?: number | null;
+          chunk_index: number;
+          embedding?: number[] | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          document_id?: string;
+          advisory_id?: string;
+          content?: string;
+          page_number?: number | null;
+          chunk_index?: number;
+          embedding?: number[] | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'document_chunks_document_id_fkey';
+            columns: ['document_id'];
+            referencedRelation: 'documents';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      chat_documents: {
+        Row: {
+          id: string;
+          chat_id: string;
+          document_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          chat_id: string;
+          document_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          chat_id?: string;
+          document_id?: string;
           created_at?: string;
         };
         Relationships: [
@@ -1390,52 +1476,9 @@ export interface Database {
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'chat_documents_advisor_id_fkey';
-            columns: ['advisor_id'];
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      chat_document_chunks: {
-        Row: {
-          id: string;
-          document_id: string;
-          chat_id: string;
-          advisor_id: string;
-          content: string;
-          page_number: number | null;
-          chunk_index: number;
-          embedding: number[] | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          document_id: string;
-          chat_id: string;
-          advisor_id: string;
-          content: string;
-          page_number?: number | null;
-          chunk_index: number;
-          embedding?: number[] | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          document_id?: string;
-          chat_id?: string;
-          advisor_id?: string;
-          content?: string;
-          page_number?: number | null;
-          chunk_index?: number;
-          embedding?: number[] | null;
-          created_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'chat_document_chunks_document_id_fkey';
+            foreignKeyName: 'chat_documents_document_id_fkey';
             columns: ['document_id'];
-            referencedRelation: 'chat_documents';
+            referencedRelation: 'documents';
             referencedColumns: ['id'];
           },
         ];
@@ -1713,10 +1756,10 @@ export interface Database {
           similarity: number;
         }[];
       };
-      match_chat_document_chunks: {
+      match_document_chunks: {
         Args: {
           query_embedding: number[];
-          p_chat_id: string;
+          p_document_ids: string[];
           match_threshold?: number;
           match_count?: number;
         };
@@ -1726,7 +1769,7 @@ export interface Database {
           content: string;
           page_number: number | null;
           chunk_index: number;
-          file_name: string;
+          document_name: string;
           similarity: number;
         }[];
       };
@@ -1770,11 +1813,14 @@ export type ChatUpdate = Database['public']['Tables']['chats']['Update'];
 export type ChatMessageRow = Database['public']['Tables']['chat_messages']['Row'];
 export type ChatMessageInsert = Database['public']['Tables']['chat_messages']['Insert'];
 
-// Chat document types
-export type ChatDocumentRow = Database['public']['Tables']['chat_documents']['Row'];
-export type ChatDocumentInsert = Database['public']['Tables']['chat_documents']['Insert'];
-export type ChatDocumentUpdate = Database['public']['Tables']['chat_documents']['Update'];
+// Document types (advisory-scoped)
+export type DocumentRow = Database['public']['Tables']['documents']['Row'];
+export type DocumentInsert = Database['public']['Tables']['documents']['Insert'];
+export type DocumentUpdate = Database['public']['Tables']['documents']['Update'];
 
-export type ChatDocumentChunkRow = Database['public']['Tables']['chat_document_chunks']['Row'];
-export type ChatDocumentChunkInsert =
-  Database['public']['Tables']['chat_document_chunks']['Insert'];
+export type DocumentChunkRow = Database['public']['Tables']['document_chunks']['Row'];
+export type DocumentChunkInsert = Database['public']['Tables']['document_chunks']['Insert'];
+
+// Chat-document join table
+export type ChatDocumentLinkRow = Database['public']['Tables']['chat_documents']['Row'];
+export type ChatDocumentLinkInsert = Database['public']['Tables']['chat_documents']['Insert'];

@@ -25,11 +25,13 @@ type UseChatStreamParams = {
   messages: Message[];
   currentSessionId: string | undefined;
   chatContext: ChatContext;
+  pendingDocumentIds?: string[];
   updateCurrentSessionMessages: (messages: Message[]) => void;
   setCurrentSessionId: (id: string | undefined) => void;
   invalidateAfterStream: (chatIdOverride?: string, finalMessages?: Message[]) => void;
   onChatCreated?: (chatId: string) => void;
   onContextPersisted?: () => void;
+  onDocumentsUploaded?: (chatId: string) => void;
 };
 
 export type UseChatStreamReturn = {
@@ -43,11 +45,13 @@ export const useChatStream = ({
   messages,
   currentSessionId,
   chatContext,
+  pendingDocumentIds,
   updateCurrentSessionMessages,
   setCurrentSessionId,
   invalidateAfterStream,
   onChatCreated,
   onContextPersisted,
+  onDocumentsUploaded,
 }: UseChatStreamParams): UseChatStreamReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCallState[]>([]);
@@ -101,7 +105,8 @@ export const useChatStream = ({
           chatContext,
           abortController.signal,
           currentSessionId,
-          filesToSend.length > 0 ? filesToSend : undefined
+          filesToSend.length > 0 ? filesToSend : undefined,
+          !currentSessionId ? pendingDocumentIds : undefined
         )) {
           if (chunk.type === 'chat_created' && chunk.chatId) {
             streamChatId = chunk.chatId;
@@ -158,6 +163,9 @@ export const useChatStream = ({
             updateCurrentSessionMessages(allMessages);
 
             invalidateAfterStream(streamChatId, allMessages);
+            if (filesToSend.length > 0 && streamChatId) {
+              onDocumentsUploaded?.(streamChatId);
+            }
           } else if (chunk.type === 'error') {
             throw new Error(chunk.error);
           }
@@ -190,11 +198,13 @@ export const useChatStream = ({
       messages,
       currentSessionId,
       chatContext,
+      pendingDocumentIds,
       updateCurrentSessionMessages,
       setCurrentSessionId,
       invalidateAfterStream,
       onChatCreated,
       onContextPersisted,
+      onDocumentsUploaded,
     ]
   );
 

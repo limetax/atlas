@@ -1,6 +1,7 @@
 import {
   Building2,
   Calculator,
+  Files,
   FileText,
   Folder,
   LayoutGrid,
@@ -22,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 import { getInitials } from '@/utils/formatters';
 import { Link, useLocation } from '@tanstack/react-router';
 
@@ -84,6 +86,13 @@ const Navigation = () => {
       isActiveCheck: (path: string): boolean => path.startsWith('/assistenten'),
     },
     {
+      to: '/dokumente',
+      label: 'Dokumente',
+      icon: Files,
+      badge: null,
+      isActiveCheck: (path: string): boolean => path.startsWith('/dokumente'),
+    },
+    {
       to: '/mandanten',
       label: 'Mandanten',
       icon: Building2,
@@ -130,11 +139,12 @@ const Navigation = () => {
           <Link
             key={item.to}
             to={item.to}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] transition-all ${
+            className={cn(
+              'flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] transition-all',
               isActive
                 ? 'bg-card text-foreground font-semibold shadow-sm'
                 : 'text-muted-foreground font-medium hover:bg-card hover:shadow-sm'
-            }`}
+            )}
           >
             <Icon className="w-5 h-5" />
             <span className="flex-1">{item.label}</span>

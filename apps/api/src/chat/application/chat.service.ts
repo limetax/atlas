@@ -1,4 +1,5 @@
 import { ChatContext, ChatMessageMetadata, MessageRole } from '@atlas/shared';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import { ChatRepository } from '@chat/domain/chat.repository';
 import { ChatStreamChunk, Message } from '@chat/domain/message.entity';
 import { ClientService } from '@datev/application/client.service';
@@ -26,7 +27,8 @@ export class ChatService {
     private readonly rag: RAGService,
     private readonly clientService: ClientService,
     private readonly chatRepo: ChatRepository,
-    private readonly documentService: DocumentService
+    private readonly documentService: DocumentService,
+    private readonly advisorRepo: AdvisorRepository
   ) {}
 
   /**
@@ -78,15 +80,18 @@ export class ChatService {
       }
     }
 
-    // 2. Search for relevant context using RAG with client filter
+    // 2. Get document IDs linked to this chat for RAG context
+    const documentIds = chatId ? await this.documentService.getDocumentIdsByChatId(chatId) : [];
+
+    // 3. Search for relevant context using RAG with client filter + document IDs
     const { context: ragContext, citations } = await this.rag.searchContext(
       userMessage,
       clientIdFilter,
       chatContext?.research,
-      chatId
+      documentIds.length > 0 ? documentIds : undefined
     );
 
-    // 3. Build system prompt with context
+    // 4. Build system prompt with context
     const systemPrompt = customSystemPrompt
       ? this.buildAssistantPrompt(customSystemPrompt, ragContext, chatContext, selectedClientName)
       : this.buildSystemPrompt(ragContext, chatContext, selectedClientName);
@@ -110,13 +115,8 @@ export class ChatService {
     // 5a. Acknowledge files received (with 'processing' status)
     if (files?.length && chatId) {
       const processingDocuments = files.map((file) => ({
-        id: 'pending',
-        chatId,
-        fileName: file.originalname,
-        fileSize: file.size,
-        status: 'processing' as const,
-        chunkCount: 0,
-        createdAt: new Date().toISOString(),
+        name: file.originalname,
+        size: file.size,
       }));
       yield { type: 'files_processed', documents: processingDocuments };
     }
@@ -390,7 +390,8 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     chatId?: string,
     customSystemPrompt?: string,
     context?: ChatContext,
-    files?: Express.Multer.File[]
+    files?: Express.Multer.File[],
+    pendingDocumentIds?: string[]
   ): AsyncGenerator<ChatStreamChunk, void, unknown> {
     // 1. Resolve or create the chat
     let resolvedChatId = chatId;
@@ -401,6 +402,16 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
       const chat = await this.chatRepo.create(advisorId, autoTitle, context);
       resolvedChatId = chat.id;
       isFirstMessage = true;
+
+      // Link any pending documents before emitting chat_created so they're available
+      // for RAG in processMessage (which fetches linked docs from DB).
+      if (pendingDocumentIds?.length) {
+        await Promise.all(
+          pendingDocumentIds.map((docId) =>
+            this.documentService.linkDocumentToChat(resolvedChatId!, docId)
+          )
+        );
+      }
 
       yield { type: 'chat_created', chatId: resolvedChatId };
     } else {
@@ -418,8 +429,11 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     // 3. Log files received (RAG storage happens async in processMessage)
     this.logger.debug(`Files received: ${files?.length ?? 0} file(s)`);
 
-    // 4. Persist user message (files will be stored in RAG asynchronously)
-    await this.chatRepo.addMessage(resolvedChatId, 'user', message, {});
+    // 4. Persist user message — include file info in metadata so chips survive re-fetch
+    const userMetadata: ChatMessageMetadata = files?.length
+      ? { documents: files.map((f) => ({ name: f.originalname, size: f.size })) }
+      : {};
+    await this.chatRepo.addMessage(resolvedChatId, 'user', message, userMetadata);
 
     // 5. Stream response, accumulate for persistence
     let assistantContent = '';
@@ -478,22 +492,41 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
   }
 
   /**
-   * Store files in RAG asynchronously (fire-and-forget)
-   * Errors are logged but don't block the user response
+   * Store files in RAG asynchronously (fire-and-forget).
+   * Phase 1: initDocument() creates the DB record and links it to the chat immediately.
+   * Phase 2: processDocumentAsync() runs in the background — status transitions to ready/error.
+   * Errors are logged but don't block the user response.
    */
   private async storeFilesInRagAsync(
     files: Express.Multer.File[],
     chatId: string,
     advisorId: string
   ): Promise<void> {
+    const advisor = await this.advisorRepo.findById(advisorId);
+    if (!advisor?.advisory_id) {
+      this.logger.warn(`No advisory found for advisor ${advisorId}, skipping file storage`);
+      return;
+    }
+
+    const advisoryId = advisor.advisory_id;
+
     for (const file of files) {
       try {
-        // Use Claude for text extraction instead of DocumentService
-        await this.documentService.processAndStoreWithClaude(file, chatId, advisorId);
-        this.logger.log(`Successfully stored file "${file.originalname}" in RAG`);
+        // Phase 1: upload + create record (fast, links document to chat immediately)
+        const document = await this.documentService.initDocument(file, advisoryId, advisorId);
+        await this.documentService.linkDocumentToChat(chatId, document.id);
+        this.logger.log(`Document "${file.originalname}" initialized and linked to chat ${chatId}`);
+
+        // Phase 2: fire-and-forget text extraction + embedding
+        this.documentService.processDocumentAsync(document.id, file, advisoryId).catch((err) => {
+          this.logger.error(
+            `Background processing failed for "${file.originalname}" (${document.id})`,
+            err instanceof Error ? err.stack : String(err)
+          );
+        });
       } catch (error) {
         this.logger.error(
-          `Failed to store file "${file.originalname}" in RAG`,
+          `Failed to init file "${file.originalname}" for chat ${chatId}`,
           error instanceof Error ? error.stack : String(error)
         );
         // Continue with other files

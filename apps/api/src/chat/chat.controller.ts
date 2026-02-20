@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 
 import { AssistantService } from '@/assistant/assistant.service';
+import { AdvisorRepository } from '@/auth/domain/advisor.repository';
 import { ChatContextSchema, MessageSchema } from '@atlas/shared';
 import { ChatService } from '@chat/application/chat.service';
 import {
@@ -28,6 +29,7 @@ const StreamChatBodySchema = z.object({
   chatId: z.string().uuid().optional(),
   assistantId: z.string().optional(),
   context: ChatContextSchema.optional(),
+  documentIds: z.array(z.string().uuid()).optional(),
 });
 
 /**
@@ -43,7 +45,8 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly assistantService: AssistantService,
-    private readonly supabase: SupabaseService
+    private readonly supabase: SupabaseService,
+    private readonly advisorRepo: AdvisorRepository
   ) {}
 
   @Post('stream')
@@ -71,6 +74,7 @@ export class ChatController {
 
     let parsedHistory: unknown;
     let parsedContext: unknown;
+    let parsedDocumentIds: unknown;
     try {
       parsedHistory =
         typeof rawBody.history === 'string' ? JSON.parse(rawBody.history) : (rawBody.history ?? []);
@@ -78,6 +82,10 @@ export class ChatController {
         typeof rawBody.context === 'string'
           ? JSON.parse(rawBody.context)
           : (rawBody.context ?? undefined);
+      parsedDocumentIds =
+        typeof rawBody.documentIds === 'string'
+          ? JSON.parse(rawBody.documentIds)
+          : (rawBody.documentIds ?? undefined);
     } catch {
       throw new BadRequestException('Ungültiges JSON in history oder context');
     }
@@ -88,9 +96,10 @@ export class ChatController {
       chatId: rawBody.chatId ? rawBody.chatId : undefined,
       assistantId: rawBody.assistantId ? rawBody.assistantId : undefined,
       context: parsedContext,
+      documentIds: parsedDocumentIds,
     });
 
-    const { message, history, chatId, assistantId, context } = parsed;
+    const { message, history, chatId, assistantId, context, documentIds } = parsed;
 
     // Authenticate the user
     const advisorId = await this.authenticateRequest(req);
@@ -119,7 +128,8 @@ export class ChatController {
       chatId,
       customSystemPrompt,
       context,
-      files
+      files,
+      documentIds
     )) {
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }

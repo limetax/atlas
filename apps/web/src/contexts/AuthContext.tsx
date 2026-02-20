@@ -10,18 +10,19 @@
  * directly since they run outside the React tree.
  */
 
-import { createContext, useContext, useCallback, type ReactNode } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { createContext, type ReactNode, useCallback, useContext } from 'react';
+
+import { ROUTES, STORAGE_KEYS } from '@/constants';
 import { trpc } from '@/lib/trpc';
-import { STORAGE_KEYS, ROUTES } from '@/constants';
-import { isTokenExpired } from '@/utils/validators';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { Advisor } from '@atlas/shared';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useNavigate } from '@tanstack/react-router';
 
 export type AuthContextValue = {
   user: SupabaseUser | null | undefined;
   advisor: Advisor | null | undefined;
   isLoading: boolean;
+  getToken: () => string | null;
   setToken: (token: string) => void;
   removeToken: () => void;
   logout: () => void;
@@ -44,6 +45,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     },
   });
 
+  const getToken = useCallback(() => localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN), []);
+
   const setToken = useCallback((token: string) => {
     localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
   }, []);
@@ -60,6 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     advisor,
     isLoading: isUserLoading,
+    getToken,
     setToken,
     removeToken,
     logout,

@@ -14,7 +14,7 @@ import {
   DatevAnalyticsOrderValuesMatch,
   DatevHrEmployeeMatch,
   LawPublisherDocumentMatch,
-  ChatDocumentChunkMatch,
+  DocumentChunkMatch,
   AddresseeSearchFilters,
   PostingSearchFilters,
   SusaSearchFilters,
@@ -474,31 +474,33 @@ export class SupabaseVectorStoreAdapter extends VectorStoreAdapter {
   }
 
   /**
-   * Search for similar chunks in uploaded chat documents
-   * Scoped to a specific chat for document isolation
+   * Search for similar chunks in uploaded documents
+   * Scoped to specific document IDs for RAG context
    */
-  async searchChatDocumentChunks(
+  async searchDocumentChunks(
     queryEmbedding: number[],
-    chatId: string,
+    documentIds: string[],
     matchThreshold: number,
     matchCount: number
-  ): Promise<ChatDocumentChunkMatch[]> {
+  ): Promise<DocumentChunkMatch[]> {
     try {
-      const { data, error } = await this.supabase.db.rpc('match_chat_document_chunks', {
+      if (documentIds.length === 0) return [];
+
+      const { data, error } = await this.supabase.db.rpc('match_document_chunks', {
         query_embedding: queryEmbedding,
-        p_chat_id: chatId,
+        p_document_ids: documentIds,
         match_threshold: matchThreshold,
         match_count: matchCount,
       });
 
       if (error) {
-        this.logger.error('Chat document chunk search error:', error);
+        this.logger.error('Document chunk search error:', error);
         return [];
       }
 
-      return (data as ChatDocumentChunkMatch[]) || [];
+      return (data as DocumentChunkMatch[]) || [];
     } catch (err) {
-      this.logger.error('Chat document chunk search failed:', err);
+      this.logger.error('Document chunk search failed:', err);
       return [];
     }
   }

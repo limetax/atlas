@@ -1,4 +1,4 @@
-import { type ChatDocument, LlmMessageRole } from '@atlas/shared';
+import { LlmMessageRole } from '@atlas/shared';
 
 /**
  * Message Entity - Domain representation of a chat message
@@ -19,7 +19,7 @@ export type ChatStreamChunk =
   | { type: 'citations'; citations: Citation[] }
   | { type: 'tool_call'; toolCall: { name: string; status: 'started' | 'completed' } }
   | { type: 'chat_created'; chatId: string }
-  | { type: 'files_processed'; documents: ChatDocument[] }
+  | { type: 'files_processed'; documents: Array<{ name: string; size: number }> }
   | { type: 'done' }
   | { type: 'error'; error: string };
 

@@ -148,6 +148,45 @@ Atlas backend follows Hexagonal Architecture Adapters with modern, clean naming:
 
 - **No direct `localStorage` reads in components** — use `useAuthContext()` or `useLocalStorage()`. Route guards (`beforeLoad`) are the only exception since they run outside the React tree
 
+#### Mutations & cache updates
+
+**Default — simple invalidation.** Use for all mutations unless latency causes a visible UX problem:
+
+```ts
+useMutation({ mutationFn: ..., onError: () => toast.error(...), onSettled: () => utils.foo.invalidate() })
+```
+
+**Optimistic updates** — only reach for these when mutation latency noticeably hurts UX. Two approaches:
+
+**Via UI** (`isPending` + `variables`) — prefer for single-component instant feedback, no rollback needed:
+
+```ts
+const mutation = useMutation({ mutationFn: ..., onSettled: () => utils.foo.invalidate() });
+// Render the pending item from mutation.variables while mutation.isPending === true.
+// On error it simply disappears; show a toast in onError.
+```
+
+**Via Cache** (`onMutate`) — use only when multiple components share the query and all need the instant update:
+
+```ts
+useMutation({
+  onMutate: async (vars) => {
+    await utils.foo.cancel(); // cancel in-flight refetch so it doesn't overwrite
+    const previous = utils.foo.getData(); // snapshot for rollback
+    utils.foo.setData(updater); // apply optimistic change
+    return { previous };
+  },
+  onError: (_err, _vars, ctx) => utils.foo.setData(ctx!.previous), // rollback on failure
+  onSettled: () => utils.foo.invalidate(), // always resync with server
+});
+```
+
+**Rules:**
+
+- **`onSettled` not `onSuccess` for invalidation** — `onSettled` fires on both success and error, so the cache always resyncs even after a failed mutation
+- **Do not use `onMutate` for add-to-list** — `onSettled` invalidation triggers a refetch that races with the optimistic entry, causing the item to briefly appear twice; use Via UI instead
+- **Cache seeding (`setData` outside mutations)** — valid when you already hold the full entity data locally and need a zero-latency transition (e.g. seeding `getDocumentsByChatId` when pending docs become linked after a new chat is created)
+
 #### Toasts (user feedback)
 
 - **Library:** [Sonner](https://sonner.emilkowal.ski/) via `components/ui/sonner.tsx` wrapper. `<Toaster />` is mounted in `_authenticated.tsx`
