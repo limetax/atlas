@@ -1,7 +1,8 @@
 import { Request } from 'express';
+
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import { DocumentService } from '@document/application/document.service';
 import { type DocumentEntity } from '@document/domain/document.entity';
-import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import {
   BadRequestException,
   Controller,
@@ -93,7 +94,7 @@ export class DocumentController {
     const token = authHeader.slice(7);
     const { data, error } = await this.supabase.getUser(token);
 
-    if (error ?? !data.user) {
+    if (error || !data.user) {
       throw new UnauthorizedException('Ungültiges Token');
     }
 

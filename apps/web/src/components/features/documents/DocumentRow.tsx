@@ -50,7 +50,7 @@ export const DocumentRow = ({ document, onDelete, isDeleting }: DocumentRowProps
           <span>{formattedSize}</span>
           <span>{formattedDate}</span>
           {document.status === 'processing' && (
-            <span className="flex items-center gap-1 text-amber-600">
+            <span className="flex items-center gap-1 text-warning">
               <Loader2 className="w-3 h-3 animate-spin" />
               Wird verarbeitet…
             </span>

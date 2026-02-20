@@ -80,7 +80,7 @@ export class SupabaseDocumentRepository extends DocumentRepository {
       .eq('id', documentId)
       .select('id');
 
-    if (error ?? !data?.length) {
+    if (error || !data?.length) {
       const reason = error?.message ?? 'no rows updated (document not found or RLS blocked)';
       this.logger.error(`Failed to update document status for ${documentId}: ${reason}`);
       throw new Error(`Failed to update document status: ${reason}`);

@@ -3,7 +3,7 @@ import { type DragEvent } from 'react';
 import { FileText, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { formatFileSize } from '@/utils/formatters';
+import { formatFileSize } from '@/lib/utils';
 import { isValidPdfFile } from '@/utils/validators';
 
 // ─── DropZoneOverlay ──────────────────────────────────────────────────────────
