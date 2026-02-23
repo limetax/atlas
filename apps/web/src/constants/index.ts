@@ -15,6 +15,7 @@ export const ROUTES = {
 
 export const API_ENDPOINTS = {
   CHAT_STREAM: '/api/chat/stream',
+  TAX_ASSESSMENT_REVIEW: '/api/tax-assessment/review',
   TRPC: '/api/trpc',
 } as const;
 

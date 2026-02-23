@@ -76,9 +76,8 @@ export const TOOLS: Tool[] = [
     description: 'Analyse von Steuerbescheiden auf Abweichungen',
     icon: FileCheck,
     route: '/tools/bescheid-pruefen',
-    status: 'coming-soon',
+    status: 'active',
     category: 'analyse-recherche',
-    badge: 'BALD',
   },
   {
     id: 'gestaltung',

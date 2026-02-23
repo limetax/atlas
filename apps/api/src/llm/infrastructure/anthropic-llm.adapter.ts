@@ -26,7 +26,7 @@ export class AnthropicLlmAdapter extends LlmProviderAdapter {
       apiKey,
       model: 'claude-sonnet-4-20250514',
       temperature: 0.3,
-      maxTokens: 4096,
+      maxTokens: 16000,
     });
   }
 

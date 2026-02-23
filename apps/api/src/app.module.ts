@@ -14,6 +14,7 @@ import { DatevModule } from '@datev/datev.module';
 import { AssistantModule } from '@/assistant/assistant.module';
 import { DocumentModule } from '@/document/document.module';
 import { HealthModule } from '@/health/health.module';
+import { TaxAssessmentModule } from '@/tax-assessment/tax-assessment.module';
 /**
  * Root Application Module
  */
@@ -39,6 +40,7 @@ import { HealthModule } from '@/health/health.module';
     AssistantModule,
     DocumentModule,
     HealthModule,
+    TaxAssessmentModule,
   ],
   providers: [AppContext, AuthMiddleware, RateLimitMiddleware],
 })

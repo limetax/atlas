@@ -1,0 +1,215 @@
+import type { ChatStreamChunk, OpenAssessmentView } from '@atlas/shared';
+import { CONTEXT_PROMPTS } from '@chat/application/chat.prompts';
+import { ChatRepository } from '@chat/domain/chat.repository';
+import { LlmService } from '@llm/application/llm.service';
+import type { ToolCallEvent } from '@llm/application/tool-orchestration.service';
+import type { LlmMessage } from '@llm/domain/llm.types';
+import {
+  detectMimeTypeFromBuffer,
+  encodeBufferToContentBlocks,
+} from '@llm/infrastructure/file-encoding.util';
+import { Injectable, Logger } from '@nestjs/common';
+import { DmsAdapter } from '@tax-assessment/domain/dms.adapter';
+
+import { BESCHEID_PRUEFUNG_SYSTEM_PROMPT } from './tax-assessment.prompts';
+
+const SYSTEM_PROMPT = BESCHEID_PRUEFUNG_SYSTEM_PROMPT + CONTEXT_PROMPTS.EMAIL;
+
+const INCOME_TAX_ORDER_NAME = 'Einkommensteuererklärung';
+const OPEN_ASSESSMENT_FILTER =
+  'folder.id eq 198 and domain.id eq 1 and register.id eq 489 and state.id eq 5';
+const MAX_TOTAL_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+
+/**
+ * File extensions we can actually send to the Anthropic API.
+ * DMS documents can contain .msg (Outlook emails), .doc, etc. — skip those.
+ */
+const PROCESSABLE_EXTENSIONS = new Set(['pdf', 'tif', 'tiff', 'jpg', 'jpeg', 'png', 'gif', 'webp']);
+
+const isProcessableFile = (name: string): boolean =>
+  PROCESSABLE_EXTENSIONS.has(name.split('.').pop()?.toLowerCase() ?? '');
+
+/**
+ * TaxAssessmentService - Orchestrates income tax assessment review
+ *
+ * Fetches DMS documents, encodes them, then streams an LLM review via LlmService.
+ * Uses the shared LlmService so email templates, tool calls, and all chat features
+ * work in the resulting chat session.
+ */
+@Injectable()
+export class TaxAssessmentService {
+  private readonly logger = new Logger(TaxAssessmentService.name);
+
+  constructor(
+    private readonly dmsAdapter: DmsAdapter,
+    private readonly chatRepository: ChatRepository,
+    private readonly llm: LlmService
+  ) {}
+
+  async listOpenAssessments(): Promise<OpenAssessmentView[]> {
+    const docs = await this.dmsAdapter.getDocuments(OPEN_ASSESSMENT_FILTER);
+
+    const filtered = docs.filter((doc) => doc.order?.name === INCOME_TAX_ORDER_NAME);
+
+    return filtered.map((doc) => ({
+      documentId: doc.id,
+      clientName: doc.correspondence_partner_guid,
+      taxType: doc.order!.name!,
+      year: doc.year,
+      stateId: doc.state.id.toString(),
+      createdAt: doc.change_date_time,
+    }));
+  }
+
+  async *streamReview(
+    assessmentDocumentId: string,
+    advisorId: string
+  ): AsyncGenerator<ChatStreamChunk> {
+    // 1. Fetch assessment document metadata
+    const assessmentDoc = await this.dmsAdapter.getDocumentById(assessmentDocumentId);
+
+    if (!assessmentDoc) {
+      yield { type: 'error', error: 'Bescheid nicht gefunden' };
+      return;
+    }
+
+    const clientName = assessmentDoc.description;
+    const year = assessmentDoc.year;
+
+    // 2. Fetch and download assessment PDFs
+    this.logger.log(`Fetching assessment PDFs for document ${assessmentDocumentId}`);
+    const assessmentItems = await this.dmsAdapter.getStructureItems(assessmentDocumentId);
+    this.logger.log(`Assessment structure items: ${JSON.stringify(assessmentItems)}`);
+    const assessmentFileItems = assessmentItems.filter(
+      (item) => item.type === 1 && isProcessableFile(item.name)
+    );
+
+    const assessmentFiles = await Promise.all(
+      assessmentFileItems.map(async (item) => ({
+        buffer: await this.dmsAdapter.getFileContent(item.document_file_id),
+        name: item.name,
+      }))
+    );
+    assessmentFiles.forEach(({ buffer, name }, i) => {
+      const header = buffer.subarray(0, 8).toString('hex');
+      const detectedMime = detectMimeTypeFromBuffer(buffer, name);
+      this.logger.log(
+        `Assessment file[${i}]: ${buffer.length} bytes, name="${name}", header=0x${header}, detectedMime="${detectedMime}"`
+      );
+    });
+
+    // 3. Find matching declaration (same client GUID + EStE year)
+    const allClientDocs = await this.dmsAdapter.getDocuments(
+      `correspondence_partner_guid eq '${assessmentDoc.correspondence_partner_guid}'`
+    );
+    const declarationDoc = allClientDocs.find(
+      (doc) =>
+        doc.description.startsWith('EStE') && doc.year === year && doc.id !== assessmentDocumentId
+    );
+
+    if (!declarationDoc) {
+      yield {
+        type: 'error',
+        error: `Keine passende Einkommensteuererklärung für ${clientName} (${year}) gefunden`,
+      };
+      return;
+    }
+
+    // 4. Fetch and download declaration PDFs
+    this.logger.log(`Fetching declaration PDFs for document ${declarationDoc.id}`);
+    const declarationItems = await this.dmsAdapter.getStructureItems(declarationDoc.id);
+    const declarationFileItems = declarationItems.filter(
+      (item) => item.type === 1 && isProcessableFile(item.name)
+    );
+
+    const declarationFiles = await Promise.all(
+      declarationFileItems.map(async (item) => ({
+        buffer: await this.dmsAdapter.getFileContent(item.document_file_id),
+        name: item.name,
+      }))
+    );
+    declarationFiles.forEach(({ buffer, name }, i) => {
+      const header = buffer.subarray(0, 8).toString('hex');
+      const detectedMime = detectMimeTypeFromBuffer(buffer, name);
+      this.logger.log(
+        `Declaration file[${i}]: ${buffer.length} bytes, name="${name}", header=0x${header}, detectedMime="${detectedMime}"`
+      );
+    });
+
+    // 5. Check total size
+    const totalSize = [...assessmentFiles, ...declarationFiles].reduce(
+      (sum, { buffer }) => sum + buffer.length,
+      0
+    );
+    this.logger.log(
+      `Total file size: ${(totalSize / 1024 / 1024).toFixed(1)} MB (${assessmentFiles.length + declarationFiles.length} files)`
+    );
+
+    if (totalSize > MAX_TOTAL_SIZE_BYTES) {
+      yield {
+        type: 'error',
+        error: 'Dokumente zu groß für die Prüfung (max. 25 MB gesamt)',
+      };
+      return;
+    }
+
+    // 6. Create chat session
+    const chat = await this.chatRepository.create(
+      advisorId,
+      `Bescheidprüfung: ${clientName} EStE ${year}`
+    );
+
+    // 7. Yield chat_created so frontend can navigate to the chat
+    yield { type: 'chat_created', chatId: chat.id };
+
+    // 8. Build LLM messages with all PDFs/TIFFs as content blocks
+    // encodeBufferToContentBlocks is async: TIFFs are converted page-by-page to JPEG
+    // (Anthropic only accepts application/pdf for documents; TIFF is not supported natively)
+    const fileContentBlocks = await Promise.all([
+      ...assessmentFiles.map(({ buffer, name }) =>
+        encodeBufferToContentBlocks(buffer, detectMimeTypeFromBuffer(buffer, name))
+      ),
+      ...declarationFiles.map(({ buffer, name }) =>
+        encodeBufferToContentBlocks(buffer, detectMimeTypeFromBuffer(buffer, name))
+      ),
+    ]);
+    const pdfBlocks = fileContentBlocks.flat();
+
+    const userMessageText = `Bitte prüfen Sie den beigefügten Einkommensteuerbescheid gegen die Einkommensteuererklärung für ${clientName} (${year}). Bescheid: ${assessmentFiles.length} Datei(en), Erklärung: ${declarationFiles.length} Datei(en).`;
+
+    // 9. Persist user message
+    await this.chatRepository.addMessage(chat.id, 'user', userMessageText);
+
+    // 10. Stream LLM review via LlmService (email templates, tool calls, all features included)
+    const llmMessages: LlmMessage[] = [
+      {
+        role: 'user',
+        content: [{ type: 'text', text: userMessageText }, ...pdfBlocks],
+      },
+    ];
+
+    let fullResponse = '';
+    try {
+      for await (const chunk of this.llm.streamCompletion(llmMessages, SYSTEM_PROMPT)) {
+        if (typeof chunk === 'string') {
+          fullResponse += chunk;
+          yield { type: 'text', content: chunk };
+        } else {
+          const toolEvent = chunk as ToolCallEvent;
+          yield { type: 'tool_call', toolCall: { name: toolEvent.name, status: toolEvent.status } };
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(`LLM streaming failed: ${message}`, stack);
+      yield { type: 'error', error: 'Fehler beim Generieren der Bescheidprüfung' };
+      return;
+    }
+
+    // 11. Persist assistant response
+    await this.chatRepository.addMessage(chat.id, 'assistant', fullResponse);
+
+    yield { type: 'done' };
+  }
+}

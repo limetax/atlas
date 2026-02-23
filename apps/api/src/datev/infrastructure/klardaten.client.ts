@@ -43,7 +43,7 @@ const DATE_FILTER_FROM = '2025-01-01'; // Only sync data from 2025 onwards
 @Injectable()
 export class KlardatenClient {
   private readonly logger = new Logger(KlardatenClient.name);
-  private readonly httpClient: AxiosInstance;
+  readonly httpClient: AxiosInstance;
   private accessToken: string | null = null;
   private tokenExpiresAt: number = 0;
   private readonly instanceId: string;
@@ -451,7 +451,7 @@ export class KlardatenClient {
           if (response.data && Array.isArray(response.data)) {
             allSusa.push(...response.data);
           }
-        } catch (error) {
+        } catch {
           // Month might not have data yet - continue
           this.logger.debug(`  → No SUSA data for month ${month}`);
         }
