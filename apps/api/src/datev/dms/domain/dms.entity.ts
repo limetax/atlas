@@ -1,5 +1,6 @@
 /**
- * Domain types for DATEV DMS tax assessment documents
+ * Domain types for DATEV DMS documents.
+ * DMS (Document Management System) is a DATEV product accessed via the DATEVconnect DMS v2 API.
  */
 
 export type DmsDocumentState = {

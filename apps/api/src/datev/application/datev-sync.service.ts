@@ -1,5 +1,6 @@
 import pLimit from 'p-limit';
 
+import { KlardatenClient } from '@/datev/infrastructure/klardaten/klardaten.client';
 import {
   DatevAddressee,
   DatevClient,
@@ -10,7 +11,6 @@ import {
   DatevSyncResult,
   DatevTradeTax,
 } from '@atlas/shared';
-import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
 import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
