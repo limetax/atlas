@@ -10,6 +10,7 @@ import {
   encodeBufferToContentBlocks,
 } from '@llm/infrastructure/file-encoding.util';
 import { Injectable, Logger } from '@nestjs/common';
+import { RAGService } from '@rag/application/rag.service';
 import { DmsAdapter } from '@tax-assessment/domain/dms.adapter';
 
 import { BESCHEID_PRUEFUNG_SYSTEM_PROMPT } from './tax-assessment.prompts';
@@ -45,7 +46,8 @@ export class TaxAssessmentService {
     private readonly dmsAdapter: DmsAdapter,
     private readonly chatRepository: ChatRepository,
     private readonly llm: LlmService,
-    private readonly clientService: ClientService
+    private readonly clientService: ClientService,
+    private readonly ragService: RAGService
   ) {}
 
   async listOpenAssessments(): Promise<OpenAssessmentView[]> {
@@ -84,7 +86,17 @@ export class TaxAssessmentService {
       return;
     }
 
-    const clientName = assessmentDoc.description;
+    const [client, ragClientResult] = await Promise.all([
+      this.clientService.getClientById(assessmentDoc.correspondence_partner_guid),
+      this.ragService.getDatevClientById(assessmentDoc.correspondence_partner_guid),
+    ]);
+
+    const clientName = client?.client_name ?? assessmentDoc.correspondence_partner_guid;
+
+    const clientContextSection = ragClientResult.context
+      ? `\n\n---\n\nMANDANTEN-STAMMDATEN (aus DATEV):\n${ragClientResult.context}\n\nWichtig: Verwende die oben angegebene E-Mail-Adresse als Empfänger in der Mandantenmitteilung (Abschnitt 11). Falls mehrere Kontakte vorhanden sind, wähle die hauptverantwortliche Kontaktperson.`
+      : '';
+
     const year = assessmentDoc.year;
 
     // 2. Fetch and download assessment PDFs
@@ -165,12 +177,7 @@ export class TaxAssessmentService {
     }
 
     // 6. Create chat session
-    const assessmentDate = new Date(assessmentDoc.change_date_time).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-    const chatTitle = `Bescheid prüfung: EStB ${year} vom ${assessmentDate} EStE ${declarationDoc.year}`;
+    const chatTitle = `Bescheidprüfung: ${clientName} EStB ${year}`;
     const chat = await this.chatRepository.create(advisorId, chatTitle);
 
     // 7. Yield chat_created so frontend can navigate to the chat
@@ -204,7 +211,10 @@ export class TaxAssessmentService {
 
     let fullResponse = '';
     try {
-      for await (const chunk of this.llm.streamCompletion(llmMessages, SYSTEM_PROMPT)) {
+      for await (const chunk of this.llm.streamCompletion(
+        llmMessages,
+        SYSTEM_PROMPT + clientContextSection
+      )) {
         if (typeof chunk === 'string') {
           fullResponse += chunk;
           yield { type: 'text', content: chunk };

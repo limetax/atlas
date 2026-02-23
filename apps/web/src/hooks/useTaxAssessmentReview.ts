@@ -46,6 +46,7 @@ export const useTaxAssessmentReview = (): UseTaxAssessmentReviewReturn => {
         } else if (chunk.type === 'done') {
           setCompletedChatId(pendingChatIdRef.current);
           setPhase('completed');
+          break; // stop consuming — SSE connection closes after 'done'
         } else if (chunk.type === 'error') {
           toast.error(chunk.error ?? 'Fehler beim Starten der Bescheidprüfung');
           setPhase('idle');

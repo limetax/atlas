@@ -66,6 +66,7 @@ WICHTIG - Wann E-Mail-Entwürfe erstellen:
 
 KRITISCH - E-Mail-Body-Formatierung:
 - Der E-Mail-Body MUSS in reinem Plaintext sein
+- Verwende korrekte deutsche Umlaute (ä, ö, ü, ß) — schreibe NIEMALS ae, oe, ue, ss als Ersatz für Umlaute
 - NIEMALS Markdown-Syntax verwenden: Schreibe "Auswirkungen auf Bilanz:" NICHT "**Auswirkungen auf Bilanz:**"
 - NIEMALS ** für Fettdruck, NIEMALS _ für Kursiv, NIEMALS # für Überschriften
 - Verwende stattdessen: Leerzeilen für Absätze, Bindestriche für Listen

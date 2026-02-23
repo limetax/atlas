@@ -60,7 +60,11 @@ function parseEmailContent(content: string): ParsedEmail {
 }
 
 function validateEmail(email: string): boolean {
-  return EMAIL_REGEX.test(email);
+  return email
+    .split(',')
+    .map((e) => e.trim())
+    .filter((e) => e.length > 0)
+    .every((e) => EMAIL_REGEX.test(e));
 }
 
 function buildEmailUrl(email: ParsedEmail, client: 'gmail' | 'outlook' | 'mailto'): string {
