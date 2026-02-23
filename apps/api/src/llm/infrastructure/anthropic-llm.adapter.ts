@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { ChatAnthropic } from '@langchain/anthropic';
-import { HumanMessage } from '@langchain/core/messages';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { HumanMessage } from '@langchain/core/messages';
 import { LlmProviderAdapter } from '@llm/domain/llm-provider.adapter';
+import { Injectable, Logger } from '@nestjs/common';
 
 /**
  * Anthropic LLM Adapter - Infrastructure implementation of LlmProviderAdapter
@@ -24,7 +24,7 @@ export class AnthropicLlmAdapter extends LlmProviderAdapter {
 
     return new ChatAnthropic({
       apiKey,
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       temperature: 0.3,
       maxTokens: 16000,
     });

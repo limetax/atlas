@@ -1,6 +1,7 @@
 import type { ChatStreamChunk, OpenAssessmentView } from '@atlas/shared';
 import { CONTEXT_PROMPTS } from '@chat/application/chat.prompts';
 import { ChatRepository } from '@chat/domain/chat.repository';
+import { ClientService } from '@datev/application/client.service';
 import { LlmService } from '@llm/application/llm.service';
 import type { ToolCallEvent } from '@llm/application/tool-orchestration.service';
 import type { LlmMessage } from '@llm/domain/llm.types';
@@ -43,17 +44,27 @@ export class TaxAssessmentService {
   constructor(
     private readonly dmsAdapter: DmsAdapter,
     private readonly chatRepository: ChatRepository,
-    private readonly llm: LlmService
+    private readonly llm: LlmService,
+    private readonly clientService: ClientService
   ) {}
 
   async listOpenAssessments(): Promise<OpenAssessmentView[]> {
     const docs = await this.dmsAdapter.getDocuments(OPEN_ASSESSMENT_FILTER);
-
     const filtered = docs.filter((doc) => doc.order?.name === INCOME_TAX_ORDER_NAME);
+
+    // Batch-resolve client names from datev_clients via correspondence_partner_guid
+    const uniqueGuids = [...new Set(filtered.map((d) => d.correspondence_partner_guid))];
+    const clientResults = await Promise.all(
+      uniqueGuids.map((guid) => this.clientService.getClientById(guid))
+    );
+    const clientNameByGuid = new Map(
+      uniqueGuids.map((guid, i) => [guid, clientResults[i]?.client_name ?? guid])
+    );
 
     return filtered.map((doc) => ({
       documentId: doc.id,
-      clientName: doc.correspondence_partner_guid,
+      clientName:
+        clientNameByGuid.get(doc.correspondence_partner_guid) ?? doc.correspondence_partner_guid,
       taxType: doc.order!.name!,
       year: doc.year,
       stateId: doc.state.id.toString(),
@@ -154,10 +165,13 @@ export class TaxAssessmentService {
     }
 
     // 6. Create chat session
-    const chat = await this.chatRepository.create(
-      advisorId,
-      `Bescheidprüfung: ${clientName} EStE ${year}`
-    );
+    const assessmentDate = new Date(assessmentDoc.change_date_time).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const chatTitle = `Bescheid prüfung: EStB ${year} vom ${assessmentDate} EStE ${declarationDoc.year}`;
+    const chat = await this.chatRepository.create(advisorId, chatTitle);
 
     // 7. Yield chat_created so frontend can navigate to the chat
     yield { type: 'chat_created', chatId: chat.id };

@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
+
+import { ArrowLeft, ArrowRight, MessageSquare } from 'lucide-react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,18 +13,20 @@ import { useTaxAssessmentReview } from '@/hooks/useTaxAssessmentReview';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { type OpenAssessmentView } from '@atlas/shared';
+import { useNavigate } from '@tanstack/react-router';
 
 /**
- * BescheidPruefenPage - Lists open income tax assessments from DATEV DMS
+ * TaxAssessmentReviewPage - Lists open income tax assessments from DATEV DMS
  * Allows advisors to start an AI-powered review for each assessment
  */
-export const BescheidPruefenPage = () => {
-  const [search, setSearch] = useState('');
-  const [startingId, setStartingId] = useState<string | undefined>(undefined);
+export const TaxAssessmentReviewPage = () => {
+  const [search, setSearch] = React.useState('');
+  const [startingId, setStartingId] = React.useState<string | undefined>(undefined);
   const { data: assessments, isLoading, error } = trpc.taxAssessmentReview.getOpen.useQuery();
-  const { startReview, isStarting, streamingText } = useTaxAssessmentReview();
+  const { startReview, clearReview, phase, streamingText, completedChatId } =
+    useTaxAssessmentReview();
 
-  const filtered = useMemo(
+  const filtered = React.useMemo(
     () =>
       assessments?.filter(
         (a) =>
@@ -41,39 +45,31 @@ export const BescheidPruefenPage = () => {
     ? assessments?.find((a) => a.documentId === startingId)
     : undefined;
 
+  const showPanel = phase === 'reviewing' || phase === 'completed';
+
   return (
     <main className="flex-1 overflow-y-auto bg-background p-6">
       <div className="mx-auto max-w-4xl">
         <PageHeader />
-        {isStarting ? (
+        {showPanel ? (
           <ReviewProgressPanel
             clientName={startingAssessment?.clientName}
             year={startingAssessment?.year}
             streamingText={streamingText}
+            phase={phase}
+            completedChatId={completedChatId}
+            onBack={clearReview}
           />
         ) : (
           <>
-            <div className="mb-6">
-              <Input
-                placeholder="Nach Mandant oder Jahr suchen..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-            {isLoading ? (
-              <LoadingSkeleton />
-            ) : error ? (
-              <ErrorState message={error.message} />
-            ) : filtered.length === 0 ? (
-              <EmptyState hasSearch={search.length > 0} />
-            ) : (
-              <AssessmentList
-                assessments={filtered}
-                onStartReview={handleStartReview}
-                isStarting={isStarting}
-              />
-            )}
+            <SearchBar value={search} onChange={setSearch} />
+            <AssessmentOverviewContent
+              isLoading={isLoading}
+              error={error ?? null}
+              assessments={filtered}
+              hasSearch={search.length > 0}
+              onStartReview={handleStartReview}
+            />
           </>
         )}
       </div>
@@ -92,13 +88,49 @@ const PageHeader = () => (
   </div>
 );
 
+type SearchBarProps = {
+  value: string;
+  onChange: (value: string) => void;
+};
+
+const SearchBar = ({ value, onChange }: SearchBarProps) => (
+  <div className="mb-6">
+    <Input
+      placeholder="Nach Mandant oder Jahr suchen..."
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="max-w-sm"
+    />
+  </div>
+);
+
+type AssessmentOverviewContentProps = {
+  isLoading: boolean;
+  error: { message: string } | null;
+  assessments: OpenAssessmentView[];
+  hasSearch: boolean;
+  onStartReview: (documentId: string) => void;
+};
+
+const AssessmentOverviewContent = ({
+  isLoading,
+  error,
+  assessments,
+  hasSearch,
+  onStartReview,
+}: AssessmentOverviewContentProps) => {
+  if (isLoading) return <LoadingSkeleton />;
+  if (error) return <ErrorState message={error.message} />;
+  if (assessments.length === 0) return <EmptyState hasSearch={hasSearch} />;
+  return <AssessmentList assessments={assessments} onStartReview={onStartReview} />;
+};
+
 type AssessmentListProps = {
   assessments: OpenAssessmentView[];
   onStartReview: (documentId: string) => void;
-  isStarting: boolean;
 };
 
-const AssessmentList = ({ assessments, onStartReview, isStarting }: AssessmentListProps) => (
+const AssessmentList = ({ assessments, onStartReview }: AssessmentListProps) => (
   <div className="overflow-hidden rounded-lg border border-border">
     <table className="w-full">
       <thead className="bg-muted/50">
@@ -118,7 +150,6 @@ const AssessmentList = ({ assessments, onStartReview, isStarting }: AssessmentLi
             key={assessment.documentId}
             assessment={assessment}
             onStartReview={onStartReview}
-            isStarting={isStarting}
           />
         ))}
       </tbody>
@@ -129,10 +160,9 @@ const AssessmentList = ({ assessments, onStartReview, isStarting }: AssessmentLi
 type AssessmentRowProps = {
   assessment: OpenAssessmentView;
   onStartReview: (documentId: string) => void;
-  isStarting: boolean;
 };
 
-const AssessmentRow = ({ assessment, onStartReview, isStarting }: AssessmentRowProps) => {
+const AssessmentRow = ({ assessment, onStartReview }: AssessmentRowProps) => {
   const formattedDate = assessment.createdAt
     ? new Date(assessment.createdAt).toLocaleDateString('de-DE', {
         day: '2-digit',
@@ -151,11 +181,13 @@ const AssessmentRow = ({ assessment, onStartReview, isStarting }: AssessmentRowP
       <td className="px-4 py-4 text-sm text-muted-foreground">{formattedDate}</td>
       <td className="px-4 py-4 text-right">
         <Button
+          variant="ghost"
           size="sm"
           onClick={() => onStartReview(assessment.documentId)}
-          disabled={isStarting}
+          className="gap-1 text-primary hover:text-primary"
         >
-          {isStarting ? 'Wird gestartet...' : 'Prüfung starten'}
+          Prüfung starten
+          <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </td>
     </tr>
@@ -192,24 +224,59 @@ type ReviewProgressPanelProps = {
   clientName: string | undefined;
   year: number | undefined;
   streamingText: string;
+  phase: 'reviewing' | 'completed';
+  completedChatId: string | undefined;
+  onBack: () => void;
 };
 
-const ReviewProgressPanel = ({ clientName, year, streamingText }: ReviewProgressPanelProps) => {
+const ReviewProgressPanel = ({
+  clientName,
+  year,
+  streamingText,
+  phase,
+  completedChatId,
+  onBack,
+}: ReviewProgressPanelProps) => {
+  const navigate = useNavigate();
   const hasText = streamingText.length > 0;
+  const isCompleted = phase === 'completed';
   const title = clientName ? `${clientName}${year ? ` (${year})` : ''}` : 'Bescheid';
+
+  const handleOpenChat = () => {
+    if (completedChatId) {
+      void navigate({ to: '/chat/$chatId', params: { chatId: completedChatId } });
+    }
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center gap-3 border-b border-border px-5 py-3">
-        <span
-          className={cn(
-            'inline-block h-2 w-2 rounded-full animate-pulse',
-            hasText ? 'bg-primary' : 'bg-muted-foreground'
-          )}
-        />
-        <span className="text-sm font-medium text-foreground">
-          {hasText ? `Prüfung läuft – ${title}` : `Dokumente werden geladen – ${title}`}
-        </span>
+      <div className="flex items-center justify-between border-b border-border px-5 py-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              'inline-block h-2 w-2 rounded-full',
+              isCompleted ? 'bg-muted-foreground' : 'bg-primary animate-pulse'
+            )}
+          />
+          <span className="text-sm font-medium text-foreground">
+            {isCompleted
+              ? `Prüfung abgeschlossen – ${title}`
+              : hasText
+                ? `Prüfung läuft – ${title}`
+                : `Dokumente werden geladen – ${title}`}
+          </span>
+        </div>
+        {isCompleted && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="gap-1.5 text-muted-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Zurück zur Übersicht
+          </Button>
+        )}
       </div>
 
       {hasText ? (
@@ -224,6 +291,15 @@ const ReviewProgressPanel = ({ clientName, year, streamingText }: ReviewProgress
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-5/6" />
           <Skeleton className="h-4 w-2/3" />
+        </div>
+      )}
+
+      {isCompleted && completedChatId && (
+        <div className="flex justify-end border-t border-border px-5 py-3">
+          <Button onClick={handleOpenChat} className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Chat öffnen
+          </Button>
         </div>
       )}
     </div>

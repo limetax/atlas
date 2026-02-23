@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { BescheidPruefenPage } from '@/pages/BescheidPruefenPage';
+import { TaxAssessmentReviewPage } from '@/pages/TaxAssessmentReviewPage';
 
 export const Route = createFileRoute('/_authenticated/tools/bescheid-pruefen')({
-  component: BescheidPruefenPage,
+  component: TaxAssessmentReviewPage,
 });
