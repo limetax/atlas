@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { KlardatenClient } from '@/datev/infrastructure/klardaten/klardaten.client';
 import { DatevClient, DatevOrder } from '@atlas/shared';
 import { DatevAdapter } from '@datev/domain/datev.adapter';
-import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
+import { Injectable, Logger } from '@nestjs/common';
 
 /**
  * Klardaten DATEV Adapter - Infrastructure implementation for DATEV data access

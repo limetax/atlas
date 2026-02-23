@@ -1,10 +1,10 @@
+import { KlardatenDatevAdapter } from '@/datev/infrastructure/klardaten/klardaten-datev.adapter';
+import { KlardatenClientModule } from '@/datev/infrastructure/klardaten/klardaten.module';
 import { ClientService } from '@datev/application/client.service';
 import { DatevSyncService } from '@datev/application/datev-sync.service';
 import { DatevRouter } from '@datev/datev.router';
 import { ClientRepository } from '@datev/domain/client.repository';
 import { DatevAdapter } from '@datev/domain/datev.adapter';
-import { KlardatenDatevAdapter } from '@datev/infrastructure/klardaten-datev.adapter';
-import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
 import { SupabaseClientRepository } from '@datev/infrastructure/repositories/supabase-client.repository';
 import { LlmModule } from '@llm/llm.module';
 import { Module } from '@nestjs/common';
@@ -16,12 +16,14 @@ import { InfrastructureModule } from '@shared/infrastructure/infrastructure.modu
  *
  * Uses provider pattern to inject abstract classes:
  * - DatevAdapter → KlardatenDatevAdapter
+ *
+ * TODO(future): split into datev/masterdata/, datev/accounting/, datev/hr/ sub-modules
+ * TODO(future): datev-webhook/ orchestrator module will import DatevModule + TaxAssessmentModule
+ *               for bidirectional workflows (e.g. new DMS doc → trigger tax review)
  */
 @Module({
-  imports: [ConfigModule.forRoot(), InfrastructureModule, LlmModule],
+  imports: [ConfigModule.forRoot(), InfrastructureModule, LlmModule, KlardatenClientModule],
   providers: [
-    // Infrastructure implementations
-    KlardatenClient,
     KlardatenDatevAdapter,
     // Domain abstract class provider (proper NestJS DI)
     {
@@ -38,8 +40,6 @@ import { InfrastructureModule } from '@shared/infrastructure/infrastructure.modu
     // tRPC Router
     DatevRouter,
   ],
-  // TODO(TEC-119): Don't export Axios Clients here — this violates DDD boundaries.
-  // DATEV folder is most likely too big; needs to be split into smaller DATEV products.
-  exports: [DatevAdapter, DatevSyncService, ClientService, KlardatenClient],
+  exports: [DatevAdapter, DatevSyncService, ClientService],
 })
 export class DatevModule {}

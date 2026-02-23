@@ -1,8 +1,9 @@
-import type { DmsDocument, DmsStructureItem } from './tax-assessment.entity';
+import type { DmsDocument, DmsStructureItem } from '@datev/dms/domain/dms.entity';
 
 /**
- * DMS Adapter - Domain contract for Document Management System access
- * Abstract class (not interface) so it can be used as NestJS injection token.
+ * DmsAdapter - Domain contract for DATEV DMS access.
+ * Abstract class (required for NestJS DI injection tokens).
+ * Implemented by KlardatenDmsAdapter in the infrastructure layer.
  */
 export abstract class DmsAdapter {
   abstract getDocuments(filter: string): Promise<DmsDocument[]>;

@@ -11,6 +11,7 @@ import { AuthModule } from '@auth/auth.module';
 import { ChatModule } from '@chat/chat.module';
 import { RAGModule } from '@rag/rag.module';
 import { DatevModule } from '@datev/datev.module';
+import { DmsModule } from '@datev/dms/dms.module';
 import { AssistantModule } from '@/assistant/assistant.module';
 import { DocumentModule } from '@/document/document.module';
 import { HealthModule } from '@/health/health.module';
@@ -37,6 +38,7 @@ import { TaxAssessmentModule } from '@/tax-assessment/tax-assessment.module';
     ChatModule,
     RAGModule,
     DatevModule,
+    DmsModule,
     AssistantModule,
     DocumentModule,
     HealthModule,

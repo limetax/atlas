@@ -11,7 +11,7 @@ import {
 } from '@llm/infrastructure/file-encoding.util';
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
-import { DmsAdapter } from '@tax-assessment/domain/dms.adapter';
+import { DmsAdapter } from '@datev/dms/domain/dms.adapter';
 
 import { BESCHEID_PRUEFUNG_SYSTEM_PROMPT } from './tax-assessment.prompts';
 

@@ -1,9 +1,9 @@
 import { isAxiosError } from 'axios';
 
-import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
+import { KlardatenClient } from '@/datev/infrastructure/klardaten/klardaten.client';
+import { DmsAdapter } from '@datev/dms/domain/dms.adapter';
+import type { DmsDocument, DmsStructureItem } from '@datev/dms/domain/dms.entity';
 import { Injectable, Logger } from '@nestjs/common';
-import { DmsAdapter } from '@tax-assessment/domain/dms.adapter';
-import type { DmsDocument, DmsStructureItem } from '@tax-assessment/domain/tax-assessment.entity';
 
 /**
  * KlardatenDmsAdapter - Implements DmsAdapter using Klardaten DATEVconnect DMS v2 API
