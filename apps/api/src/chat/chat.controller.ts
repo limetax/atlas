@@ -137,10 +137,7 @@ export class ChatController {
     res.end();
   }
 
-  /**
-   * Extract and validate JWT from Authorization header
-   * Returns the advisor (user) ID
-   */
+  // TODO(TEC-120): authenticateRequest is duplicated from tax-assessment.controller.ts — extract to a shared NestJS guard
   private async authenticateRequest(req: Request): Promise<string> {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {

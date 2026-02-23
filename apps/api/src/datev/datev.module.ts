@@ -1,15 +1,15 @@
+import { ClientService } from '@datev/application/client.service';
+import { DatevSyncService } from '@datev/application/datev-sync.service';
+import { DatevRouter } from '@datev/datev.router';
+import { ClientRepository } from '@datev/domain/client.repository';
+import { DatevAdapter } from '@datev/domain/datev.adapter';
+import { KlardatenDatevAdapter } from '@datev/infrastructure/klardaten-datev.adapter';
+import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
+import { SupabaseClientRepository } from '@datev/infrastructure/repositories/supabase-client.repository';
+import { LlmModule } from '@llm/llm.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
-import { KlardatenDatevAdapter } from '@datev/infrastructure/klardaten-datev.adapter';
-import { DatevSyncService } from '@datev/application/datev-sync.service';
-import { ClientService } from '@datev/application/client.service';
-import { DatevRouter } from '@datev/datev.router';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
-import { LlmModule } from '@llm/llm.module';
-import { DatevAdapter } from '@datev/domain/datev.adapter';
-import { ClientRepository } from '@datev/domain/client.repository';
-import { SupabaseClientRepository } from '@datev/infrastructure/repositories/supabase-client.repository';
 
 /**
  * DATEV Module - Provides DATEV data synchronization services
@@ -38,6 +38,8 @@ import { SupabaseClientRepository } from '@datev/infrastructure/repositories/sup
     // tRPC Router
     DatevRouter,
   ],
-  exports: [DatevAdapter, DatevSyncService, ClientService],
+  // TODO(TEC-119): Don't export Axios Clients here — this violates DDD boundaries.
+  // DATEV folder is most likely too big; needs to be split into smaller DATEV products.
+  exports: [DatevAdapter, DatevSyncService, ClientService, KlardatenClient],
 })
 export class DatevModule {}

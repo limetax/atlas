@@ -1,9 +1,8 @@
-import type { ToolCategory } from '@/data/tools';
 import { ToolCard } from '@/components/features/tools/ToolCard';
+import type { ToolCategory } from '@/data/tools';
 import { CATEGORY_META, getToolsByCategory } from '@/data/tools';
-import { type JSX } from 'react';
 
-export const ToolsCatalogPage = (): JSX.Element => {
+export const ToolsCatalogPage = () => {
   return (
     <main className="flex-1 overflow-y-auto bg-background p-6">
       <div className="max-w-6xl mx-auto">
@@ -16,7 +15,7 @@ export const ToolsCatalogPage = (): JSX.Element => {
 
 // Subcomponents colocated below
 
-const PageHeader = (): JSX.Element => (
+const PageHeader = () => (
   <div className="mb-10">
     <h1 className="text-3xl font-bold text-foreground mb-2">KI-Toolbox</h1>
     <p className="text-muted-foreground text-base">
@@ -25,7 +24,7 @@ const PageHeader = (): JSX.Element => (
   </div>
 );
 
-const CategoriesSection = (): JSX.Element => (
+const CategoriesSection = () => (
   <div className="space-y-12">
     {CATEGORY_META.map((categoryMeta) => (
       <CategorySection key={categoryMeta.id} category={categoryMeta.id} />
@@ -37,7 +36,7 @@ type CategorySectionProps = {
   category: ToolCategory;
 };
 
-const CategorySection = ({ category }: CategorySectionProps): JSX.Element | null => {
+const CategorySection = ({ category }: CategorySectionProps) => {
   const tools = getToolsByCategory(category);
   const meta = CATEGORY_META.find((c) => c.id === category);
 

@@ -27,7 +27,8 @@
       "@chat/*": ["src/chat/*"],
       "@datev/*": ["src/datev/*"],
       "@document/*": ["src/document/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@tax-assessment/*": ["src/tax-assessment/*"]
     }
   },
   "include": ["src/**/*"],

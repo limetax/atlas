@@ -1,18 +1,19 @@
-import { Injectable, Logger } from '@nestjs/common';
+import pLimit from 'p-limit';
+
 import {
-  DatevClient,
   DatevAddressee,
+  DatevClient,
+  DatevCorpTax,
+  DatevDocument,
   DatevPosting,
   DatevSusa,
-  DatevDocument,
-  DatevCorpTax,
-  DatevTradeTax,
   DatevSyncResult,
+  DatevTradeTax,
 } from '@atlas/shared';
-import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
-import { SupabaseService } from '@shared/infrastructure/supabase.service';
 import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
-import pLimit from 'p-limit';
+import { EmbeddingsAdapter } from '@llm/domain/embeddings.adapter';
+import { Injectable, Logger } from '@nestjs/common';
+import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 /**
  * DATEV Sync Service - Phase 1.1 Klardaten Core Tables
@@ -74,25 +75,6 @@ export class DatevSyncService {
         .from('datev_clients')
         .select('client_id, client_name, client_status')
         .eq('client_status', '1'); // Only active clients
-
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'datev-sync.service.ts:100',
-          message: 'Client list query result',
-          data: {
-            clientCount: clients?.length ?? 0,
-            hasError: !!clientListError,
-            errorMsg: clientListError?.message,
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'C',
-        }),
-      }).catch(() => {});
-      // #endregion
 
       if (clientListError) {
         throw new Error(`Failed to get client list: ${clientListError.message}`);
@@ -551,38 +533,8 @@ export class DatevSyncService {
     let errors = 0;
 
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'datev-sync.service.ts:401',
-          message: 'Before getAccountingPostings API call',
-          data: { clientId, clientName, fiscalYear },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'B',
-        }),
-      }).catch(() => {});
-      // #endregion
-
       // Fetch postings (already filtered for 2025+ by KlardatenClient)
       const postings = await this.klardatenClient.getAccountingPostings(clientId, fiscalYear);
-
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'datev-sync.service.ts:410',
-          message: 'After getAccountingPostings API call',
-          data: { clientName, postingCount: postings.length, fiscalYear },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'A,D',
-        }),
-      }).catch(() => {});
-      // #endregion
 
       if (postings.length === 0) {
         this.logger.debug(`  → No postings found for ${clientName}`);
