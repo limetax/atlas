@@ -39,6 +39,7 @@ import { Injectable, Logger } from '@nestjs/common';
  */
 
 const KLARDATEN_BASE_URL = 'https://api.klardaten.com';
+const DMS_BASE = '/datevconnect/dms/v2';
 const DATE_FILTER_FROM = '2025-01-01'; // Only sync data from 2025 onwards
 
 @Injectable()
@@ -295,21 +296,6 @@ export class KlardatenClient {
       const top = 1000; // Page size
 
       while (true) {
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'klardaten.client.ts:230',
-            message: 'Before API call',
-            data: { clientId, fiscalYear, skip, top },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            hypothesisId: 'B,D',
-          }),
-        }).catch(() => {});
-        // #endregion
-
         const response = await this.httpClient.get<DatevPosting[]>('/api/accounting/postings', {
           params: {
             clientId,
@@ -320,21 +306,6 @@ export class KlardatenClient {
         });
 
         const batch = response.data;
-
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'klardaten.client.ts:247',
-            message: 'API response received',
-            data: { batchSize: batch?.length ?? 0, isArray: Array.isArray(batch), fiscalYear },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            hypothesisId: 'D',
-          }),
-        }).catch(() => {});
-        // #endregion
 
         // Filter by date (2025-01-01+)
         const filtered = batch.filter((posting) => {
@@ -349,25 +320,6 @@ export class KlardatenClient {
           }
         });
 
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'klardaten.client.ts:264',
-            message: 'After date filtering',
-            data: {
-              originalCount: batch?.length ?? 0,
-              filteredCount: filtered.length,
-              filterDate: DATE_FILTER_FROM,
-            },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            hypothesisId: 'A',
-          }),
-        }).catch(() => {});
-        // #endregion
-
         allPostings.push(...filtered);
 
         // Check if more pages exist
@@ -381,43 +333,8 @@ export class KlardatenClient {
 
       this.logger.log(`✅ Fetched ${allPostings.length} postings (filtered for 2025+)`);
 
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'klardaten.client.ts:278',
-          message: 'getAccountingPostings SUCCESS',
-          data: { totalPostings: allPostings.length, clientId, fiscalYear },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'A,D',
-        }),
-      }).catch(() => {});
-      // #endregion
-
       return allPostings;
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'klardaten.client.ts:286',
-          message: 'getAccountingPostings ERROR',
-          data: {
-            error: error instanceof Error ? error.message : String(error),
-            clientId,
-            isAxiosError: axios.isAxiosError(error),
-            statusCode: axios.isAxiosError(error) ? error.response?.status : null,
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'B',
-        }),
-      }).catch(() => {});
-      // #endregion
-
       // Handle 403 Forbidden gracefully - accounting API may not be available
       if (axios.isAxiosError(error) && error.response?.status === 403) {
         this.logger.warn(
@@ -457,21 +374,6 @@ export class KlardatenClient {
           this.logger.debug(`  → No SUSA data for month ${month}`);
         }
       }
-
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/98926b89-5c75-4f32-b935-5d5bdd473e40', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: 'klardaten.client.ts:318',
-          message: 'getSusa result',
-          data: { totalSusa: allSusa.length, clientId, fiscalYear },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          hypothesisId: 'D',
-        }),
-      }).catch(() => {});
-      // #endregion
 
       this.logger.log(`✅ Fetched ${allSusa.length} SUSA entries`);
       return allSusa;
@@ -875,5 +777,3 @@ export class KlardatenClient {
     }
   }
 }
-
-const DMS_BASE = '/datevconnect/dms/v2';

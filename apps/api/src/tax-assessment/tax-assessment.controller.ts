@@ -48,7 +48,7 @@ export class TaxAssessmentController {
     }
   }
 
-  // TODO(TEC-XXX): authenticateRequest is duplicated from chat.controller.ts — extract to a shared NestJS guard
+  // TODO(TEC-120): authenticateRequest is duplicated from chat.controller.ts — extract to a shared NestJS guard
   private async authenticateRequest(req: Request): Promise<string> {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
