@@ -1,4 +1,4 @@
-import React from 'react';
+import { Children, isValidElement, useMemo, useState } from 'react';
 
 import { ArrowLeft, ArrowRight, MessageSquare } from 'lucide-react';
 import type { Components } from 'react-markdown';
@@ -20,13 +20,13 @@ import { useNavigate } from '@tanstack/react-router';
  * Allows advisors to start an AI-powered review for each assessment
  */
 export const TaxAssessmentReviewPage = () => {
-  const [search, setSearch] = React.useState('');
-  const [startingId, setStartingId] = React.useState<string | undefined>(undefined);
+  const [search, setSearch] = useState('');
+  const [startingId, setStartingId] = useState<string | undefined>(undefined);
   const { data: assessments, isLoading, error } = trpc.taxAssessmentReview.getOpen.useQuery();
   const { startReview, clearReview, phase, streamingText, completedChatId } =
     useTaxAssessmentReview();
 
-  const filtered = React.useMemo(
+  const filtered = useMemo(
     () =>
       assessments?.filter(
         (a) =>
@@ -208,8 +208,8 @@ const markdownComponents: Components = {
     );
   },
   pre: ({ children, ...props }) => {
-    const hasEmailBlock = React.Children.toArray(children).some((child) => {
-      if (!React.isValidElement(child)) return false;
+    const hasEmailBlock = Children.toArray(children).some((child) => {
+      if (!isValidElement(child)) return false;
       const childProps = child.props as { className?: string };
       return (
         typeof childProps.className === 'string' && childProps.className.includes('language-email')

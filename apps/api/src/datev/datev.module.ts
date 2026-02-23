@@ -38,8 +38,8 @@ import { InfrastructureModule } from '@shared/infrastructure/infrastructure.modu
     // tRPC Router
     DatevRouter,
   ],
-  // TODO Don't export Axios Clients here, we need to rework this
-  // DATEV Folder most liekly too big, maybe we need to split it into smaller DATEV products
+  // TODO(TEC-119): Don't export Axios Clients here — this violates DDD boundaries.
+  // DATEV folder is most likely too big; needs to be split into smaller DATEV products.
   exports: [DatevAdapter, DatevSyncService, ClientService, KlardatenClient],
 })
 export class DatevModule {}

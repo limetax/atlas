@@ -18,9 +18,20 @@ import { BESCHEID_PRUEFUNG_SYSTEM_PROMPT } from './tax-assessment.prompts';
 const SYSTEM_PROMPT = BESCHEID_PRUEFUNG_SYSTEM_PROMPT + CONTEXT_PROMPTS.EMAIL;
 
 const INCOME_TAX_ORDER_NAME = 'Einkommensteuererklärung';
-const OPEN_ASSESSMENT_FILTER =
-  'folder.id eq 198 and domain.id eq 1 and register.id eq 489 and state.id eq 5';
+
+// NOTE: These IDs are specific to the bPlus DATEV DMS instance and must not be reused for other tenants.
+const BPLUS_DATEV_FOLDER_ID = 198; // DMS folder: Steuerakten
+const BPLUS_DATEV_DOMAIN_ID = 1; // Domain: Steuerberatung
+const BPLUS_DATEV_REGISTER_ID = 489; // Register: Einkommensteuerbescheid
+const BPLUS_DATEV_STATE_OPEN_ID = 5; // Document state: Zur Prüfung bereit
+const OPEN_ASSESSMENT_FILTER = `folder.id eq ${BPLUS_DATEV_FOLDER_ID} and domain.id eq ${BPLUS_DATEV_DOMAIN_ID} and register.id eq ${BPLUS_DATEV_REGISTER_ID} and state.id eq ${BPLUS_DATEV_STATE_OPEN_ID}`;
+
 const MAX_TOTAL_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isToolCallEvent = (chunk: string | ToolCallEvent): chunk is ToolCallEvent =>
+  typeof chunk !== 'string';
 
 /**
  * File extensions we can actually send to the Anthropic API.
@@ -122,8 +133,14 @@ export class TaxAssessmentService {
     });
 
     // 3. Find matching declaration (same client GUID + EStE year)
+    const guid = assessmentDoc.correspondence_partner_guid;
+    if (!UUID_REGEX.test(guid)) {
+      this.logger.error(`Invalid GUID in DMS document: "${guid}"`);
+      yield { type: 'error', error: 'Ungültige Dokument-ID' };
+      return;
+    }
     const allClientDocs = await this.dmsAdapter.getDocuments(
-      `correspondence_partner_guid eq '${assessmentDoc.correspondence_partner_guid}'`
+      `correspondence_partner_guid eq '${guid}'`
     );
     const declarationDoc = allClientDocs.find(
       (doc) =>
@@ -218,9 +235,8 @@ export class TaxAssessmentService {
         if (typeof chunk === 'string') {
           fullResponse += chunk;
           yield { type: 'text', content: chunk };
-        } else {
-          const toolEvent = chunk as ToolCallEvent;
-          yield { type: 'tool_call', toolCall: { name: toolEvent.name, status: toolEvent.status } };
+        } else if (isToolCallEvent(chunk)) {
+          yield { type: 'tool_call', toolCall: { name: chunk.name, status: chunk.status } };
         }
       }
     } catch (error) {

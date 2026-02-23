@@ -1,25 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
 import axios, { type AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 import { isAfter, parseISO } from 'date-fns';
+
 import {
-  DatevClient,
   DatevAddressee,
-  DatevPosting,
-  DatevSusa,
-  DatevDocument,
-  DatevRelationship,
-  DatevCorpTax,
-  DatevTradeTax,
-  DatevAnalyticsOrderValues,
-  DatevAnalyticsProcessingStatus,
   DatevAnalyticsExpenses,
   DatevAnalyticsFees,
+  DatevAnalyticsOrderValues,
+  DatevAnalyticsProcessingStatus,
+  DatevClient,
+  DatevClientService,
+  DatevCorpTax,
+  DatevDocument,
   DatevHrEmployee,
   DatevHrTransaction,
-  DatevClientService,
+  DatevPosting,
+  DatevRelationship,
+  DatevSusa,
+  DatevTradeTax,
   KlardatenAuthResponse,
 } from '@atlas/shared';
+import { Injectable, Logger } from '@nestjs/common';
 
 /**
  * Klardaten Client - HTTP client for Klardaten Gateway API
@@ -43,7 +44,7 @@ const DATE_FILTER_FROM = '2025-01-01'; // Only sync data from 2025 onwards
 @Injectable()
 export class KlardatenClient {
   private readonly logger = new Logger(KlardatenClient.name);
-  readonly httpClient: AxiosInstance;
+  private readonly httpClient: AxiosInstance;
   private accessToken: string | null = null;
   private tokenExpiresAt: number = 0;
   private readonly instanceId: string;
@@ -830,6 +831,30 @@ export class KlardatenClient {
   }
 
   /**
+   * Authenticated HTTP request scoped to the DATEVconnect DMS v2 API.
+   * Prepends the DMS base path so callers only pass the resource path (e.g. `/documents`).
+   * Keeps httpClient private while giving KlardatenDmsAdapter a typed entry point.
+   */
+  async dmsRequest<T>(
+    method: 'GET',
+    resourcePath: string,
+    options?: {
+      params?: Record<string, string>;
+      responseType?: 'arraybuffer' | 'json';
+      headers?: Record<string, string>;
+    }
+  ): Promise<T> {
+    const response = await this.httpClient.request<T>({
+      method,
+      url: `${DMS_BASE}${resourcePath}`,
+      params: options?.params,
+      responseType: options?.responseType,
+      headers: options?.headers,
+    });
+    return response.data;
+  }
+
+  /**
    * Fetch services enabled for a specific client
    * Source: /api/master-data/clients/{clientId}/services
    */
@@ -850,3 +875,5 @@ export class KlardatenClient {
     }
   }
 }
+
+const DMS_BASE = '/datevconnect/dms/v2';

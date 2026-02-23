@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { STORAGE_KEYS } from '@/constants';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { streamTaxAssessmentReview } from '@/lib/tax-assessment-api';
 
 type ReviewPhase = 'idle' | 'reviewing' | 'completed';
@@ -25,38 +25,42 @@ type UseTaxAssessmentReviewReturn = {
  * 5. clearReview: resets to 'idle' so the user goes back to the overview
  */
 export const useTaxAssessmentReview = (): UseTaxAssessmentReviewReturn => {
+  const { getToken } = useAuthContext();
   const [phase, setPhase] = useState<ReviewPhase>('idle');
   const [streamingText, setStreamingText] = useState('');
   const [completedChatId, setCompletedChatId] = useState<string | undefined>(undefined);
   const pendingChatIdRef = useRef<string | undefined>(undefined);
 
-  const startReview = useCallback(async (assessmentDocumentId: string) => {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) ?? '';
-    setPhase('reviewing');
-    setStreamingText('');
-    setCompletedChatId(undefined);
-    pendingChatIdRef.current = undefined;
+  const startReview = useCallback(
+    async (assessmentDocumentId: string) => {
+      const token = getToken() ?? '';
+      setPhase('reviewing');
+      setStreamingText('');
+      setCompletedChatId(undefined);
+      pendingChatIdRef.current = undefined;
 
-    try {
-      for await (const chunk of streamTaxAssessmentReview(assessmentDocumentId, token)) {
-        if (chunk.type === 'chat_created' && chunk.chatId) {
-          pendingChatIdRef.current = chunk.chatId;
-        } else if (chunk.type === 'text' && chunk.content) {
-          setStreamingText((prev) => prev + chunk.content);
-        } else if (chunk.type === 'done') {
-          setCompletedChatId(pendingChatIdRef.current);
-          setPhase('completed');
-          break; // stop consuming — SSE connection closes after 'done'
-        } else if (chunk.type === 'error') {
-          toast.error(chunk.error ?? 'Fehler beim Starten der Bescheidprüfung');
-          setPhase('idle');
+      try {
+        for await (const chunk of streamTaxAssessmentReview(assessmentDocumentId, token)) {
+          if (chunk.type === 'chat_created' && chunk.chatId) {
+            pendingChatIdRef.current = chunk.chatId;
+          } else if (chunk.type === 'text' && chunk.content) {
+            setStreamingText((prev) => prev + chunk.content);
+          } else if (chunk.type === 'done') {
+            setCompletedChatId(pendingChatIdRef.current);
+            setPhase('completed');
+            break; // stop consuming — SSE connection closes after 'done'
+          } else if (chunk.type === 'error') {
+            toast.error(chunk.error ?? 'Fehler beim Starten der Bescheidprüfung');
+            setPhase('idle');
+          }
         }
+      } catch {
+        toast.error('Bescheidprüfung konnte nicht gestartet werden');
+        setPhase('idle');
       }
-    } catch {
-      toast.error('Bescheidprüfung konnte nicht gestartet werden');
-      setPhase('idle');
-    }
-  }, []);
+    },
+    [getToken]
+  );
 
   const clearReview = useCallback(() => {
     setPhase('idle');

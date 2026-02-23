@@ -30,17 +30,25 @@ export class TaxAssessmentController {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    for await (const chunk of this.taxAssessmentService.streamReview(
-      assessmentDocumentId,
-      advisorId
-    )) {
-      res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    try {
+      for await (const chunk of this.taxAssessmentService.streamReview(
+        assessmentDocumentId,
+        advisorId
+      )) {
+        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      this.logger.error('SSE stream failed:', message);
+      res.write(
+        `data: ${JSON.stringify({ type: 'error', error: 'Serverfehler bei der Bescheidprüfung' })}\n\n`
+      );
+    } finally {
+      res.end();
     }
-
-    res.end();
   }
 
-  // TODO don't we have a REST SSE common middleware that already does this? SHould be in chat-controller
+  // TODO(TEC-XXX): authenticateRequest is duplicated from chat.controller.ts — extract to a shared NestJS guard
   private async authenticateRequest(req: Request): Promise<string> {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {

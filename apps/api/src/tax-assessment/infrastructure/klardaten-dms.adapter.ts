@@ -1,13 +1,14 @@
+import { isAxiosError } from 'axios';
+
 import { KlardatenClient } from '@datev/infrastructure/klardaten.client';
 import { Injectable, Logger } from '@nestjs/common';
 import { DmsAdapter } from '@tax-assessment/domain/dms.adapter';
 import type { DmsDocument, DmsStructureItem } from '@tax-assessment/domain/tax-assessment.entity';
 
-const DMS_BASE = '/datevconnect/dms/v2';
-
 /**
  * KlardatenDmsAdapter - Implements DmsAdapter using Klardaten DATEVconnect DMS v2 API
- * Reuses KlardatenClient's authenticated axios instance (with auto token refresh)
+ * Uses KlardatenClient.dmsRequest() for authenticated requests (httpClient stays private).
+ * Resource paths are relative to the DMS base URL (handled inside dmsRequest).
  */
 @Injectable()
 export class KlardatenDmsAdapter extends DmsAdapter {
@@ -19,43 +20,39 @@ export class KlardatenDmsAdapter extends DmsAdapter {
 
   async getDocuments(filter: string): Promise<DmsDocument[]> {
     this.logger.debug(`Fetching DMS documents with filter: ${filter}`);
-    const { data } = await this.klardatenClient.httpClient.get<
-      { value: DmsDocument[] } | DmsDocument[]
-    >(`${DMS_BASE}/documents`, { params: { filter } });
-
-    const result = Array.isArray(data) ? data : (data.value ?? []);
-
-    return result;
+    const data = await this.klardatenClient.dmsRequest<{ value: DmsDocument[] } | DmsDocument[]>(
+      'GET',
+      '/documents',
+      { params: { filter } }
+    );
+    return Array.isArray(data) ? data : (data.value ?? []);
   }
 
-  async getDocumentById(documentId: string): Promise<DmsDocument> {
+  async getDocumentById(documentId: string): Promise<DmsDocument | null> {
     this.logger.debug(`Fetching DMS document by ID: ${documentId}`);
-
-    const { data } = await this.klardatenClient.httpClient.get<DmsDocument>(
-      `${DMS_BASE}/documents/${documentId}`
-    );
-    return data;
+    try {
+      return await this.klardatenClient.dmsRequest<DmsDocument>('GET', `/documents/${documentId}`);
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) return null;
+      throw error;
+    }
   }
 
   async getStructureItems(documentId: string): Promise<DmsStructureItem[]> {
     this.logger.debug(`Fetching structure items for document: ${documentId}`);
-    const response = await this.klardatenClient.httpClient.get<
+    const data = await this.klardatenClient.dmsRequest<
       { value: DmsStructureItem[] } | DmsStructureItem[]
-    >(`${DMS_BASE}/documents/${documentId}/structure-items`);
-
-    const data = response.data;
+    >('GET', `/documents/${documentId}/structure-items`);
     return Array.isArray(data) ? data : (data.value ?? []);
   }
 
   async getFileContent(documentFileId: number): Promise<Buffer> {
     this.logger.debug(`Downloading DMS file: ${documentFileId}`);
-    const response = await this.klardatenClient.httpClient.get<ArrayBuffer>(
-      `${DMS_BASE}/document-files/${documentFileId}`,
-      {
-        responseType: 'arraybuffer',
-        headers: { Accept: 'application/octet-stream' },
-      }
+    const data = await this.klardatenClient.dmsRequest<ArrayBuffer>(
+      'GET',
+      `/document-files/${documentFileId}`,
+      { responseType: 'arraybuffer', headers: { Accept: 'application/octet-stream' } }
     );
-    return Buffer.from(response.data);
+    return Buffer.from(data);
   }
 }
