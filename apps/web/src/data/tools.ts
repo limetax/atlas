@@ -61,6 +61,15 @@ export const TOOLS: Tool[] = [
     featured: true, // Primary tool with filled button
   },
   {
+    id: 'vertrag-zusammenfassen',
+    name: 'Vertrag zusammenfassen',
+    description: 'Vertragsanalyse mit HGB-Buchhaltungs-Expertise',
+    icon: FileText,
+    route: '/chat',
+    status: 'active',
+    category: 'dokumentenverarbeitung',
+  },
+  {
     id: 'hr-abgleich',
     name: 'HR-Abgleich',
     description: 'Abgleich von Lohnbuchhaltung und Stammdaten',
@@ -90,16 +99,6 @@ export const TOOLS: Tool[] = [
     badge: 'BALD',
   },
   {
-    id: 'dokument-zusammenfassen',
-    name: 'Dokument zusammenfassen',
-    description: 'Schnelle Zusammenfassung langer Steuerdokumente',
-    icon: FileText,
-    route: '/tools/dokument-zusammenfassen',
-    status: 'coming-soon',
-    category: 'dokumentenverarbeitung',
-    badge: 'BALD',
-  },
-  {
     id: 'pdf-to-excel',
     name: 'PDF → Excel',
     description: 'Automatische Konvertierung von PDF-Tabellen',
@@ -110,7 +109,3 @@ export const TOOLS: Tool[] = [
     badge: 'BALD',
   },
 ];
-
-export const getToolsByCategory = (category: ToolCategory): Tool[] => {
-  return TOOLS.filter((tool) => tool.category === category);
-};
