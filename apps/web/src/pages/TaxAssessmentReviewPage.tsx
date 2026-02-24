@@ -9,6 +9,7 @@ import { EmailDraftCard } from '@/components/features/chat/EmailDraftCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAutoScroll } from '@/hooks/useAutoScroll';
 import { useTaxAssessmentReview } from '@/hooks/useTaxAssessmentReview';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -238,6 +239,7 @@ const ReviewProgressPanel = ({
   onBack,
 }: ReviewProgressPanelProps) => {
   const navigate = useNavigate();
+  const { scrollContainerRef, handleScroll } = useAutoScroll(streamingText);
   const hasText = streamingText.length > 0;
   const isCompleted = phase === 'completed';
   const title = clientName ? `${clientName}${year ? ` (${year})` : ''}` : 'Bescheid';
@@ -280,7 +282,11 @@ const ReviewProgressPanel = ({
       </div>
 
       {hasText ? (
-        <div className="prose prose-sm max-h-[65vh] max-w-none overflow-y-auto px-5 py-4 text-foreground">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="prose prose-sm max-h-[65vh] max-w-none overflow-y-auto [overflow-anchor:none] [overscroll-behavior-y:contain] px-5 py-4 text-foreground"
+        >
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
             {streamingText}
           </ReactMarkdown>

@@ -1,16 +1,16 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { FileImage, FileText, Library, Paperclip, StopCircle } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 
 import { Button } from '@/components/ui/button';
+import { useAutoScroll } from '@/hooks/useAutoScroll';
 import { type ToolCallState } from '@/hooks/useChatStream';
 import { isValidPdfFile } from '@/utils/validators';
 import { ChatContext, type Document, Message } from '@atlas/shared';
 
 import { ChatEmptyState } from './ChatEmptyState';
 import { ChatMessage } from './ChatMessage';
-import { ChatScrollAnchor } from './ChatScrollAnchor';
 import { ChatStreamingIndicator } from './ChatStreamingIndicator';
 import { ContextToggles } from './context/ContextToggles';
 import { DeepThinkingToggle } from './context/DeepThinkingToggle';
@@ -50,8 +50,7 @@ export const ChatInterface = ({
   pendingDocuments = [],
   onDocumentSelect,
 }: ChatInterfaceProps) => {
-  const [inputValue, setInputValue] = useState(initialContent || '');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState(initialContent ?? '');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounterRef = useRef(0);
@@ -63,14 +62,6 @@ export const ChatInterface = ({
       inputRef.current.focus();
     }
   }, [initialContent]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,12 +125,7 @@ export const ChatInterface = ({
     >
       <DropZoneOverlay isVisible={isDragOver} onDrop={handleDrop} />
 
-      <MessagesArea
-        messages={messages}
-        isLoading={isLoading}
-        activeToolCalls={activeToolCalls}
-        messagesEndRef={messagesEndRef}
-      />
+      <MessagesArea messages={messages} isLoading={isLoading} activeToolCalls={activeToolCalls} />
 
       <InputArea
         inputValue={inputValue}
@@ -166,15 +152,11 @@ type MessagesAreaProps = {
   messages: Message[];
   isLoading: boolean;
   activeToolCalls: ToolCallState[];
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
 };
 
-const MessagesArea = ({
-  messages,
-  isLoading,
-  activeToolCalls,
-  messagesEndRef,
-}: MessagesAreaProps) => {
+const MessagesArea = ({ messages, isLoading, activeToolCalls }: MessagesAreaProps) => {
+  const { scrollContainerRef, handleScroll } = useAutoScroll(messages);
+
   // Show minimal empty state when no messages
   if (messages.length === 0) {
     return <ChatEmptyState />;
@@ -185,16 +167,17 @@ const MessagesArea = ({
   const showIndicator = isLoading && lastMessage?.role !== 'assistant';
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
+    <div
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto [overflow-anchor:none] [overscroll-behavior-y:contain] px-4 py-6 min-h-0"
+    >
       <div className="max-w-4xl mx-auto space-y-6">
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
 
         {showIndicator && <ChatStreamingIndicator activeToolCalls={activeToolCalls} />}
-
-        <ChatScrollAnchor trackVisibility />
-        <div ref={messagesEndRef} />
       </div>
     </div>
   );
