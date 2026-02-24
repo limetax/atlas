@@ -1,14 +1,10 @@
 import {
   Building2,
-  Calculator,
   Files,
   FileText,
-  Folder,
-  LayoutGrid,
   LogOut,
   MessageSquare,
   Settings,
-  TrendingUp,
   User,
   Workflow,
   Wrench,
@@ -40,13 +36,8 @@ export const Sidebar = () => {
         <Navigation />
       </div>
 
-      {/* Bottom section - Settings + User Card */}
-      <div className="flex-shrink-0 p-4 space-y-2">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-[15px] text-muted-foreground font-medium hover:bg-card hover:shadow-sm transition-all cursor-not-allowed opacity-60">
-          <Settings className="w-5 h-5" />
-          <span className="flex-1">Einstellungen</span>
-          <span className="text-xs text-muted-foreground font-normal">Bald</span>
-        </div>
+      {/* Bottom section - User Card */}
+      <div className="flex-shrink-0 p-4">
         <UserCard />
       </div>
     </aside>
@@ -59,10 +50,10 @@ const Navigation = () => {
   const navItems = [
     {
       to: '/',
-      label: 'Dashboard',
-      icon: LayoutGrid,
+      label: 'Tools',
+      icon: Wrench,
       badge: null,
-      isActiveCheck: (path: string): boolean => path === '/',
+      isActiveCheck: (path: string): boolean => path === '/' || path.startsWith('/tools'),
     },
     {
       to: '/chat',
@@ -70,13 +61,6 @@ const Navigation = () => {
       icon: MessageSquare,
       badge: null,
       isActiveCheck: (path: string): boolean => path === '/chat' || path.startsWith('/chat/'),
-    },
-    {
-      to: '/tools',
-      label: 'Tools',
-      icon: Wrench,
-      badge: null,
-      isActiveCheck: (path: string): boolean => path === '/tools',
     },
     {
       to: '/assistenten',
@@ -105,27 +89,6 @@ const Navigation = () => {
       icon: Workflow,
       badge: 'bald',
       isActiveCheck: (path: string): boolean => path.startsWith('/automatisierungen'),
-    },
-    {
-      to: '/buchhaltung',
-      label: 'Buchhaltung',
-      icon: Calculator,
-      badge: 'bald',
-      isActiveCheck: (path: string): boolean => path.startsWith('/buchhaltung'),
-    },
-    {
-      to: '/controlling',
-      label: 'Controlling',
-      icon: TrendingUp,
-      badge: 'bald',
-      isActiveCheck: (path: string): boolean => path.startsWith('/controlling'),
-    },
-    {
-      to: '/portal',
-      label: 'Portal',
-      icon: Folder,
-      badge: 'bald',
-      isActiveCheck: (path: string): boolean => path.startsWith('/portal'),
     },
   ];
 
@@ -200,22 +163,6 @@ const UserCard = () => {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" side="right" className="w-64">
-        {/* User Info Header */}
-        <div className="px-3 py-3 border-b border-border">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10">
-              {advisor?.image_url && <AvatarImage src={advisor.image_url} alt={displayName} />}
-              <AvatarFallback className="bg-accent text-accent-foreground font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Menu Items */}
         <DropdownMenuItem disabled>
           <User className="w-5 h-5 text-muted-foreground" />
@@ -230,6 +177,12 @@ const UserCard = () => {
             <span className="text-xs text-muted-foreground">Bald</span>
           </DropdownMenuItem>
         )}
+
+        <DropdownMenuItem disabled>
+          <Settings className="w-5 h-5 text-muted-foreground" />
+          <span className="flex-1">Einstellungen</span>
+          <span className="text-xs text-muted-foreground">Bald</span>
+        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 

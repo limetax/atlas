@@ -4,6 +4,12 @@ import { ArrowRight } from 'lucide-react';
 import { type JSX } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 
+/** Maps tool IDs to their corresponding template IDs for chat-based tools */
+const TOOL_TEMPLATE_MAP: Record<string, string> = {
+  'recherche-chat': 'steuerrechtliche-recherche',
+  'vertrag-zusammenfassen': 'vertrag-zusammenfassen',
+};
+
 type ToolCardProps = {
   tool: Tool;
 };
@@ -13,12 +19,9 @@ export const ToolCard = ({ tool }: ToolCardProps): JSX.Element => {
 
   const handleClick = () => {
     if (tool.status === 'active' || tool.status === 'beta') {
-      // Special handling for Recherche tool - opens chat with template
-      if (tool.id === 'recherche-chat') {
-        navigate({
-          to: tool.route,
-          search: { templateId: 'steuerrechtliche-recherche' },
-        });
+      const templateId = TOOL_TEMPLATE_MAP[tool.id];
+      if (templateId) {
+        navigate({ to: tool.route, search: { templateId } });
       } else {
         navigate({ to: tool.route });
       }

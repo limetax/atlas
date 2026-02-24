@@ -61,6 +61,15 @@ export const TOOLS: Tool[] = [
     featured: true, // Primary tool with filled button
   },
   {
+    id: 'vertrag-zusammenfassen',
+    name: 'Vertrag zusammenfassen',
+    description: 'Vertragsanalyse mit HGB-Buchhaltungs-Expertise',
+    icon: FileText,
+    route: '/chat',
+    status: 'active',
+    category: 'dokumentenverarbeitung',
+  },
+  {
     id: 'hr-abgleich',
     name: 'HR-Abgleich',
     description: 'Abgleich von Lohnbuchhaltung und Stammdaten',
@@ -87,16 +96,6 @@ export const TOOLS: Tool[] = [
     route: '/tools/gestaltung',
     status: 'coming-soon',
     category: 'analyse-recherche',
-    badge: 'BALD',
-  },
-  {
-    id: 'dokument-zusammenfassen',
-    name: 'Dokument zusammenfassen',
-    description: 'Schnelle Zusammenfassung langer Steuerdokumente',
-    icon: FileText,
-    route: '/tools/dokument-zusammenfassen',
-    status: 'coming-soon',
-    category: 'dokumentenverarbeitung',
     badge: 'BALD',
   },
   {
