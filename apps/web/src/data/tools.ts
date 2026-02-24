@@ -109,7 +109,3 @@ export const TOOLS: Tool[] = [
     badge: 'BALD',
   },
 ];
-
-export const getToolsByCategory = (category: ToolCategory): Tool[] => {
-  return TOOLS.filter((tool) => tool.category === category);
-};
