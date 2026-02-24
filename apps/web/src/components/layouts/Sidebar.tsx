@@ -139,7 +139,7 @@ const UserCard = () => {
     return <div className="h-[72px]" />;
   }
 
-  const displayName = advisor?.full_name || user.email?.split('@')[0] || 'Benutzer';
+  const displayName = advisor?.full_name ?? user.email?.split('@')[0] ?? 'Benutzer';
   const displayRole = advisor?.role === 'admin' ? 'Administrator' : 'Benutzer';
   const initials = getInitials(displayName);
 

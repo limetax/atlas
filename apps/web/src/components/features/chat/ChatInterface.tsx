@@ -50,7 +50,7 @@ export const ChatInterface = ({
   pendingDocuments = [],
   onDocumentSelect,
 }: ChatInterfaceProps) => {
-  const [inputValue, setInputValue] = useState(initialContent || '');
+  const [inputValue, setInputValue] = useState(initialContent ?? '');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounterRef = useRef(0);
