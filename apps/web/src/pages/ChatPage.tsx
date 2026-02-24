@@ -66,20 +66,21 @@ export const ChatPage = () => {
     [navigate, linkPendingToNewChat]
   );
 
-  const { isLoading, activeToolCalls, handleSendMessage, handleCancelRequest } = useChatStream({
-    messages,
-    currentSessionId,
-    chatContext,
-    pendingDocumentIds: pendingDocuments.map((d) => d.id),
-    updateCurrentSessionMessages,
-    setCurrentSessionId,
-    invalidateAfterStream,
-    onChatCreated: handleChatCreated,
-    onContextPersisted: () => {
-      setPendingContext({});
-    },
-    onDocumentsUploaded: handleDocumentsUploaded,
-  });
+  const { isLoading, activeToolCalls, streamingStatus, handleSendMessage, handleCancelRequest } =
+    useChatStream({
+      messages,
+      currentSessionId,
+      chatContext,
+      pendingDocumentIds: pendingDocuments.map((d) => d.id),
+      updateCurrentSessionMessages,
+      setCurrentSessionId,
+      invalidateAfterStream,
+      onChatCreated: handleChatCreated,
+      onContextPersisted: () => {
+        setPendingContext({});
+      },
+      onDocumentsUploaded: handleDocumentsUploaded,
+    });
 
   // Sync URL → hook state. The URL is the source of truth for which chat is active.
   // This only runs when the URL chatId changes (route navigation).
@@ -186,10 +187,12 @@ export const ChatPage = () => {
 
       <ChatInterface
         messages={messages}
+        sessionId={currentSessionId}
         onSendMessage={onSendMessage}
         onCancelRequest={handleCancelRequest}
         isLoading={isLoading}
         activeToolCalls={activeToolCalls}
+        streamingStatus={streamingStatus}
         initialContent={templateContent}
         context={chatContext}
         onContextChange={handleContextChange}

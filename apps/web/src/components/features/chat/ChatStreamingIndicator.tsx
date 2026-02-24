@@ -8,47 +8,59 @@ import { getToolLabel } from './tool-labels';
 type ChatStreamingIndicatorProps = {
   className?: string;
   activeToolCalls?: ToolCallState[];
+  streamingStatus?: string | null;
 };
 
 export const ChatStreamingIndicator = ({
   className,
   activeToolCalls = [],
+  streamingStatus,
 }: ChatStreamingIndicatorProps) => {
-  return (
-    <div className={cn('flex gap-4 justify-start', className)}>
-      {/* Bouncing dots avatar */}
-      <div className="w-10 h-10 rounded-full bg-card flex items-center justify-center shadow-md border border-border flex-shrink-0">
-        <div className="flex gap-1">
-          <span className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
-          <span className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
-          <span className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+  const hasStatus = Boolean(streamingStatus);
+  const hasToolCalls = activeToolCalls.length > 0;
+
+  // Nothing to show
+  if (!hasStatus && !hasToolCalls) {
+    return (
+      <div className={cn('flex justify-start', className)}>
+        <div className="flex items-center gap-2 px-4 py-3">
+          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+          <span className="text-sm text-muted-foreground">Verarbeitet...</span>
         </div>
       </div>
+    );
+  }
 
-      {/* Content bubble — only show when tool calls exist */}
-      {activeToolCalls.length > 0 && (
-        <div className="px-4 py-3 bg-muted border border-border rounded-2xl rounded-tl-sm">
-          <div className="flex flex-col gap-1.5">
-            {activeToolCalls.map((tc, index) => (
-              <div key={`${tc.name}-${index}`} className="flex items-center gap-2">
-                {tc.status === 'started' ? (
-                  <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
-                ) : (
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                )}
-                <span
-                  className={cn(
-                    'text-sm',
-                    tc.status === 'completed' ? 'text-muted-foreground' : 'text-foreground'
-                  )}
-                >
-                  {getToolLabel(tc.name)}
-                </span>
-              </div>
-            ))}
+  return (
+    <div className={cn('flex justify-start', className)}>
+      <div className="flex flex-col gap-1.5 px-4 py-3">
+        {/* Status phase label */}
+        {hasStatus && (
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+            <span className="text-sm text-muted-foreground">{streamingStatus}</span>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Tool call list */}
+        {activeToolCalls.map((tc, index) => (
+          <div key={`${tc.name}-${index}`} className="flex items-center gap-2">
+            {tc.status === 'started' ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
+            ) : (
+              <Check className="w-4 h-4 text-primary flex-shrink-0" />
+            )}
+            <span
+              className={cn(
+                'text-sm',
+                tc.status === 'completed' ? 'text-muted-foreground' : 'text-foreground'
+              )}
+            >
+              {getToolLabel(tc.name)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

@@ -19,10 +19,12 @@ import { DropZoneOverlay, PendingFileList } from './FileUpload';
 
 type ChatInterfaceProps = {
   messages: Message[];
+  sessionId?: string;
   onSendMessage: (message: string) => void;
   onCancelRequest?: () => void;
   isLoading?: boolean;
   activeToolCalls?: ToolCallState[];
+  streamingStatus?: string | null;
   initialContent?: string;
   context: ChatContext;
   onContextChange: (context: ChatContext) => void;
@@ -36,10 +38,12 @@ type ChatInterfaceProps = {
 
 export const ChatInterface = ({
   messages,
+  sessionId,
   onSendMessage,
   onCancelRequest,
   isLoading = false,
   activeToolCalls = [],
+  streamingStatus,
   initialContent,
   context,
   onContextChange,
@@ -125,7 +129,13 @@ export const ChatInterface = ({
     >
       <DropZoneOverlay isVisible={isDragOver} onDrop={handleDrop} />
 
-      <MessagesArea messages={messages} isLoading={isLoading} activeToolCalls={activeToolCalls} />
+      <MessagesArea
+        key={sessionId}
+        messages={messages}
+        isLoading={isLoading}
+        activeToolCalls={activeToolCalls}
+        streamingStatus={streamingStatus}
+      />
 
       <InputArea
         inputValue={inputValue}
@@ -152,9 +162,15 @@ type MessagesAreaProps = {
   messages: Message[];
   isLoading: boolean;
   activeToolCalls: ToolCallState[];
+  streamingStatus?: string | null;
 };
 
-const MessagesArea = ({ messages, isLoading, activeToolCalls }: MessagesAreaProps) => {
+const MessagesArea = ({
+  messages,
+  isLoading,
+  activeToolCalls,
+  streamingStatus,
+}: MessagesAreaProps) => {
   const { scrollContainerRef, handleScroll } = useAutoScroll(messages);
 
   // Show minimal empty state when no messages
@@ -177,7 +193,12 @@ const MessagesArea = ({ messages, isLoading, activeToolCalls }: MessagesAreaProp
           <ChatMessage key={message.id} message={message} />
         ))}
 
-        {showIndicator && <ChatStreamingIndicator activeToolCalls={activeToolCalls} />}
+        {showIndicator && (
+          <ChatStreamingIndicator
+            activeToolCalls={activeToolCalls}
+            streamingStatus={streamingStatus}
+          />
+        )}
       </div>
     </div>
   );

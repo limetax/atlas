@@ -75,6 +75,7 @@ export const CHAT_STREAM_CHUNK_TYPES = [
   'error',
   'tool_call',
   'chat_created',
+  'status',
 ] as const;
 export type ChatStreamChunkType = (typeof CHAT_STREAM_CHUNK_TYPES)[number];
 
@@ -87,6 +88,7 @@ export type ChatStreamChunk = {
   toolCall?: { name: string; status: 'started' | 'completed' };
   chatId?: string;
   documents?: Array<{ name: string; size: number }>;
+  status?: string;
 };
 
 // Metadata stored alongside chat messages
