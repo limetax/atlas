@@ -1,11 +1,10 @@
-import { type RefObject, useEffect, useRef } from 'react';
+import { type RefObject, useCallback, useEffect, useRef } from 'react';
 
 const BOTTOM_THRESHOLD_PX = 20;
 
 type AutoScrollReturn = {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
   handleScroll: () => void;
-  scrollToBottom: () => void;
 };
 
 /**
@@ -29,19 +28,12 @@ export const useAutoScroll = (trigger: unknown): AutoScrollReturn => {
     el.scrollTop = el.scrollHeight;
   }, [trigger]);
 
-  const handleScroll = (): void => {
+  const handleScroll = useCallback((): void => {
     const el = scrollContainerRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     isUserScrolledRef.current = distanceFromBottom > BOTTOM_THRESHOLD_PX;
-  };
+  }, []);
 
-  const scrollToBottom = (): void => {
-    isUserScrolledRef.current = false;
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  };
-
-  return { scrollContainerRef, handleScroll, scrollToBottom };
+  return { scrollContainerRef, handleScroll };
 };
