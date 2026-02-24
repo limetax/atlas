@@ -20,6 +20,7 @@ export type ChatStreamChunk =
   | { type: 'tool_call'; toolCall: { name: string; status: 'started' | 'completed' } }
   | { type: 'chat_created'; chatId: string }
   | { type: 'files_processed'; documents: Array<{ name: string; size: number }> }
+  | { type: 'status'; status: string }
   | { type: 'done' }
   | { type: 'error'; error: string };
 

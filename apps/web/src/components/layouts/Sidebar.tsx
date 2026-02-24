@@ -123,11 +123,8 @@ const Navigation = () => {
 
 const SidebarLogo = () => {
   return (
-    <Link to="/" className="flex items-center gap-3 rounded-lg p-2">
-      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5">
-        <img src="/icon.png" alt="limetax logo" className="w-full h-full object-contain" />
-      </div>
-      <h1 className="text-lg font-bold text-foreground">Limetax App</h1>
+    <Link to="/" className="flex items-center rounded-lg p-2">
+      <img src="/limetax-app-logo.svg" alt="Limetax App logo" className="h-14 object-contain" />
     </Link>
   );
 };

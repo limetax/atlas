@@ -6,6 +6,7 @@
  * - Sending messages via SSE (streamChatMessage)
  * - Managing loading / abort state
  * - Tracking active tool calls during streaming
+ * - Tracking phased status labels with minimum display time
  * - Building optimistic messages during the stream
  * - Seeding the query cache on stream completion
  */
@@ -20,6 +21,12 @@ export type ToolCallState = {
   name: string;
   status: 'started' | 'completed';
 };
+
+/**
+ * Minimum time (ms) each status label stays visible before transitioning.
+ * Prevents jittery flicker when backend phases complete quickly.
+ */
+const MIN_STATUS_DISPLAY_MS = 1000;
 
 type UseChatStreamParams = {
   messages: Message[];
@@ -37,6 +44,7 @@ type UseChatStreamParams = {
 export type UseChatStreamReturn = {
   isLoading: boolean;
   activeToolCalls: ToolCallState[];
+  streamingStatus: string | null;
   handleSendMessage: (content: string, pendingFiles?: File[]) => Promise<void>;
   handleCancelRequest: () => void;
 };
@@ -55,13 +63,65 @@ export const useChatStream = ({
 }: UseChatStreamParams): UseChatStreamReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCallState[]>([]);
+  const [streamingStatus, setStreamingStatus] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Refs for minimum display time logic (mutable, no re-renders)
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const statusShownAtRef = useRef<number>(0);
+  const pendingStatusRef = useRef<string | null>(null);
 
   // Cleanup: abort any running stream on unmount
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     };
+  }, []);
+
+  /**
+   * Update streaming status with minimum display time.
+   * If the previous status was shown less than MIN_STATUS_DISPLAY_MS ago,
+   * queue the new status to appear after the remaining time.
+   */
+  const updateStatus = useCallback((newStatus: string) => {
+    // Clear any pending timer
+    if (statusTimerRef.current) {
+      clearTimeout(statusTimerRef.current);
+      statusTimerRef.current = null;
+    }
+
+    const elapsed = Date.now() - statusShownAtRef.current;
+
+    if (elapsed >= MIN_STATUS_DISPLAY_MS || statusShownAtRef.current === 0) {
+      // Enough time has passed (or first status) — show immediately
+      setStreamingStatus(newStatus);
+      statusShownAtRef.current = Date.now();
+      pendingStatusRef.current = null;
+    } else {
+      // Too soon — queue the transition
+      pendingStatusRef.current = newStatus;
+      const remaining = MIN_STATUS_DISPLAY_MS - elapsed;
+      statusTimerRef.current = setTimeout(() => {
+        statusTimerRef.current = null;
+        if (pendingStatusRef.current) {
+          setStreamingStatus(pendingStatusRef.current);
+          statusShownAtRef.current = Date.now();
+          pendingStatusRef.current = null;
+        }
+      }, remaining);
+    }
+  }, []);
+
+  /** Clear all status state (on stream end or cancel) */
+  const clearStatus = useCallback(() => {
+    if (statusTimerRef.current) {
+      clearTimeout(statusTimerRef.current);
+      statusTimerRef.current = null;
+    }
+    pendingStatusRef.current = null;
+    statusShownAtRef.current = 0;
+    setStreamingStatus(null);
   }, []);
 
   const handleCancelRequest = useCallback(() => {
@@ -113,7 +173,14 @@ export const useChatStream = ({
             setCurrentSessionId(chunk.chatId);
             onContextPersisted?.();
             onChatCreated?.(chunk.chatId);
+          } else if (chunk.type === 'status' && chunk.status) {
+            updateStatus(chunk.status);
           } else if (chunk.type === 'text' && chunk.content) {
+            // First text chunk means LLM is responding — clear status
+            if (!assistantContent) {
+              clearStatus();
+            }
+
             assistantContent += chunk.content;
 
             if (assistantContent.trim()) {
@@ -149,6 +216,7 @@ export const useChatStream = ({
               return [...prev, toolCall];
             });
           } else if (chunk.type === 'done') {
+            clearStatus();
             setActiveToolCalls([]);
             const finalMessage: Message = {
               id: generateMessageId(),
@@ -191,6 +259,7 @@ export const useChatStream = ({
       } finally {
         setIsLoading(false);
         setActiveToolCalls([]);
+        clearStatus();
         abortControllerRef.current = null;
       }
     },
@@ -205,12 +274,15 @@ export const useChatStream = ({
       onChatCreated,
       onContextPersisted,
       onDocumentsUploaded,
+      updateStatus,
+      clearStatus,
     ]
   );
 
   return {
     isLoading,
     activeToolCalls,
+    streamingStatus,
     handleSendMessage,
     handleCancelRequest,
   };

@@ -11,6 +11,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 
 import { CONTEXT_PROMPTS, TITLE_GENERATION_PROMPT } from './chat.prompts';
+import { CHAT_STATUS } from './chat-status.constants';
 
 /**
  * Chat Service - Application layer for chat functionality
@@ -80,10 +81,13 @@ export class ChatService {
       }
     }
 
-    // 2. Get document IDs linked to this chat for RAG context
+    // 2. Signal RAG search phase
+    yield { type: 'status', status: CHAT_STATUS.SEARCHING_KNOWLEDGE };
+
+    // 3. Get document IDs linked to this chat for RAG context
     const documentIds = chatId ? await this.documentService.getDocumentIdsByChatId(chatId) : [];
 
-    // 3. Search for relevant context using RAG with client filter + document IDs
+    // 4. Search for relevant context using RAG with client filter + document IDs
     const { context: ragContext, citations } = await this.rag.searchContext(
       userMessage,
       clientIdFilter,
@@ -91,12 +95,12 @@ export class ChatService {
       documentIds.length > 0 ? documentIds : undefined
     );
 
-    // 4. Build system prompt with context
+    // 5. Build system prompt with context
     const systemPrompt = customSystemPrompt
       ? this.buildAssistantPrompt(customSystemPrompt, ragContext, chatContext, selectedClientName)
       : this.buildSystemPrompt(ragContext, chatContext, selectedClientName);
 
-    // 4. Convert message history to LLM format (type-safe, no assertions)
+    // 6. Convert message history to LLM format (type-safe, no assertions)
     const llmMessages: LlmMessage[] = [
       ...this.filterUserAssistantMessages(history),
       {
@@ -107,12 +111,12 @@ export class ChatService {
       },
     ];
 
-    // 5. Yield citations first (if any)
+    // 7. Yield citations (if any)
     if (citations.length > 0) {
       yield { type: 'citations', citations };
     }
 
-    // 5a. Acknowledge files received (with 'processing' status)
+    // 8. Acknowledge files received (with 'processing' status)
     if (files?.length && chatId) {
       const processingDocuments = files.map((file) => ({
         name: file.originalname,
@@ -121,7 +125,7 @@ export class ChatService {
       yield { type: 'files_processed', documents: processingDocuments };
     }
 
-    // 5b. Fire-and-forget: Store files in RAG async (doesn't block response)
+    // 9. Fire-and-forget: Store files in RAG async (doesn't block response)
     if (files?.length && chatId && advisorId) {
       this.storeFilesInRagAsync(files, chatId, advisorId).catch((error: Error) => {
         this.logger.error('Background RAG storage failed', error.stack);
@@ -129,7 +133,10 @@ export class ChatService {
       });
     }
 
-    // 6. Stream response from LLM with context for tool access
+    // 10. Signal LLM thinking phase
+    yield { type: 'status', status: CHAT_STATUS.THINKING };
+
+    // 11. Stream response from LLM with context for tool access
     for await (const chunk of this.llm.streamCompletion(llmMessages, systemPrompt, chatContext)) {
       if (typeof chunk === 'string') {
         yield { type: 'text', content: chunk };
@@ -138,7 +145,7 @@ export class ChatService {
       }
     }
 
-    // 7. Yield done signal
+    // 12. Yield done signal
     yield { type: 'done' };
   }
 
