@@ -56,7 +56,7 @@ Vite proxies `/api` → `http://localhost:3001` in dev.
 
 - Use `type` over `interface` (exception: module augmentation like TanStack Router's `Register`)
 - No `as` type assertions — use type guards with `is` keyword (never `as any`)
-- Use `??` instead of `||` for defaults
+- Use `??` for null/undefined fallbacks (`value ?? 'fallback'`), `||` for boolean conditions (`if (error || !data)`)
 - Discriminated string unions via `as const` arrays:
   ```typescript
   export const RESEARCH_SOURCES = ['handelsregister', 'german_law', 'law_publishers'] as const;

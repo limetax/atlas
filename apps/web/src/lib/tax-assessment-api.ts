@@ -45,11 +45,13 @@ function* processSSELine(line: string): Generator<ChatStreamChunk, void, unknown
  *
  * @param assessmentDocumentId - The DMS document ID of the assessment
  * @param token - Auth JWT token
+ * @param sandboxMode - When true, backend uses fixture PDFs instead of DMS
  * @yields ChatStreamChunk events (chat_created, text, done, error)
  */
 export async function* streamTaxAssessmentReview(
   assessmentDocumentId: string,
-  token: string
+  token: string,
+  sandboxMode = false
 ): AsyncGenerator<ChatStreamChunk, void, unknown> {
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => timeoutController.abort(), STREAM_TIMEOUT);
@@ -61,7 +63,7 @@ export async function* streamTaxAssessmentReview(
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ assessmentDocumentId }),
+      body: JSON.stringify({ assessmentDocumentId, sandboxMode }),
       signal: timeoutController.signal,
     });
 

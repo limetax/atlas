@@ -15,7 +15,7 @@ import { TaxAssessmentRouter } from '@tax-assessment/tax-assessment.router';
  * - DmsModule: provides DmsAdapter for DMS document access (DATEV product, Klardaten-backed)
  * - DatevModule: provides ClientService for client context
  * - ChatModule: provides ChatRepository for session persistence
- * - InfrastructureModule: provides SupabaseService for auth
+ * - InfrastructureModule: provides SupabaseService for auth, StorageAdapter for sandbox fixtures
  */
 @Module({
   imports: [DmsModule, DatevModule, ChatModule, InfrastructureModule, RAGModule],

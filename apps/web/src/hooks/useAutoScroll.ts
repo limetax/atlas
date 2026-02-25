@@ -1,6 +1,6 @@
 import { type RefObject, useCallback, useEffect, useRef } from 'react';
 
-const BOTTOM_THRESHOLD_PX = 20;
+const BOTTOM_THRESHOLD_PX = 40;
 
 type AutoScrollReturn = {
   scrollContainerRef: RefObject<HTMLDivElement | null>;

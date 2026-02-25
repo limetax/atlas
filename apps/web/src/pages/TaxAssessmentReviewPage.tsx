@@ -1,4 +1,4 @@
-import { Children, isValidElement, useMemo, useState } from 'react';
+import { Children, isValidElement, useDeferredValue, useMemo, useState } from 'react';
 
 import { ArrowLeft, ArrowRight, MessageSquare } from 'lucide-react';
 import type { Components } from 'react-markdown';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAutoScroll } from '@/hooks/useAutoScroll';
+import { useSandboxMode } from '@/hooks/useSandboxMode';
 import { useTaxAssessmentReview } from '@/hooks/useTaxAssessmentReview';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -23,9 +24,16 @@ import { useNavigate } from '@tanstack/react-router';
 export const TaxAssessmentReviewPage = () => {
   const [search, setSearch] = useState('');
   const [startingId, setStartingId] = useState<string | undefined>(undefined);
-  const { data: assessments, isLoading, error } = trpc.taxAssessmentReview.getOpen.useQuery();
+  const [isSandboxMode] = useSandboxMode();
+  const {
+    data: assessments,
+    isLoading,
+    error,
+  } = trpc.taxAssessmentReview.getOpen.useQuery({
+    sandboxMode: isSandboxMode,
+  });
   const { startReview, clearReview, phase, streamingText, completedChatId } =
-    useTaxAssessmentReview();
+    useTaxAssessmentReview(isSandboxMode);
 
   const filtered = useMemo(
     () =>
@@ -240,6 +248,7 @@ const ReviewProgressPanel = ({
 }: ReviewProgressPanelProps) => {
   const navigate = useNavigate();
   const { scrollContainerRef, handleScroll } = useAutoScroll(streamingText);
+  const deferredText = useDeferredValue(streamingText);
   const hasText = streamingText.length > 0;
   const isCompleted = phase === 'completed';
   const title = clientName ? `${clientName}${year ? ` (${year})` : ''}` : 'Bescheid';
@@ -288,7 +297,7 @@ const ReviewProgressPanel = ({
           className="prose prose-sm max-h-[65vh] max-w-none overflow-y-auto [overflow-anchor:none] [overscroll-behavior-y:contain] px-5 py-4 text-foreground"
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-            {streamingText}
+            {deferredText}
           </ReactMarkdown>
         </div>
       ) : (

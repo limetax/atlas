@@ -13,12 +13,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useSandboxMode } from '@/hooks/useSandboxMode';
 import { cn } from '@/lib/utils';
 import { getInitials } from '@/utils/formatters';
 import { Link, useLocation } from '@tanstack/react-router';
@@ -131,6 +133,7 @@ const SidebarLogo = () => {
 
 const UserCard = () => {
   const { user, advisor, isLoading, logout } = useAuthContext();
+  const [isSandboxMode, setSandboxMode] = useSandboxMode();
 
   if (isLoading || !user) {
     return <div className="h-[72px]" />;
@@ -180,6 +183,16 @@ const UserCard = () => {
           <span className="flex-1">Einstellungen</span>
           <span className="text-xs text-muted-foreground">Bald</span>
         </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuCheckboxItem
+          checked={isSandboxMode}
+          onCheckedChange={setSandboxMode}
+          onSelect={(e) => e.preventDefault()}
+        >
+          Sandbox-Modus
+        </DropdownMenuCheckboxItem>
 
         <DropdownMenuSeparator />
 

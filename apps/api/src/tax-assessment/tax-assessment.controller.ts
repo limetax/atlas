@@ -7,6 +7,7 @@ import { TaxAssessmentService } from '@tax-assessment/application/tax-assessment
 
 const ReviewBodySchema = z.object({
   assessmentDocumentId: z.string().min(1),
+  sandboxMode: z.boolean().default(false),
 });
 
 /**
@@ -23,7 +24,7 @@ export class TaxAssessmentController {
 
   @Post('review')
   async review(@Body() body: unknown, @Req() req: Request, @Res() res: Response): Promise<void> {
-    const { assessmentDocumentId } = ReviewBodySchema.parse(body);
+    const { assessmentDocumentId, sandboxMode } = ReviewBodySchema.parse(body);
     const advisorId = await this.authenticateRequest(req);
 
     res.setHeader('Content-Type', 'text/event-stream');
@@ -33,7 +34,8 @@ export class TaxAssessmentController {
     try {
       for await (const chunk of this.taxAssessmentService.streamReview(
         assessmentDocumentId,
-        advisorId
+        advisorId,
+        sandboxMode
       )) {
         res.write(`data: ${JSON.stringify(chunk)}\n\n`);
       }
