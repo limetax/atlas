@@ -12,7 +12,7 @@ import {
 } from '@llm/infrastructure/file-encoding.util';
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
-import { SupabaseService } from '@shared/infrastructure/supabase.service';
+import { StorageAdapter } from '@shared/domain/storage.adapter';
 
 import { BESCHEID_PRUEFUNG_SYSTEM_PROMPT } from './tax-assessment.prompts';
 
@@ -73,15 +73,11 @@ export class TaxAssessmentService {
     private readonly llm: LlmService,
     private readonly clientService: ClientService,
     private readonly ragService: RAGService,
-    private readonly supabase: SupabaseService
+    private readonly storageAdapter: StorageAdapter
   ) {}
 
   private async downloadSandboxFile(path: string): Promise<Buffer> {
-    const { data, error } = await this.supabase.db.storage.from(SANDBOX_BUCKET).download(path);
-    if (error || !data) {
-      throw new Error(`Sandbox file not found: ${path}`);
-    }
-    return Buffer.from(await data.arrayBuffer());
+    return this.storageAdapter.downloadFile(SANDBOX_BUCKET, path);
   }
 
   async listOpenAssessments(sandboxMode = false): Promise<OpenAssessmentView[]> {

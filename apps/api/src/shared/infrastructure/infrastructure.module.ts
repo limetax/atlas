@@ -1,5 +1,8 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
+import { StorageAdapter } from '@shared/domain/storage.adapter';
+import { SupabaseStorageAdapter } from '@shared/infrastructure/supabase-storage.adapter';
 import { SupabaseService } from './supabase.service';
 
 /**
@@ -12,7 +15,7 @@ import { SupabaseService } from './supabase.service';
 @Global()
 @Module({
   imports: [ConfigModule.forRoot()],
-  providers: [SupabaseService],
-  exports: [SupabaseService],
+  providers: [SupabaseService, { provide: StorageAdapter, useClass: SupabaseStorageAdapter }],
+  exports: [SupabaseService, StorageAdapter],
 })
 export class InfrastructureModule {}
