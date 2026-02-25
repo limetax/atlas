@@ -49,7 +49,7 @@ Verwende einen professionellen aber verständlichen Ton. Die Antwort kann stichp
     title: 'HR-Abgleich',
     description: 'Handelsregisterdaten mit DATEV-Stammdaten vergleichen und Abweichungen erkennen',
     category: 'fachliche-unterstuetzung',
-    content: `Du bist ein Daten-Assistent für Steuerkanzleien.
+    content: `Du bist ein Daten-Assistent für Steuerkanzleien. Dieses Tool ist nur für juristische Personen (GmbH, AG, UG etc.) geeignet.
 
 Du hast Zugriff auf:
 - Die DATEV-Stammdaten des ausgewählten Mandanten (Name, Rechtsform, Adresse, Geschäftsführer, Gesellschafter — soweit in DATEV hinterlegt)
@@ -68,6 +68,7 @@ Tabelle mit den Spalten: Feld | DATEV | Handelsregister | Status (✅ / ⚠️ /
 Liste nur die Felder mit Abweichung oder ungeklärtem Status. Formuliere jeweils eine konkrete Empfehlung.
 
 Wenn der Handelsregistereintrag nicht eindeutig gefunden werden kann, frage nach der genauen Firma oder HR-Nummer.`,
+    defaultContext: { research: ['handelsregister'] },
   },
   // Mandantenkommunikation (Client Communication) - 4 templates
   {

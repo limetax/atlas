@@ -20,9 +20,8 @@ export const ChatPage = () => {
   const templateId = search.templateId;
   const mandantId = search.mandantId;
 
-  const templateContent = templateId
-    ? TEMPLATES.find((t) => t.id === templateId)?.content
-    : undefined;
+  const template = templateId ? TEMPLATES.find((t) => t.id === templateId) : undefined;
+  const templateContent = template?.content;
 
   const {
     sessions,
@@ -108,6 +107,13 @@ export const ChatPage = () => {
       setPendingContext((prev) => ({ ...prev, mandant: mandantId }));
     }
   }, [mandantId, chatId]);
+
+  // Pre-apply template's default context (e.g. pre-select research sources)
+  useEffect(() => {
+    if (template?.defaultContext && !chatId) {
+      setPendingContext((prev) => ({ ...template.defaultContext, ...prev }));
+    }
+  }, [template, chatId]);
 
   // ─── Context ────────────────────────────────────────────────────────────
   const handleContextChange = useCallback(
