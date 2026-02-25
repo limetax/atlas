@@ -24,7 +24,7 @@ type UseTaxAssessmentReviewReturn = {
  *    (no auto-navigation — the advisor may need to act in DATEV first)
  * 5. clearReview: resets to 'idle' so the user goes back to the overview
  */
-export const useTaxAssessmentReview = (): UseTaxAssessmentReviewReturn => {
+export const useTaxAssessmentReview = (sandboxMode = false): UseTaxAssessmentReviewReturn => {
   const { getToken } = useAuthContext();
   const [phase, setPhase] = useState<ReviewPhase>('idle');
   const [streamingText, setStreamingText] = useState('');
@@ -40,7 +40,11 @@ export const useTaxAssessmentReview = (): UseTaxAssessmentReviewReturn => {
       pendingChatIdRef.current = undefined;
 
       try {
-        for await (const chunk of streamTaxAssessmentReview(assessmentDocumentId, token)) {
+        for await (const chunk of streamTaxAssessmentReview(
+          assessmentDocumentId,
+          token,
+          sandboxMode
+        )) {
           if (chunk.type === 'chat_created' && chunk.chatId) {
             pendingChatIdRef.current = chunk.chatId;
           } else if (chunk.type === 'text' && chunk.content) {
@@ -59,7 +63,7 @@ export const useTaxAssessmentReview = (): UseTaxAssessmentReviewReturn => {
         setPhase('idle');
       }
     },
-    [getToken]
+    [getToken, sandboxMode]
   );
 
   const clearReview = useCallback(() => {

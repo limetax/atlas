@@ -1,4 +1,4 @@
-import { Query, Router, UseMiddlewares } from 'nestjs-trpc';
+import { Input, Query, Router, UseMiddlewares } from 'nestjs-trpc';
 import { z } from 'zod';
 
 import { Logger } from '@nestjs/common';
@@ -14,6 +14,10 @@ const OpenAssessmentViewSchema = z.object({
   createdAt: z.string(),
 });
 
+const GetOpenInputSchema = z.object({
+  sandboxMode: z.boolean().default(false),
+});
+
 /**
  * TaxAssessmentRouter - tRPC router for tax assessment queries
  */
@@ -24,10 +28,11 @@ export class TaxAssessmentRouter {
   constructor(private readonly taxAssessmentService: TaxAssessmentService) {}
 
   @Query({
+    input: GetOpenInputSchema,
     output: z.array(OpenAssessmentViewSchema),
   })
   @UseMiddlewares(AuthMiddleware)
-  async getOpen() {
-    return await this.taxAssessmentService.listOpenAssessments();
+  async getOpen(@Input('sandboxMode') sandboxMode: boolean) {
+    return await this.taxAssessmentService.listOpenAssessments(sandboxMode);
   }
 }

@@ -12,12 +12,21 @@ import {
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
 import { DmsAdapter } from '@datev/dms/domain/dms.adapter';
+import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 import { BESCHEID_PRUEFUNG_SYSTEM_PROMPT } from './tax-assessment.prompts';
 
 const SYSTEM_PROMPT = BESCHEID_PRUEFUNG_SYSTEM_PROMPT + CONTEXT_PROMPTS.EMAIL;
 
 const INCOME_TAX_ORDER_NAME = 'Einkommensteuererklärung';
+
+// Sandbox demo fixtures
+const SANDBOX_BUCKET = 'sandbox';
+const SANDBOX_ESTB_PATH = 'bescheidpruefung/estb.pdf';
+const SANDBOX_ESTE_PATH = 'bescheidpruefung/este.pdf';
+const SANDBOX_DOCUMENT_ID = 'sandbox-estb-2024';
+const SANDBOX_YEAR = 2024;
+const SANDBOX_CLIENT_GUID = 'client-max-muster-45001';
 
 // NOTE: These IDs are specific to the bPlus DATEV DMS instance and must not be reused for other tenants.
 const BPLUS_DATEV_FOLDER_ID = 198; // DMS folder: Steuerakten
@@ -58,10 +67,33 @@ export class TaxAssessmentService {
     private readonly chatRepository: ChatRepository,
     private readonly llm: LlmService,
     private readonly clientService: ClientService,
-    private readonly ragService: RAGService
+    private readonly ragService: RAGService,
+    private readonly supabase: SupabaseService
   ) {}
 
-  async listOpenAssessments(): Promise<OpenAssessmentView[]> {
+  private async downloadSandboxFile(path: string): Promise<Buffer> {
+    const { data, error } = await this.supabase.db.storage.from(SANDBOX_BUCKET).download(path);
+    if (error ?? !data) {
+      throw new Error(`Sandbox file not found: ${path}`);
+    }
+    return Buffer.from(await data.arrayBuffer());
+  }
+
+  async listOpenAssessments(sandboxMode = false): Promise<OpenAssessmentView[]> {
+    if (sandboxMode) {
+      const client = await this.clientService.getClientById(SANDBOX_CLIENT_GUID);
+      return [
+        {
+          documentId: SANDBOX_DOCUMENT_ID,
+          clientName: client?.client_name ?? SANDBOX_CLIENT_GUID,
+          taxType: INCOME_TAX_ORDER_NAME,
+          year: SANDBOX_YEAR,
+          stateId: BPLUS_DATEV_STATE_OPEN_ID.toString(),
+          createdAt: new Date().toISOString(),
+        },
+      ];
+    }
+
     const docs = await this.dmsAdapter.getDocuments(OPEN_ASSESSMENT_FILTER);
     const filtered = docs.filter((doc) => doc.order?.name === INCOME_TAX_ORDER_NAME);
 
@@ -87,94 +119,119 @@ export class TaxAssessmentService {
 
   async *streamReview(
     assessmentDocumentId: string,
-    advisorId: string
+    advisorId: string,
+    sandboxMode = false
   ): AsyncGenerator<ChatStreamChunk> {
-    // 1. Fetch assessment document metadata
-    const assessmentDoc = await this.dmsAdapter.getDocumentById(assessmentDocumentId);
+    let clientName: string;
+    let clientContextSection: string;
+    let year: number;
+    let assessmentFiles: { buffer: Buffer; name: string }[];
+    let declarationFiles: { buffer: Buffer; name: string }[];
 
-    if (!assessmentDoc) {
-      yield { type: 'error', error: 'Bescheid nicht gefunden' };
-      return;
-    }
+    if (sandboxMode) {
+      // Sandbox: skip DMS — load fixture PDFs from Supabase Storage
+      this.logger.log('Sandbox mode: loading fixture PDFs from Supabase Storage');
 
-    const [client, ragClientResult] = await Promise.all([
-      this.clientService.getClientById(assessmentDoc.correspondence_partner_guid),
-      this.ragService.getDatevClientById(assessmentDoc.correspondence_partner_guid),
-    ]);
+      const [client, ragClientResult, estbBuffer, esteBuffer] = await Promise.all([
+        this.clientService.getClientById(SANDBOX_CLIENT_GUID),
+        this.ragService.getDatevClientById(SANDBOX_CLIENT_GUID),
+        this.downloadSandboxFile(SANDBOX_ESTB_PATH),
+        this.downloadSandboxFile(SANDBOX_ESTE_PATH),
+      ]);
 
-    const clientName = client?.client_name ?? assessmentDoc.correspondence_partner_guid;
+      clientName = client?.client_name ?? SANDBOX_CLIENT_GUID;
+      clientContextSection = ragClientResult.context
+        ? `\n\n---\n\nMANDANTEN-STAMMDATEN (aus DATEV):\n${ragClientResult.context}\n\nWichtig: Verwende die oben angegebene E-Mail-Adresse als Empfänger in der Mandantenmitteilung (Abschnitt 11). Falls mehrere Kontakte vorhanden sind, wähle die hauptverantwortliche Kontaktperson.`
+        : '';
+      year = SANDBOX_YEAR;
+      assessmentFiles = [{ buffer: estbBuffer, name: 'estb.pdf' }];
+      declarationFiles = [{ buffer: esteBuffer, name: 'este.pdf' }];
+    } else {
+      // 1. Fetch assessment document metadata
+      const assessmentDoc = await this.dmsAdapter.getDocumentById(assessmentDocumentId);
 
-    const clientContextSection = ragClientResult.context
-      ? `\n\n---\n\nMANDANTEN-STAMMDATEN (aus DATEV):\n${ragClientResult.context}\n\nWichtig: Verwende die oben angegebene E-Mail-Adresse als Empfänger in der Mandantenmitteilung (Abschnitt 11). Falls mehrere Kontakte vorhanden sind, wähle die hauptverantwortliche Kontaktperson.`
-      : '';
+      if (!assessmentDoc) {
+        yield { type: 'error', error: 'Bescheid nicht gefunden' };
+        return;
+      }
 
-    const year = assessmentDoc.year;
+      const [client, ragClientResult] = await Promise.all([
+        this.clientService.getClientById(assessmentDoc.correspondence_partner_guid),
+        this.ragService.getDatevClientById(assessmentDoc.correspondence_partner_guid),
+      ]);
 
-    // 2. Fetch and download assessment PDFs
-    this.logger.log(`Fetching assessment PDFs for document ${assessmentDocumentId}`);
-    const assessmentItems = await this.dmsAdapter.getStructureItems(assessmentDocumentId);
-    this.logger.log(`Assessment structure items: ${JSON.stringify(assessmentItems)}`);
-    const assessmentFileItems = assessmentItems.filter(
-      (item) => item.type === 1 && isProcessableFile(item.name)
-    );
+      clientName = client?.client_name ?? assessmentDoc.correspondence_partner_guid;
+      clientContextSection = ragClientResult.context
+        ? `\n\n---\n\nMANDANTEN-STAMMDATEN (aus DATEV):\n${ragClientResult.context}\n\nWichtig: Verwende die oben angegebene E-Mail-Adresse als Empfänger in der Mandantenmitteilung (Abschnitt 11). Falls mehrere Kontakte vorhanden sind, wähle die hauptverantwortliche Kontaktperson.`
+        : '';
+      year = assessmentDoc.year;
 
-    const assessmentFiles = await Promise.all(
-      assessmentFileItems.map(async (item) => ({
-        buffer: await this.dmsAdapter.getFileContent(item.document_file_id),
-        name: item.name,
-      }))
-    );
-    assessmentFiles.forEach(({ buffer, name }, i) => {
-      const header = buffer.subarray(0, 8).toString('hex');
-      const detectedMime = detectMimeTypeFromBuffer(buffer, name);
-      this.logger.log(
-        `Assessment file[${i}]: ${buffer.length} bytes, name="${name}", header=0x${header}, detectedMime="${detectedMime}"`
+      // 2. Fetch and download assessment PDFs
+      this.logger.log(`Fetching assessment PDFs for document ${assessmentDocumentId}`);
+      const assessmentItems = await this.dmsAdapter.getStructureItems(assessmentDocumentId);
+      this.logger.log(`Assessment structure items: ${JSON.stringify(assessmentItems)}`);
+      const assessmentFileItems = assessmentItems.filter(
+        (item) => item.type === 1 && isProcessableFile(item.name)
       );
-    });
 
-    // 3. Find matching declaration (same client GUID + EStE year)
-    const guid = assessmentDoc.correspondence_partner_guid;
-    if (!UUID_REGEX.test(guid)) {
-      this.logger.error(`Invalid GUID in DMS document: "${guid}"`);
-      yield { type: 'error', error: 'Ungültige Dokument-ID' };
-      return;
-    }
-    const allClientDocs = await this.dmsAdapter.getDocuments(
-      `correspondence_partner_guid eq '${guid}'`
-    );
-    const declarationDoc = allClientDocs.find(
-      (doc) =>
-        doc.description.startsWith('EStE') && doc.year === year && doc.id !== assessmentDocumentId
-    );
-
-    if (!declarationDoc) {
-      yield {
-        type: 'error',
-        error: `Keine passende Einkommensteuererklärung für ${clientName} (${year}) gefunden`,
-      };
-      return;
-    }
-
-    // 4. Fetch and download declaration PDFs
-    this.logger.log(`Fetching declaration PDFs for document ${declarationDoc.id}`);
-    const declarationItems = await this.dmsAdapter.getStructureItems(declarationDoc.id);
-    const declarationFileItems = declarationItems.filter(
-      (item) => item.type === 1 && isProcessableFile(item.name)
-    );
-
-    const declarationFiles = await Promise.all(
-      declarationFileItems.map(async (item) => ({
-        buffer: await this.dmsAdapter.getFileContent(item.document_file_id),
-        name: item.name,
-      }))
-    );
-    declarationFiles.forEach(({ buffer, name }, i) => {
-      const header = buffer.subarray(0, 8).toString('hex');
-      const detectedMime = detectMimeTypeFromBuffer(buffer, name);
-      this.logger.log(
-        `Declaration file[${i}]: ${buffer.length} bytes, name="${name}", header=0x${header}, detectedMime="${detectedMime}"`
+      assessmentFiles = await Promise.all(
+        assessmentFileItems.map(async (item) => ({
+          buffer: await this.dmsAdapter.getFileContent(item.document_file_id),
+          name: item.name,
+        }))
       );
-    });
+      assessmentFiles.forEach(({ buffer, name }, i) => {
+        const header = buffer.subarray(0, 8).toString('hex');
+        const detectedMime = detectMimeTypeFromBuffer(buffer, name);
+        this.logger.log(
+          `Assessment file[${i}]: ${buffer.length} bytes, name="${name}", header=0x${header}, detectedMime="${detectedMime}"`
+        );
+      });
+
+      // 3. Find matching declaration (same client GUID + EStE year)
+      const guid = assessmentDoc.correspondence_partner_guid;
+      if (!UUID_REGEX.test(guid)) {
+        this.logger.error(`Invalid GUID in DMS document: "${guid}"`);
+        yield { type: 'error', error: 'Ungültige Dokument-ID' };
+        return;
+      }
+      const allClientDocs = await this.dmsAdapter.getDocuments(
+        `correspondence_partner_guid eq '${guid}'`
+      );
+      const declarationDoc = allClientDocs.find(
+        (doc) =>
+          doc.description.startsWith('EStE') && doc.year === year && doc.id !== assessmentDocumentId
+      );
+
+      if (!declarationDoc) {
+        yield {
+          type: 'error',
+          error: `Keine passende Einkommensteuererklärung für ${clientName} (${year}) gefunden`,
+        };
+        return;
+      }
+
+      // 4. Fetch and download declaration PDFs
+      this.logger.log(`Fetching declaration PDFs for document ${declarationDoc.id}`);
+      const declarationItems = await this.dmsAdapter.getStructureItems(declarationDoc.id);
+      const declarationFileItems = declarationItems.filter(
+        (item) => item.type === 1 && isProcessableFile(item.name)
+      );
+
+      declarationFiles = await Promise.all(
+        declarationFileItems.map(async (item) => ({
+          buffer: await this.dmsAdapter.getFileContent(item.document_file_id),
+          name: item.name,
+        }))
+      );
+      declarationFiles.forEach(({ buffer, name }, i) => {
+        const header = buffer.subarray(0, 8).toString('hex');
+        const detectedMime = detectMimeTypeFromBuffer(buffer, name);
+        this.logger.log(
+          `Declaration file[${i}]: ${buffer.length} bytes, name="${name}", header=0x${header}, detectedMime="${detectedMime}"`
+        );
+      });
+    }
 
     // 5. Check total size
     const totalSize = [...assessmentFiles, ...declarationFiles].reduce(

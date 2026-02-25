@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAutoScroll } from '@/hooks/useAutoScroll';
+import { useSandboxMode } from '@/hooks/useSandboxMode';
 import { useTaxAssessmentReview } from '@/hooks/useTaxAssessmentReview';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -23,9 +24,16 @@ import { useNavigate } from '@tanstack/react-router';
 export const TaxAssessmentReviewPage = () => {
   const [search, setSearch] = useState('');
   const [startingId, setStartingId] = useState<string | undefined>(undefined);
-  const { data: assessments, isLoading, error } = trpc.taxAssessmentReview.getOpen.useQuery();
+  const [isSandboxMode] = useSandboxMode();
+  const {
+    data: assessments,
+    isLoading,
+    error,
+  } = trpc.taxAssessmentReview.getOpen.useQuery({
+    sandboxMode: isSandboxMode,
+  });
   const { startReview, clearReview, phase, streamingText, completedChatId } =
-    useTaxAssessmentReview();
+    useTaxAssessmentReview(isSandboxMode);
 
   const filtered = useMemo(
     () =>
