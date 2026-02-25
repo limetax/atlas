@@ -9,7 +9,6 @@ import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const STORAGE_BUCKET = 'documents';
-const LEGACY_STORAGE_BUCKET = 'chat-documents';
 
 /**
  * Document Service - Application layer for advisory-scoped document management
@@ -144,9 +143,8 @@ export class DocumentService {
     const doc = await this.documentRepo.findById(documentId);
     if (!doc) throw new BadRequestException('Dokument nicht gefunden');
 
-    const bucket = this.getBucketForPath(doc.storagePath);
     const { data, error } = await this.supabase.db.storage
-      .from(bucket)
+      .from(STORAGE_BUCKET)
       .createSignedUrl(doc.storagePath, 3600); // 1 hour
 
     if (error) {
@@ -163,27 +161,13 @@ export class DocumentService {
     if (!doc) return false;
 
     // Delete from storage
-    const bucket = this.getBucketForPath(doc.storagePath);
-    await this.supabase.db.storage.from(bucket).remove([doc.storagePath]);
+    await this.supabase.db.storage.from(STORAGE_BUCKET).remove([doc.storagePath]);
 
     // Delete from DB (cascade deletes chunks + chat_documents links)
     return this.documentRepo.delete(documentId);
   }
 
   // --- Helpers ---
-
-  /**
-   * Determine the storage bucket from the path.
-   * Legacy documents (pre-migration) have paths like "{advisorId}/{chatId}/{uuid}.pdf"
-   * and live in the "chat-documents" bucket. New documents use "documents" bucket.
-   */
-  private getBucketForPath(storagePath: string): string {
-    // New documents have paths like "{advisoryId}/shared/{docId}/{filename}"
-    if (storagePath.includes('/shared/')) {
-      return STORAGE_BUCKET;
-    }
-    return LEGACY_STORAGE_BUCKET;
-  }
 
   private validateFile(file: Express.Multer.File): void {
     const allowedMimeTypes = [
