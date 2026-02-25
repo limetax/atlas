@@ -72,12 +72,11 @@ export const TOOLS: Tool[] = [
   {
     id: 'hr-abgleich',
     name: 'HR-Abgleich',
-    description: 'Abgleich von Lohnbuchhaltung und Stammdaten',
+    description: 'Handelsregisterdaten mit DATEV-Stammdaten vergleichen und Abweichungen erkennen',
     icon: GitCompare,
-    route: '/tools/hr-abgleich',
-    status: 'coming-soon',
-    category: 'dokumentenverarbeitung',
-    badge: 'BALD',
+    route: '/chat',
+    status: 'active',
+    category: 'analyse-recherche',
   },
   {
     id: 'bescheid-pruefen',

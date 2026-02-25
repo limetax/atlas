@@ -8,6 +8,7 @@ import { useNavigate } from '@tanstack/react-router';
 const TOOL_TEMPLATE_MAP: Record<string, string> = {
   'recherche-chat': 'steuerrechtliche-recherche',
   'vertrag-zusammenfassen': 'vertrag-zusammenfassen',
+  'hr-abgleich': 'hr-abgleich',
 };
 
 type ToolCardProps = {

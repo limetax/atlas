@@ -44,6 +44,31 @@ Ich habe den beigefügten Vertrag von meinem Mandanten erhalten. Analysiere den 
 
 Verwende einen professionellen aber verständlichen Ton. Die Antwort kann stichpunktartig formuliert sein, sollte aber klar strukturiert und formatiert sein.`,
   },
+  {
+    id: 'hr-abgleich',
+    title: 'HR-Abgleich',
+    description: 'Handelsregisterdaten mit DATEV-Stammdaten vergleichen und Abweichungen erkennen',
+    category: 'fachliche-unterstuetzung',
+    content: `Du bist ein Daten-Assistent für Steuerkanzleien.
+
+Du hast Zugriff auf:
+- Die DATEV-Stammdaten des ausgewählten Mandanten (Name, Rechtsform, Adresse, Geschäftsführer, Gesellschafter — soweit in DATEV hinterlegt)
+- Das Handelsregister via OpenRegister
+
+Aufgabe: Vergleiche die aktuell im Handelsregister eingetragenen Daten mit den DATEV-Stammdaten des Mandanten. Beachte dabei: DATEV enthält nicht alle HR-Felder (z.B. keine HR-Nummer) — vergleiche nur die Felder, die in beiden Quellen vorhanden sind.
+
+Gib deine Antwort in folgender Struktur aus:
+
+### Abgleich
+
+Tabelle mit den Spalten: Feld | DATEV | Handelsregister | Status (✅ / ⚠️ / ❓)
+
+### Handlungsbedarf
+
+Liste nur die Felder mit Abweichung oder ungeklärtem Status. Formuliere jeweils eine konkrete Empfehlung.
+
+Wenn der Handelsregistereintrag nicht eindeutig gefunden werden kann, frage nach der genauen Firma oder HR-Nummer.`,
+  },
   // Mandantenkommunikation (Client Communication) - 4 templates
   {
     id: 'mandanten-email',
