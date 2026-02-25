@@ -2,6 +2,7 @@ import type { ChatStreamChunk, OpenAssessmentView } from '@atlas/shared';
 import { CONTEXT_PROMPTS } from '@chat/application/chat.prompts';
 import { ChatRepository } from '@chat/domain/chat.repository';
 import { ClientService } from '@datev/application/client.service';
+import { DmsAdapter } from '@datev/dms/domain/dms.adapter';
 import { LlmService } from '@llm/application/llm.service';
 import type { ToolCallEvent } from '@llm/application/tool-orchestration.service';
 import type { LlmMessage } from '@llm/domain/llm.types';
@@ -11,7 +12,6 @@ import {
 } from '@llm/infrastructure/file-encoding.util';
 import { Injectable, Logger } from '@nestjs/common';
 import { RAGService } from '@rag/application/rag.service';
-import { DmsAdapter } from '@datev/dms/domain/dms.adapter';
 import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 import { BESCHEID_PRUEFUNG_SYSTEM_PROMPT } from './tax-assessment.prompts';

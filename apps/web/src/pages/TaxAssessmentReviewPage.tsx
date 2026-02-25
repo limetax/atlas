@@ -1,4 +1,4 @@
-import { Children, isValidElement, useMemo, useState } from 'react';
+import { Children, isValidElement, useDeferredValue, useMemo, useState } from 'react';
 
 import { ArrowLeft, ArrowRight, MessageSquare } from 'lucide-react';
 import type { Components } from 'react-markdown';
@@ -248,6 +248,7 @@ const ReviewProgressPanel = ({
 }: ReviewProgressPanelProps) => {
   const navigate = useNavigate();
   const { scrollContainerRef, handleScroll } = useAutoScroll(streamingText);
+  const deferredText = useDeferredValue(streamingText);
   const hasText = streamingText.length > 0;
   const isCompleted = phase === 'completed';
   const title = clientName ? `${clientName}${year ? ` (${year})` : ''}` : 'Bescheid';
@@ -296,7 +297,7 @@ const ReviewProgressPanel = ({
           className="prose prose-sm max-h-[65vh] max-w-none overflow-y-auto [overflow-anchor:none] [overscroll-behavior-y:contain] px-5 py-4 text-foreground"
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-            {streamingText}
+            {deferredText}
           </ReactMarkdown>
         </div>
       ) : (

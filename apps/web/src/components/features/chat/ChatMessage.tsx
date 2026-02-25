@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useDeferredValue } from 'react';
 
 import { Check, ExternalLink, FileText } from 'lucide-react';
 import type { Components } from 'react-markdown';
@@ -58,7 +58,8 @@ function enrichContentWithLinks(content: string, citations: Message['citations']
 // React.memo prevents re-rendering all messages when a new one is added
 export const ChatMessage = React.memo<ChatMessageProps>(({ message }) => {
   const isUser = message.role === 'user';
-  const enrichedContent = enrichContentWithLinks(message.content, message.citations);
+  const deferredContent = useDeferredValue(message.content);
+  const enrichedContent = enrichContentWithLinks(deferredContent, message.citations);
 
   return (
     <div className={cn('flex gap-5', isUser ? 'justify-end' : 'justify-start')}>
