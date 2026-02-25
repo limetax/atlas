@@ -20,6 +20,11 @@ const SYSTEM_PROMPT = BESCHEID_PRUEFUNG_SYSTEM_PROMPT + CONTEXT_PROMPTS.EMAIL;
 
 const INCOME_TAX_ORDER_NAME = 'Einkommensteuererklärung';
 
+const buildClientContextSection = (context: string | null | undefined): string =>
+  context
+    ? `\n\n---\n\nMANDANTEN-STAMMDATEN (aus DATEV):\n${context}\n\nWichtig: Verwende die oben angegebene E-Mail-Adresse als Empfänger in der Mandantenmitteilung (Abschnitt 11). Falls mehrere Kontakte vorhanden sind, wähle die hauptverantwortliche Kontaktperson.`
+    : '';
+
 // Sandbox demo fixtures
 const SANDBOX_BUCKET = 'sandbox';
 const SANDBOX_ESTB_PATH = 'bescheidpruefung/estb.pdf';
@@ -73,7 +78,7 @@ export class TaxAssessmentService {
 
   private async downloadSandboxFile(path: string): Promise<Buffer> {
     const { data, error } = await this.supabase.db.storage.from(SANDBOX_BUCKET).download(path);
-    if (error ?? !data) {
+    if (error || !data) {
       throw new Error(`Sandbox file not found: ${path}`);
     }
     return Buffer.from(await data.arrayBuffer());
@@ -140,9 +145,7 @@ export class TaxAssessmentService {
       ]);
 
       clientName = client?.client_name ?? SANDBOX_CLIENT_GUID;
-      clientContextSection = ragClientResult.context
-        ? `\n\n---\n\nMANDANTEN-STAMMDATEN (aus DATEV):\n${ragClientResult.context}\n\nWichtig: Verwende die oben angegebene E-Mail-Adresse als Empfänger in der Mandantenmitteilung (Abschnitt 11). Falls mehrere Kontakte vorhanden sind, wähle die hauptverantwortliche Kontaktperson.`
-        : '';
+      clientContextSection = buildClientContextSection(ragClientResult.context);
       year = SANDBOX_YEAR;
       assessmentFiles = [{ buffer: estbBuffer, name: 'estb.pdf' }];
       declarationFiles = [{ buffer: esteBuffer, name: 'este.pdf' }];
@@ -161,9 +164,7 @@ export class TaxAssessmentService {
       ]);
 
       clientName = client?.client_name ?? assessmentDoc.correspondence_partner_guid;
-      clientContextSection = ragClientResult.context
-        ? `\n\n---\n\nMANDANTEN-STAMMDATEN (aus DATEV):\n${ragClientResult.context}\n\nWichtig: Verwende die oben angegebene E-Mail-Adresse als Empfänger in der Mandantenmitteilung (Abschnitt 11). Falls mehrere Kontakte vorhanden sind, wähle die hauptverantwortliche Kontaktperson.`
-        : '';
+      clientContextSection = buildClientContextSection(ragClientResult.context);
       year = assessmentDoc.year;
 
       // 2. Fetch and download assessment PDFs
