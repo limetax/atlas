@@ -3,6 +3,8 @@
  * Frontend-only template system for prompt management
  */
 
+import type { ChatContext } from '@atlas/shared';
+
 export type TemplateCategory =
   | 'mandantenkommunikation'
   | 'mitarbeitersuche'
@@ -17,6 +19,7 @@ export type Template = {
   description: string;
   category: TemplateCategory;
   content: string;
+  defaultContext?: ChatContext;
 };
 
 export type TemplateCategoryInfo = {
