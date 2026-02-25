@@ -76,7 +76,7 @@ export const TOOLS: Tool[] = [
     icon: GitCompare,
     route: '/chat',
     status: 'active',
-    category: 'analyse-recherche',
+    category: 'dokumentenverarbeitung',
   },
   {
     id: 'bescheid-pruefen',
