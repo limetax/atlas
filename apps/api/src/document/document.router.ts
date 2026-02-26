@@ -21,6 +21,24 @@ const LinkDocumentSchema = z.object({
   documentId: z.string().uuid(),
 });
 
+// Inline schema — no imports allowed by nestjs-trpc codegen.
+const DocumentSchema = z.object({
+  id: z.string(),
+  advisoryId: z.string(),
+  clientId: z.string().nullable(),
+  uploadedBy: z.string(),
+  name: z.string(),
+  sizeBytes: z.number(),
+  storagePath: z.string(),
+  mimeType: z.string(),
+  source: z.enum(['limetaxos', 'datev']),
+  datevDocumentId: z.string().nullable(),
+  status: z.enum(['processing', 'ready', 'error']),
+  errorMessage: z.string().optional(),
+  chunkCount: z.number(),
+  createdAt: z.string(),
+});
+
 /**
  * Document Router - tRPC procedures for advisory-scoped document management
  * Upload is handled by DocumentController (multipart/form-data HTTP endpoint)
@@ -37,7 +55,7 @@ export class DocumentRouter {
     private readonly advisorRepo: AdvisorRepository
   ) {}
 
-  @Query()
+  @Query({ output: z.array(DocumentSchema) })
   @UseMiddlewares(AuthMiddleware)
   async listDocuments(@Ctx() ctx: { user: User }): Promise<DocumentEntity[]> {
     const advisor = await this.advisorRepo.findById(ctx.user.id);
@@ -45,7 +63,7 @@ export class DocumentRouter {
     return this.documentService.getDocumentsByAdvisory(advisor.advisory_id);
   }
 
-  @Query({ input: ChatIdInputSchema })
+  @Query({ input: ChatIdInputSchema, output: z.array(DocumentSchema) })
   @UseMiddlewares(AuthMiddleware)
   async getDocumentsByChatId(
     @Input('chatId') chatId: string,
@@ -58,7 +76,7 @@ export class DocumentRouter {
     return docs.filter((doc) => doc.advisoryId === advisor.advisory_id);
   }
 
-  @Mutation({ input: DocumentIdInputSchema })
+  @Mutation({ input: DocumentIdInputSchema, output: z.boolean() })
   @UseMiddlewares(AuthMiddleware)
   async deleteDocument(
     @Input('documentId') documentId: string,
@@ -73,7 +91,7 @@ export class DocumentRouter {
     return this.documentService.deleteDocument(documentId);
   }
 
-  @Mutation({ input: LinkDocumentSchema })
+  @Mutation({ input: LinkDocumentSchema, output: z.boolean() })
   @UseMiddlewares(AuthMiddleware)
   async linkDocumentToChat(
     @Input('chatId') chatId: string,
@@ -88,7 +106,7 @@ export class DocumentRouter {
     return true;
   }
 
-  @Mutation({ input: LinkDocumentSchema })
+  @Mutation({ input: LinkDocumentSchema, output: z.boolean() })
   @UseMiddlewares(AuthMiddleware)
   async unlinkDocumentFromChat(
     @Input('chatId') chatId: string,
@@ -103,7 +121,7 @@ export class DocumentRouter {
     return true;
   }
 
-  @Query({ input: DocumentIdInputSchema })
+  @Query({ input: DocumentIdInputSchema, output: z.object({ url: z.string() }) })
   @UseMiddlewares(AuthMiddleware)
   async getDownloadUrl(
     @Input('documentId') documentId: string,
