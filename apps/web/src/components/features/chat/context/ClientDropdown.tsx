@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
+import { useSandboxMode } from '@/hooks/useSandboxMode';
 
 type ClientDropdownProps = {
   selected?: string;
@@ -29,14 +30,13 @@ export const ClientDropdown = ({ selected, onChange }: ClientDropdownProps) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [isSandboxMode] = useSandboxMode();
 
   const {
     data: clients,
     isLoading,
     error,
-  } = trpc.datev.listClients.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-  });
+  } = trpc.datev.listClients.useQuery({ sandboxMode: isSandboxMode }, { staleTime: 5 * 60 * 1000 });
 
   // Auto-focus search input when dropdown opens and reset search when closed (with delay)
   React.useEffect(() => {

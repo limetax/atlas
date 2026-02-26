@@ -1,23 +1,23 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Building2, Mail, MapPin, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSandboxMode } from '@/hooks/useSandboxMode';
 import { trpc } from '@/lib/trpc';
 import { useNavigate } from '@tanstack/react-router';
 
 export const ClientListPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSandboxMode] = useSandboxMode();
   const {
     data: clients,
     isLoading,
     isError,
-  } = trpc.datev.listClients.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-  });
+  } = trpc.datev.listClients.useQuery({ sandboxMode: isSandboxMode }, { staleTime: 5 * 60 * 1000 });
 
   const filteredClients = useMemo(() => {
     if (!clients) return [];
