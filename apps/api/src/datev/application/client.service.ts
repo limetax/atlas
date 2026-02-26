@@ -30,7 +30,11 @@ export class ClientService {
   > {
     const all = await this.clientRepository.findAllActive();
     const clients = sandboxMode
-      ? all.filter((c) => (SANDBOX_CLIENT_NUMBERS as readonly number[]).includes(c.client_number))
+      ? all.filter((c) =>
+          SANDBOX_CLIENT_NUMBERS.includes(
+            c.client_number as (typeof SANDBOX_CLIENT_NUMBERS)[number]
+          )
+        )
       : all;
 
     return clients.map((client) => ({
