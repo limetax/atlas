@@ -1,6 +1,8 @@
 import { toast } from 'sonner';
 
+import { API_ENDPOINTS } from '@/constants';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { env } from '@/config/env';
 import { trpc } from '@/lib/trpc';
 
 type UseDocumentsReturn = {
@@ -36,7 +38,7 @@ export const useDocuments = (): UseDocumentsReturn => {
 
     const token = getToken();
 
-    const response = await fetch('/api/documents/upload', {
+    const response = await fetch(`${env.apiUrl}${API_ENDPOINTS.DOCUMENTS_UPLOAD}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
