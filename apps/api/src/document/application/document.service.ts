@@ -9,6 +9,7 @@ import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const STORAGE_BUCKET = 'documents';
+const SIGNED_URL_EXPIRY_SECONDS = Number(process.env.SIGNED_URL_EXPIRY_SECONDS ?? '900');
 
 /**
  * Document Service - Application layer for advisory-scoped document management
@@ -43,6 +44,7 @@ export class DocumentService {
       .from(STORAGE_BUCKET)
       .upload(storagePath, file.buffer, {
         contentType: file.mimetype,
+        cacheControl: '3600',
         upsert: false,
       });
 
@@ -145,7 +147,7 @@ export class DocumentService {
 
     const { data, error } = await this.supabase.db.storage
       .from(STORAGE_BUCKET)
-      .createSignedUrl(doc.storagePath, 3600); // 1 hour
+      .createSignedUrl(doc.storagePath, SIGNED_URL_EXPIRY_SECONDS);
 
     if (error) {
       throw new Error(`Failed to create download URL: ${error.message}`);
