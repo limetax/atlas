@@ -1,8 +1,7 @@
 import { toast } from 'sonner';
 
-import { env } from '@/config/env';
 import { API_ENDPOINTS } from '@/constants';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { apiClient } from '@/lib/api-client';
 import { trpc } from '@/lib/trpc';
 import { type Document } from '@atlas/shared';
 import { useMutation } from '@tanstack/react-query';
@@ -19,7 +18,6 @@ type UseDocumentsReturn = {
 
 export const useDocuments = (): UseDocumentsReturn => {
   const utils = trpc.useUtils();
-  const { getToken } = useAuthContext();
 
   const documentsQuery = trpc.document.listDocuments.useQuery(undefined, {
     staleTime: 2 * 60 * 1000,
@@ -39,17 +37,7 @@ export const useDocuments = (): UseDocumentsReturn => {
     mutationFn: async (files: File[]) => {
       const formData = new FormData();
       files.forEach((file) => formData.append('files', file));
-
-      const token = getToken();
-      const response = await fetch(`${env.apiUrl}${API_ENDPOINTS.DOCUMENTS_UPLOAD}`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload fehlgeschlagen: ${response.statusText}`);
-      }
+      return apiClient.postForm(API_ENDPOINTS.DOCUMENTS_UPLOAD, formData);
     },
     onSuccess: (_data, files) => {
       toast.success(
