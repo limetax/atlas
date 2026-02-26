@@ -10,6 +10,10 @@ const SyncInputSchema = z.object({
   orderYear: z.number().optional().default(2025),
 });
 
+const ListClientsInputSchema = z.object({
+  sandboxMode: z.boolean().default(false),
+});
+
 const ClientIdInputSchema = z.object({
   clientId: z.string(),
 });
@@ -28,6 +32,7 @@ export class DatevRouter {
    * List all active clients
    */
   @Query({
+    input: ListClientsInputSchema,
     output: z.array(
       z.object({
         clientId: z.string(),
@@ -40,8 +45,8 @@ export class DatevRouter {
     ),
   })
   @UseMiddlewares(AuthMiddleware)
-  async listClients() {
-    return await this.clientService.listClients();
+  async listClients(@Input('sandboxMode') sandboxMode: boolean) {
+    return await this.clientService.listClients(sandboxMode);
   }
 
   /**

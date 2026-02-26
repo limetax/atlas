@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { DatevClient } from '@atlas/shared';
 import { ClientRepository } from '@datev/domain/client.repository';
+import { Injectable, Logger } from '@nestjs/common';
+
+const SANDBOX_CLIENT_NUMBERS = [45000, 45001] as const;
 
 /**
  * Client Service - Application layer for client operations
@@ -16,7 +18,7 @@ export class ClientService {
    * List all active clients
    * Returns simplified client data for dropdown
    */
-  async listClients(): Promise<
+  async listClients(sandboxMode = false): Promise<
     Array<{
       clientId: string;
       clientNumber: number;
@@ -26,7 +28,10 @@ export class ClientService {
       correspondenceCity: string | null;
     }>
   > {
-    const clients = await this.clientRepository.findAllActive();
+    const all = await this.clientRepository.findAllActive();
+    const clients = sandboxMode
+      ? all.filter((c) => (SANDBOX_CLIENT_NUMBERS as readonly number[]).includes(c.client_number))
+      : all;
 
     return clients.map((client) => ({
       clientId: client.client_id,
