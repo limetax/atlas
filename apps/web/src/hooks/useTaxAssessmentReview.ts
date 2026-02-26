@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { streamTaxAssessmentReview } from '@/lib/tax-assessment-api';
 
 type ReviewPhase = 'idle' | 'reviewing' | 'completed';
@@ -25,7 +24,6 @@ type UseTaxAssessmentReviewReturn = {
  * 5. clearReview: resets to 'idle' so the user goes back to the overview
  */
 export const useTaxAssessmentReview = (sandboxMode = false): UseTaxAssessmentReviewReturn => {
-  const { getToken } = useAuthContext();
   const [phase, setPhase] = useState<ReviewPhase>('idle');
   const [streamingText, setStreamingText] = useState('');
   const [completedChatId, setCompletedChatId] = useState<string | undefined>(undefined);
@@ -33,18 +31,13 @@ export const useTaxAssessmentReview = (sandboxMode = false): UseTaxAssessmentRev
 
   const startReview = useCallback(
     async (assessmentDocumentId: string) => {
-      const token = getToken() ?? '';
       setPhase('reviewing');
       setStreamingText('');
       setCompletedChatId(undefined);
       pendingChatIdRef.current = undefined;
 
       try {
-        for await (const chunk of streamTaxAssessmentReview(
-          assessmentDocumentId,
-          token,
-          sandboxMode
-        )) {
+        for await (const chunk of streamTaxAssessmentReview(assessmentDocumentId, sandboxMode)) {
           if (chunk.type === 'chat_created' && chunk.chatId) {
             pendingChatIdRef.current = chunk.chatId;
           } else if (chunk.type === 'text' && chunk.content) {
@@ -63,7 +56,7 @@ export const useTaxAssessmentReview = (sandboxMode = false): UseTaxAssessmentRev
         setPhase('idle');
       }
     },
-    [getToken, sandboxMode]
+    [sandboxMode]
   );
 
   const clearReview = useCallback(() => {

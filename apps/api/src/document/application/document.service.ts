@@ -9,7 +9,8 @@ import { SupabaseService } from '@shared/infrastructure/supabase.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const STORAGE_BUCKET = 'documents';
-const SIGNED_URL_EXPIRY_SECONDS = Number(process.env.SIGNED_URL_EXPIRY_SECONDS ?? '900');
+const SIGNED_URL_EXPIRY_SECONDS = Number(process.env.SIGNED_URL_EXPIRY_SECONDS ?? '900'); // 15 min
+const UPLOAD_CACHE_CONTROL = '3600';
 
 /**
  * Document Service - Application layer for advisory-scoped document management
@@ -44,7 +45,7 @@ export class DocumentService {
       .from(STORAGE_BUCKET)
       .upload(storagePath, file.buffer, {
         contentType: file.mimetype,
-        cacheControl: '3600',
+        cacheControl: UPLOAD_CACHE_CONTROL,
         upsert: false,
       });
 

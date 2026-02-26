@@ -1,10 +1,11 @@
-import { useRef, useState, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useMemo, useRef, useState } from 'react';
+
 import { Loader2, Search, Upload } from 'lucide-react';
+
+import { DocumentList } from '@/components/features/documents/DocumentList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DocumentList } from '@/components/features/documents/DocumentList';
 import { useDocuments } from '@/hooks/useDocuments';
 
 const ALLOWED_MIME_TYPES = [
@@ -17,11 +18,17 @@ const ALLOWED_MIME_TYPES = [
 
 export const DocumentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { documents, isLoading, isError, uploadDocuments, deleteDocument, isDeletingDocument } =
-    useDocuments();
+  const {
+    documents,
+    isLoading,
+    isError,
+    uploadDocuments,
+    isUploadingDocuments,
+    deleteDocument,
+    isDeletingDocument,
+  } = useDocuments();
 
   const filteredDocuments = useMemo(() => {
     if (!searchTerm.trim()) return documents;
@@ -29,27 +36,14 @@ export const DocumentsPage = () => {
     return documents.filter((doc) => doc.name.toLowerCase().includes(term));
   }, [documents, searchTerm]);
 
-  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter((f) =>
       ALLOWED_MIME_TYPES.includes(f.type)
     );
     e.target.value = '';
 
     if (files.length === 0) return;
-
-    setIsUploading(true);
-    try {
-      await uploadDocuments(files);
-      toast.success(
-        files.length === 1
-          ? `„${files[0].name}" wurde hochgeladen`
-          : `${files.length} Dokumente wurden hochgeladen`
-      );
-    } catch {
-      toast.error('Upload fehlgeschlagen');
-    } finally {
-      setIsUploading(false);
-    }
+    uploadDocuments(files);
   };
 
   return (
@@ -72,15 +66,15 @@ export const DocumentsPage = () => {
             />
             <Button
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
+              disabled={isUploadingDocuments}
               className="shrink-0"
             >
-              {isUploading ? (
+              {isUploadingDocuments ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Upload className="w-4 h-4 mr-2" />
               )}
-              {isUploading ? 'Wird hochgeladen…' : 'Hochladen'}
+              {isUploadingDocuments ? 'Wird hochgeladen…' : 'Hochladen'}
             </Button>
           </div>
 
