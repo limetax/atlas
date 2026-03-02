@@ -12,13 +12,14 @@ import { useNavigate } from '@tanstack/react-router';
 
 export const LoginForm = () => {
   const navigate = useNavigate({ from: ROUTES.LOGIN });
-  const { setToken } = useAuthToken();
+  const { setToken, setRefreshToken } = useAuthToken();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
       setToken(data.token);
+      setRefreshToken(data.refreshToken);
       navigate({ to: ROUTES.HOME });
     },
   });

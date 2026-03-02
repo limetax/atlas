@@ -78,4 +78,20 @@ export class SupabaseAuthAdapter extends AuthAdapter {
       throw new Error('Sign out failed');
     }
   }
+
+  /**
+   * Refresh the session using a refresh token
+   * @param refreshToken - Supabase refresh token
+   * @returns New user and session information
+   */
+  async refreshSession(refreshToken: string): Promise<{ user: User; session: Session }> {
+    const { data, error } = await this.supabase.refreshSession(refreshToken);
+
+    if (error || !data.user || !data.session) {
+      this.logger.error('Supabase refresh session error:', error);
+      throw new Error(error?.message || 'Token refresh failed');
+    }
+
+    return { user: data.user, session: data.session };
+  }
 }

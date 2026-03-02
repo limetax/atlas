@@ -16,6 +16,10 @@ const LogoutOutputSchema = z.object({
   success: z.boolean(),
 });
 
+const RefreshInputSchema = z.object({
+  refreshToken: z.string(),
+});
+
 /**
  * Auth Router - tRPC procedures for authentication
  */
@@ -29,6 +33,16 @@ export class AuthRouter {
   @UseMiddlewares(RateLimitMiddleware)
   async login(@Input('email') email: string, @Input('password') password: string) {
     return this.authService.login(email, password);
+  }
+
+  @Mutation({
+    input: RefreshInputSchema,
+  })
+  @UseMiddlewares(RateLimitMiddleware)
+  async refresh(
+    @Input('refreshToken') refreshToken: string
+  ): Promise<{ token: string; refreshToken: string }> {
+    return this.authService.refresh(refreshToken);
   }
 
   @Mutation({

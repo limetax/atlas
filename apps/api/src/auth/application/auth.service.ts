@@ -28,6 +28,7 @@ export class AuthService {
     user: User;
     session: Session;
     token: string;
+    refreshToken: string;
   }> {
     try {
       const { user, session } = await this.authAdapter.signInWithPassword(email, password);
@@ -36,6 +37,7 @@ export class AuthService {
         user,
         session,
         token: session.access_token,
+        refreshToken: session.refresh_token,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -68,6 +70,16 @@ export class AuthService {
    */
   async getUserByToken(token: string): Promise<User | null> {
     return await this.authAdapter.getUser(token);
+  }
+
+  /**
+   * Refresh tokens using a refresh token
+   * @param refreshToken - Supabase refresh token
+   * @returns New access token and refresh token pair
+   */
+  async refresh(refreshToken: string): Promise<{ token: string; refreshToken: string }> {
+    const { session } = await this.authAdapter.refreshSession(refreshToken);
+    return { token: session.access_token, refreshToken: session.refresh_token };
   }
 
   /**

@@ -13,6 +13,7 @@
 import { createContext, type ReactNode, useCallback, useContext } from 'react';
 
 import { ROUTES, STORAGE_KEYS } from '@/constants';
+import { useAuthToken } from '@/hooks/useAuthToken';
 import { trpc } from '@/lib/trpc';
 import type { Advisor } from '@atlas/shared';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
+  const { removeToken: removeAuthToken, removeRefreshToken } = useAuthToken();
 
   const { data: user, isLoading: isUserLoading } = trpc.auth.getUser.useQuery();
   const { data: advisor } = trpc.auth.getAdvisor.useQuery(undefined, {
@@ -40,7 +42,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      removeAuthToken();
+      removeRefreshToken();
       navigate({ to: ROUTES.LOGIN });
     },
   });

@@ -5,6 +5,7 @@
 
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'supabase_token',
+  REFRESH_TOKEN: 'supabase_refresh_token',
   CHAT_SESSIONS: 'limetax-sessions',
 } as const;
 

@@ -1,6 +1,7 @@
 import { env } from '@/config/env';
 import { STORAGE_KEYS } from '@/constants';
 import { logger } from '@/utils/logger';
+import { refreshTokens } from '@/lib/trpc';
 
 export class ApiError extends Error {
   constructor(
@@ -64,24 +65,47 @@ async function* readStream<T>(
   }
 }
 
+/**
+ * Wraps a fetch-based call with a single 401 → refresh → retry cycle.
+ * On successful refresh, retries the original call with the updated token.
+ * Propagates the error if refresh fails.
+ */
+const withRefreshOn401 = async <T>(fn: () => Promise<T>): Promise<T> => {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      await refreshTokens(); // throws if no refresh token or Supabase rejects
+      return fn(); // retry once with the new token now in localStorage
+    }
+    throw err;
+  }
+};
+
 const post = async <T>(path: string, body: unknown): Promise<T> => {
-  const res = await fetch(`${env.apiUrl}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(getAuthToken()) },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new ApiError(res.status, res.statusText);
-  return res.json() as Promise<T>;
+  return withRefreshOn401(() =>
+    fetch(`${env.apiUrl}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders(getAuthToken()) },
+      body: JSON.stringify(body),
+    }).then((res) => {
+      if (!res.ok) throw new ApiError(res.status, res.statusText);
+      return res.json() as Promise<T>;
+    })
+  );
 };
 
 const postForm = async <T>(path: string, body: FormData): Promise<T> => {
-  const res = await fetch(`${env.apiUrl}${path}`, {
-    method: 'POST',
-    headers: authHeaders(getAuthToken()), // no Content-Type — browser sets multipart boundary
-    body,
-  });
-  if (!res.ok) throw new ApiError(res.status, res.statusText);
-  return res.json() as Promise<T>;
+  return withRefreshOn401(() =>
+    fetch(`${env.apiUrl}${path}`, {
+      method: 'POST',
+      headers: authHeaders(getAuthToken()), // no Content-Type — browser sets multipart boundary
+      body,
+    }).then((res) => {
+      if (!res.ok) throw new ApiError(res.status, res.statusText);
+      return res.json() as Promise<T>;
+    })
+  );
 };
 
 async function* stream<T>(
@@ -92,16 +116,21 @@ async function* stream<T>(
   const abort = createAbort(signal);
   try {
     const isForm = body instanceof FormData;
-    const res = await fetch(`${env.apiUrl}${path}`, {
-      method: 'POST',
-      headers: {
-        ...authHeaders(getAuthToken()),
-        ...(!isForm ? { 'Content-Type': 'application/json' } : {}),
-      },
-      body: isForm ? body : JSON.stringify(body),
-      signal: abort.signal,
-    });
-    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    const doFetch = async (): Promise<Response> => {
+      const res = await fetch(`${env.apiUrl}${path}`, {
+        method: 'POST',
+        headers: {
+          ...authHeaders(getAuthToken()),
+          ...(!isForm ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: isForm ? body : JSON.stringify(body),
+        signal: abort.signal,
+      });
+      if (!res.ok) throw new ApiError(res.status, res.statusText);
+      return res;
+    };
+
+    const res = await withRefreshOn401(doFetch);
     const reader = res.body?.getReader();
     if (!reader) throw new Error('Response body is null');
     yield* readStream<T>(reader, abort, signal);
