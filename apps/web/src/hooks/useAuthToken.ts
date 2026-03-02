@@ -11,6 +11,8 @@ export type UseAuthTokenReturn = {
   getToken: () => string | null;
   setToken: (token: string) => void;
   removeToken: () => void;
+  setRefreshToken: (token: string) => void;
+  removeRefreshToken: () => void;
   isExpired: () => boolean;
 };
 
@@ -27,6 +29,14 @@ export function useAuthToken(): UseAuthTokenReturn {
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
   }, []);
 
+  const setRefreshToken = useCallback((token: string) => {
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, token);
+  }, []);
+
+  const removeRefreshToken = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+  }, []);
+
   const isExpired = useCallback(() => {
     const token = getToken();
     if (!token) return true;
@@ -37,6 +47,8 @@ export function useAuthToken(): UseAuthTokenReturn {
     getToken,
     setToken,
     removeToken,
+    setRefreshToken,
+    removeRefreshToken,
     isExpired,
   };
 }

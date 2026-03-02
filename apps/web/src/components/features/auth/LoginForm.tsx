@@ -5,21 +5,21 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
-import { ROUTES, STORAGE_KEYS } from '@/constants';
+import { ROUTES } from '@/constants';
 import { useAuthToken } from '@/hooks/useAuthToken';
 import { trpc } from '@/lib/trpc';
 import { useNavigate } from '@tanstack/react-router';
 
 export const LoginForm = () => {
   const navigate = useNavigate({ from: ROUTES.LOGIN });
-  const { setToken } = useAuthToken();
+  const { setToken, setRefreshToken } = useAuthToken();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
       setToken(data.token);
-      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+      setRefreshToken(data.refreshToken);
       navigate({ to: ROUTES.HOME });
     },
   });
