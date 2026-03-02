@@ -500,9 +500,7 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
 
   /**
    * Store files in RAG asynchronously (fire-and-forget).
-   * Phase 1: initDocument() creates the DB record and links it to the chat immediately.
-   * Phase 2: processDocumentAsync() runs in the background — status transitions to ready/error.
-   * Errors are logged but don't block the user response.
+   * Errors are logged per-file but don't block the user response.
    */
   private async storeFilesInRagAsync(
     files: Express.Multer.File[],
@@ -518,26 +516,19 @@ Beantworte die Frage des Nutzers. Integriere Quellenangaben DIREKT in deine Sät
     const advisoryId = advisor.advisory_id;
 
     for (const file of files) {
-      try {
-        // Phase 1: upload + create record (fast, links document to chat immediately)
-        const document = await this.documentService.initDocument(file, advisoryId, advisorId);
-        await this.documentService.linkDocumentToChat(chatId, document.id);
-        this.logger.log(`Document "${file.originalname}" initialized and linked to chat ${chatId}`);
-
-        // Phase 2: fire-and-forget text extraction + embedding
-        this.documentService.processDocumentAsync(document.id, file, advisoryId).catch((err) => {
+      await this.documentService
+        .ingestDocument(
+          { buffer: file.buffer, name: file.originalname, mimeType: file.mimetype },
+          advisoryId,
+          advisorId,
+          chatId
+        )
+        .catch((error) => {
           this.logger.error(
-            `Background processing failed for "${file.originalname}" (${document.id})`,
-            err instanceof Error ? err.stack : String(err)
+            `Failed to store file "${file.originalname}" for chat ${chatId}`,
+            error instanceof Error ? error.stack : String(error)
           );
         });
-      } catch (error) {
-        this.logger.error(
-          `Failed to init file "${file.originalname}" for chat ${chatId}`,
-          error instanceof Error ? error.stack : String(error)
-        );
-        // Continue with other files
-      }
     }
   }
 }

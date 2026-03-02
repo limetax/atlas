@@ -35,6 +35,7 @@ export class SupabaseDocumentRepository extends DocumentRepository {
     storagePath: string;
     mimeType: string;
     source?: DocumentSource;
+    datevDocumentId?: string;
     clientId?: string;
   }): Promise<DocumentEntity> {
     const { data, error } = await this.supabase.db
@@ -47,6 +48,7 @@ export class SupabaseDocumentRepository extends DocumentRepository {
         storage_path: params.storagePath,
         mime_type: params.mimeType,
         source: params.source ?? 'limetaxos',
+        datev_document_id: params.datevDocumentId ?? null,
         client_id: params.clientId ?? null,
       })
       .select()
@@ -226,5 +228,27 @@ export class SupabaseDocumentRepository extends DocumentRepository {
     }
 
     return (data ?? []).map((row) => this.mapper.toDomain(row));
+  }
+
+  async findByDatevDocumentId(
+    datevDocumentId: string,
+    advisoryId: string
+  ): Promise<DocumentEntity | null> {
+    const { data, error } = await this.supabase.db
+      .from('documents')
+      .select('*')
+      .eq('datev_document_id', datevDocumentId)
+      .eq('advisory_id', advisoryId)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error(
+        `Failed to find document by datev_document_id "${datevDocumentId}":`,
+        error
+      );
+      throw new Error(`Failed to find document by datev_document_id: ${error.message}`);
+    }
+
+    return data ? this.mapper.toDomain(data) : null;
   }
 }

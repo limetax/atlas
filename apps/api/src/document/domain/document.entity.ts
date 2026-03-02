@@ -43,6 +43,7 @@ export abstract class DocumentRepository {
     storagePath: string;
     mimeType: string;
     source?: DocumentSource;
+    datevDocumentId?: string;
     clientId?: string;
   }): Promise<DocumentEntity>;
 
@@ -72,4 +73,9 @@ export abstract class DocumentRepository {
   abstract findDocumentIdsByChatId(chatId: string): Promise<string[]>;
 
   abstract findByChatId(chatId: string): Promise<DocumentEntity[]>;
+
+  abstract findByDatevDocumentId(
+    datevDocumentId: string,
+    advisoryId: string
+  ): Promise<DocumentEntity | null>;
 }
