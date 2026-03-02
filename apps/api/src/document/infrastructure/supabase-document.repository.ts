@@ -239,7 +239,6 @@ export class SupabaseDocumentRepository extends DocumentRepository {
       .select('*')
       .eq('datev_document_id', datevDocumentId)
       .eq('advisory_id', advisoryId)
-      .limit(1)
       .maybeSingle();
 
     if (error) {

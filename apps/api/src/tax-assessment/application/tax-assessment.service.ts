@@ -31,9 +31,14 @@ const buildClientContextSection = (context: string | null | undefined): string =
 const SANDBOX_BUCKET = 'sandbox';
 const SANDBOX_ESTB_PATH = 'bescheidpruefung/estb.pdf';
 const SANDBOX_ESTE_PATH = 'bescheidpruefung/este.pdf';
-const SANDBOX_DOCUMENT_ID = 'sandbox-estb-2024';
+const SANDBOX_ESTB_DOCUMENT_ID = 'sandbox-estb-2024';
+const SANDBOX_ESTE_DOCUMENT_ID = 'sandbox-este-2024';
 const SANDBOX_YEAR = 2024;
 const SANDBOX_CLIENT_GUID = 'client-max-muster-45001';
+
+// DATEV document type IDs used as deduplication keys in the document system
+const DATEV_ASSESSMENT_TYPE_ID = 'estb'; // Einkommensteuerbescheid
+const DATEV_DECLARATION_TYPE_ID = 'este'; // Einkommensteuererklärung
 
 // NOTE: These IDs are specific to the bPlus DATEV DMS instance and must not be reused for other tenants.
 const BPLUS_DATEV_FOLDER_ID = 198; // DMS folder: Steuerakten
@@ -89,7 +94,7 @@ export class TaxAssessmentService {
       const client = await this.clientService.getClientById(SANDBOX_CLIENT_GUID);
       return [
         {
-          documentId: SANDBOX_DOCUMENT_ID,
+          documentId: SANDBOX_ESTB_DOCUMENT_ID,
           clientName: client?.client_name ?? SANDBOX_CLIENT_GUID,
           taxType: INCOME_TAX_ORDER_NAME,
           year: SANDBOX_YEAR,
@@ -348,12 +353,12 @@ export class TaxAssessmentService {
       ...assessmentFiles.map((f) => ({
         ...f,
         mimeType: detectMimeTypeFromBuffer(f.buffer, f.name),
-        datevDocumentId: sandboxMode ? 'sandbox-estb-2024' : 'estb',
+        datevDocumentId: sandboxMode ? SANDBOX_ESTB_DOCUMENT_ID : DATEV_ASSESSMENT_TYPE_ID,
       })),
       ...declarationFiles.map((f) => ({
         ...f,
         mimeType: detectMimeTypeFromBuffer(f.buffer, f.name),
-        datevDocumentId: sandboxMode ? 'sandbox-este-2024' : 'este',
+        datevDocumentId: sandboxMode ? SANDBOX_ESTE_DOCUMENT_ID : DATEV_DECLARATION_TYPE_ID,
       })),
     ];
 
