@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type AuthResponse, SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@atlas/shared';
 
 /**
@@ -76,7 +76,7 @@ export class SupabaseService implements OnModuleInit {
   }
 
   /** Refresh session — exchanges refresh token for a new token pair */
-  async refreshSession(refreshToken: string) {
+  async refreshSession(refreshToken: string): Promise<AuthResponse> {
     return this.authClient.auth.refreshSession({ refresh_token: refreshToken });
   }
 }

@@ -39,7 +39,9 @@ export class AuthRouter {
     input: RefreshInputSchema,
   })
   @UseMiddlewares(RateLimitMiddleware)
-  async refresh(@Input('refreshToken') refreshToken: string) {
+  async refresh(
+    @Input('refreshToken') refreshToken: string
+  ): Promise<{ token: string; refreshToken: string }> {
     return this.authService.refresh(refreshToken);
   }
 
