@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 
+import type { DocumentSource } from '@atlas/shared';
 import { type DocumentEntity, DocumentRepository } from '@document/domain/document.entity';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { EmbeddingsService } from '@llm/application/embeddings.service';
@@ -34,32 +35,78 @@ export class DocumentService {
   async initDocument(
     file: Express.Multer.File,
     advisoryId: string,
-    uploadedBy: string
+    uploadedBy: string,
+    options?: { source?: DocumentSource; datevDocumentId?: string }
   ): Promise<DocumentEntity> {
     this.validateFile(file);
-
-    const docId = randomUUID();
-    const storagePath = `${advisoryId}/shared/${docId}/${file.originalname}`;
-
-    const { error: uploadError } = await this.supabase.db.storage
-      .from(STORAGE_BUCKET)
-      .upload(storagePath, file.buffer, {
-        contentType: file.mimetype,
-        cacheControl: UPLOAD_CACHE_CONTROL,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      throw new Error(`Storage upload failed: ${uploadError.message}`);
-    }
-
-    return this.documentRepo.create({
+    return this.uploadAndCreate(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
       advisoryId,
       uploadedBy,
-      name: file.originalname,
-      sizeBytes: file.size,
-      storagePath,
-      mimeType: file.mimetype,
+      options
+    );
+  }
+
+  /**
+   * Ingest a document from a raw buffer: upload, create record, link to chat, and kick off processing.
+   * For programmatic ingestion (e.g. DMS documents) — skips HTTP upload validation.
+   * Deduplicates by datevDocumentId: re-links the existing document and returns early if already stored.
+   * processDocumentAsync fires in the background; errors are logged, not thrown.
+   */
+  async ingestDocument(
+    input: { buffer: Buffer; name: string; mimeType: string },
+    advisoryId: string,
+    uploadedBy: string,
+    chatId: string,
+    options?: { source?: DocumentSource; datevDocumentId?: string }
+  ): Promise<void> {
+    const { buffer, name, mimeType } = input;
+
+    if (options?.datevDocumentId) {
+      const existing = await this.documentRepo.findByDatevDocumentId(
+        options.datevDocumentId,
+        advisoryId
+      );
+      if (existing) {
+        this.logger.log(
+          `Document "${name}" (${options.datevDocumentId}) already exists, linking to chat ${chatId}`
+        );
+        await this.documentRepo.linkToChat(chatId, existing.id);
+        return;
+      }
+    }
+
+    const document = await this.uploadAndCreate(
+      buffer,
+      name,
+      mimeType,
+      advisoryId,
+      uploadedBy,
+      options
+    );
+    await this.documentRepo.linkToChat(chatId, document.id);
+    this.logger.log(`Document "${name}" initialized and linked to chat ${chatId}`);
+
+    const multerFile = {
+      buffer,
+      originalname: name,
+      mimetype: mimeType,
+      size: buffer.length,
+      fieldname: 'file',
+      encoding: '7bit',
+      stream: null as never,
+      destination: '',
+      filename: name,
+      path: '',
+    } satisfies Express.Multer.File;
+
+    this.processDocumentAsync(document.id, multerFile, advisoryId).catch((err) => {
+      this.logger.error(
+        `Background processing failed for "${name}" (${document.id})`,
+        err instanceof Error ? err.stack : String(err)
+      );
     });
   }
 
@@ -130,6 +177,13 @@ export class DocumentService {
     return this.documentRepo.findDocumentIdsByChatId(chatId);
   }
 
+  async findByDatevDocumentId(
+    datevDocumentId: string,
+    advisoryId: string
+  ): Promise<DocumentEntity | null> {
+    return this.documentRepo.findByDatevDocumentId(datevDocumentId, advisoryId);
+  }
+
   // --- Chat linking ---
 
   async linkDocumentToChat(chatId: string, documentId: string): Promise<void> {
@@ -171,6 +225,41 @@ export class DocumentService {
   }
 
   // --- Helpers ---
+
+  private async uploadAndCreate(
+    buffer: Buffer,
+    name: string,
+    mimeType: string,
+    advisoryId: string,
+    uploadedBy: string,
+    options?: { source?: DocumentSource; datevDocumentId?: string }
+  ): Promise<DocumentEntity> {
+    const docId = randomUUID();
+    const storagePath = `${advisoryId}/shared/${docId}/${name}`;
+
+    const { error: uploadError } = await this.supabase.db.storage
+      .from(STORAGE_BUCKET)
+      .upload(storagePath, buffer, {
+        contentType: mimeType,
+        cacheControl: UPLOAD_CACHE_CONTROL,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(`Storage upload failed: ${uploadError.message}`);
+    }
+
+    return this.documentRepo.create({
+      advisoryId,
+      uploadedBy,
+      name,
+      sizeBytes: buffer.length,
+      storagePath,
+      mimeType,
+      source: options?.source,
+      datevDocumentId: options?.datevDocumentId,
+    });
+  }
 
   private validateFile(file: Express.Multer.File): void {
     const allowedMimeTypes = [

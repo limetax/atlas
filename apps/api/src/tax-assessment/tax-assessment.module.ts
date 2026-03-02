@@ -1,6 +1,8 @@
+import { AuthModule } from '@auth/auth.module';
 import { ChatModule } from '@chat/chat.module';
 import { DatevModule } from '@datev/datev.module';
 import { DmsModule } from '@datev/dms/dms.module';
+import { DocumentModule } from '@document/document.module';
 import { Module } from '@nestjs/common';
 import { RAGModule } from '@rag/rag.module';
 import { InfrastructureModule } from '@shared/infrastructure/infrastructure.module';
@@ -16,9 +18,19 @@ import { TaxAssessmentRouter } from '@tax-assessment/tax-assessment.router';
  * - DatevModule: provides ClientService for client context
  * - ChatModule: provides ChatRepository for session persistence
  * - InfrastructureModule: provides SupabaseService for auth, StorageAdapter for sandbox fixtures
+ * - DocumentModule: provides DocumentService for persisting review PDFs into document system
+ * - AuthModule: provides AdvisorRepository for resolving advisoryId
  */
 @Module({
-  imports: [DmsModule, DatevModule, ChatModule, InfrastructureModule, RAGModule],
+  imports: [
+    DmsModule,
+    DatevModule,
+    ChatModule,
+    InfrastructureModule,
+    RAGModule,
+    DocumentModule,
+    AuthModule,
+  ],
   controllers: [TaxAssessmentController],
   providers: [TaxAssessmentService, TaxAssessmentRouter],
 })

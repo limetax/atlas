@@ -1,8 +1,10 @@
 import type { ChatStreamChunk, OpenAssessmentView } from '@atlas/shared';
+import { AdvisorRepository } from '@auth/domain/advisor.repository';
 import { CONTEXT_PROMPTS } from '@chat/application/chat.prompts';
 import { ChatRepository } from '@chat/domain/chat.repository';
 import { ClientService } from '@datev/application/client.service';
 import { DmsAdapter } from '@datev/dms/domain/dms.adapter';
+import { DocumentService } from '@document/application/document.service';
 import { LlmService } from '@llm/application/llm.service';
 import type { ToolCallEvent } from '@llm/application/tool-orchestration.service';
 import type { LlmMessage } from '@llm/domain/llm.types';
@@ -73,7 +75,9 @@ export class TaxAssessmentService {
     private readonly llm: LlmService,
     private readonly clientService: ClientService,
     private readonly ragService: RAGService,
-    private readonly storageAdapter: StorageAdapter
+    private readonly storageAdapter: StorageAdapter,
+    private readonly documentService: DocumentService,
+    private readonly advisorRepository: AdvisorRepository
   ) {}
 
   private async downloadSandboxFile(path: string): Promise<Buffer> {
@@ -304,6 +308,67 @@ export class TaxAssessmentService {
     // 11. Persist assistant response
     await this.chatRepository.addMessage(chat.id, 'assistant', fullResponse);
 
+    // 12. Persist review documents into document system (fire-and-forget)
+    this.storeReviewFilesAsync(
+      assessmentFiles,
+      declarationFiles,
+      chat.id,
+      advisorId,
+      sandboxMode
+    ).catch((error) => {
+      this.logger.error(
+        'Background document storage for review failed',
+        error instanceof Error ? error.stack : String(error)
+      );
+    });
+
     yield { type: 'done' };
+  }
+
+  /**
+   * Persist tax assessment review files into the document system (fire-and-forget).
+   * Deduplication and background processing are handled by DocumentService.ingestDocument.
+   */
+  private async storeReviewFilesAsync(
+    assessmentFiles: { buffer: Buffer; name: string }[],
+    declarationFiles: { buffer: Buffer; name: string }[],
+    chatId: string,
+    advisorId: string,
+    sandboxMode: boolean
+  ): Promise<void> {
+    const advisor = await this.advisorRepository.findById(advisorId);
+    if (!advisor?.advisory_id) {
+      this.logger.warn(`No advisory found for advisor ${advisorId}, skipping document storage`);
+      return;
+    }
+
+    const advisoryId = advisor.advisory_id;
+
+    const filesToIngest = [
+      ...assessmentFiles.map((f) => ({
+        ...f,
+        mimeType: detectMimeTypeFromBuffer(f.buffer, f.name),
+        datevDocumentId: sandboxMode ? 'sandbox-estb-2024' : 'estb',
+      })),
+      ...declarationFiles.map((f) => ({
+        ...f,
+        mimeType: detectMimeTypeFromBuffer(f.buffer, f.name),
+        datevDocumentId: sandboxMode ? 'sandbox-este-2024' : 'este',
+      })),
+    ];
+
+    for (const { buffer, name, mimeType, datevDocumentId } of filesToIngest) {
+      await this.documentService
+        .ingestDocument({ buffer, name, mimeType }, advisoryId, advisorId, chatId, {
+          source: 'datev',
+          datevDocumentId,
+        })
+        .catch((error) => {
+          this.logger.error(
+            `Failed to store review file "${name}" for chat ${chatId}`,
+            error instanceof Error ? error.stack : String(error)
+          );
+        });
+    }
   }
 }
