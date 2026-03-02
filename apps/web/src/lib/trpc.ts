@@ -89,13 +89,17 @@ const authErrorLink: TRPCLink<AppRouter> = () => {
           observer.next(value);
         },
         error(err) {
-          observer.error(err);
           if (isTrpcUnauthorized(err) && !isOnLoginPage()) {
-            refreshTokens().catch(() => {
-              localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-              localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-              router.navigate({ to: ROUTES.LOGIN, replace: true });
-            });
+            refreshTokens()
+              .then(() => next(op).subscribe(observer))
+              .catch(() => {
+                localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+                localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+                router.navigate({ to: ROUTES.LOGIN, replace: true });
+                observer.error(err);
+              });
+          } else {
+            observer.error(err);
           }
         },
         complete() {
