@@ -84,14 +84,18 @@ const isOnLoginPage = (): boolean => router.state.location.pathname === ROUTES.L
 const authErrorLink: TRPCLink<AppRouter> = () => {
   return ({ next, op }) => {
     return observable((observer) => {
-      const unsubscribe = next(op).subscribe({
+      // Mutable ref so the cleanup always cancels whichever subscription is
+      // currently active — the original request or the post-refresh retry.
+      let currentUnsubscribe = next(op).subscribe({
         next(value) {
           observer.next(value);
         },
         error(err) {
           if (isTrpcUnauthorized(err) && !isOnLoginPage()) {
             refreshTokens()
-              .then(() => next(op).subscribe(observer))
+              .then(() => {
+                currentUnsubscribe = next(op).subscribe(observer);
+              })
               .catch(() => {
                 localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
                 localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
@@ -106,7 +110,7 @@ const authErrorLink: TRPCLink<AppRouter> = () => {
           observer.complete();
         },
       });
-      return unsubscribe;
+      return () => currentUnsubscribe.unsubscribe();
     });
   };
 };
