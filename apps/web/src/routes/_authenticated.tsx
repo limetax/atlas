@@ -4,9 +4,10 @@ import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { STORAGE_KEYS, ROUTES } from '@/constants';
 import { isTokenExpired } from '@/utils/validators';
+import { refreshTokens } from '@/lib/trpc';
 
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: () => {
+  beforeLoad: async () => {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
 
     if (!token) {
@@ -14,8 +15,13 @@ export const Route = createFileRoute('/_authenticated')({
     }
 
     if (isTokenExpired(token)) {
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      throw redirect({ to: ROUTES.LOGIN, replace: true });
+      try {
+        await refreshTokens();
+      } catch {
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        throw redirect({ to: ROUTES.LOGIN, replace: true });
+      }
     }
   },
   component: AuthenticatedLayout,

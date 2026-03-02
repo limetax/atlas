@@ -1,4 +1,4 @@
-import { createTRPCReact } from '@trpc/react-query';
+import { createTRPCReact, createTRPCClient } from '@trpc/react-query';
 import { httpBatchLink, type TRPCLink, TRPCClientError } from '@trpc/client';
 import { observable } from '@trpc/server/observable';
 import type { AppRouter } from '@atlas/api/@generated';
@@ -8,6 +8,50 @@ import { STORAGE_KEYS, API_ENDPOINTS, ROUTES } from '@/constants';
 
 // Re-export for convenience
 export type { AppRouter };
+
+/**
+ * Vanilla tRPC client for use outside the React tree (route guards, authErrorLink).
+ * Does not include the authErrorLink to avoid circular refresh loops.
+ */
+export const trpcVanilla = createTRPCClient<AppRouter>({
+  links: [
+    httpBatchLink({
+      url: env.apiUrl + API_ENDPOINTS.TRPC,
+      headers: () => {
+        const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      },
+    }),
+  ],
+});
+
+/**
+ * In-flight refresh promise — shared across concurrent 401s so only one
+ * refresh request is made to Supabase regardless of how many calls failed.
+ */
+let refreshPromise: Promise<void> | null = null;
+
+/**
+ * Exchanges the stored refresh token for a new access/refresh token pair.
+ * Concurrent callers share the same in-flight promise (deduplication).
+ * Throws if no refresh token is stored or if Supabase rejects the token.
+ */
+export const refreshTokens = (): Promise<void> => {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    if (!refreshToken) throw new Error('No refresh token available');
+
+    const result = await trpcVanilla.auth.refresh.mutate({ refreshToken });
+    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, result.token);
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, result.refreshToken);
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+};
 
 /**
  * Type guard to check if an error is a tRPC UNAUTHORIZED error.
@@ -33,8 +77,8 @@ export const isTrpcUnauthorized = (error: unknown): error is TRPCClientError<App
 const isOnLoginPage = (): boolean => router.state.location.pathname === ROUTES.LOGIN;
 
 /**
- * Custom tRPC link that intercepts UNAUTHORIZED errors and navigates
- * to the login page using TanStack Router instead of window.location.href.
+ * Custom tRPC link that intercepts UNAUTHORIZED errors. Attempts a silent
+ * token refresh before falling back to navigating to the login page.
  * Preserves React state (draft messages, form data) by avoiding full page reload.
  */
 const authErrorLink: TRPCLink<AppRouter> = () => {
@@ -47,8 +91,11 @@ const authErrorLink: TRPCLink<AppRouter> = () => {
         error(err) {
           observer.error(err);
           if (isTrpcUnauthorized(err) && !isOnLoginPage()) {
-            localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-            router.navigate({ to: ROUTES.LOGIN, replace: true });
+            refreshTokens().catch(() => {
+              localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+              localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+              router.navigate({ to: ROUTES.LOGIN, replace: true });
+            });
           }
         },
         complete() {

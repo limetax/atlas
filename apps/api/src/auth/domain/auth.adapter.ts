@@ -32,4 +32,14 @@ export abstract class AuthAdapter {
    * Sign out the current user
    */
   abstract signOut(): Promise<void>;
+
+  /**
+   * Refresh the session using a refresh token
+   * @param refreshToken - Supabase refresh token
+   * @returns New user and session information
+   */
+  abstract refreshSession(refreshToken: string): Promise<{
+    user: User;
+    session: Session;
+  }>;
 }

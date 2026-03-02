@@ -74,4 +74,9 @@ export class SupabaseService implements OnModuleInit {
   async signOut() {
     return this.authClient.auth.signOut();
   }
+
+  /** Refresh session — exchanges refresh token for a new token pair */
+  async refreshSession(refreshToken: string) {
+    return this.authClient.auth.refreshSession({ refresh_token: refreshToken });
+  }
 }
